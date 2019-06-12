@@ -3,15 +3,15 @@ For more information, please visit --> [Project's Website](https://blockstamp.in
 
 # What is BlockStamp
 
-BlockStamp (BST) is a new digital currency intended to store user's data in blockchain. It is based on Bitcon peer-to-peer technology to operate with no central authority, and is a hardfork fromt he bitcoin blockchain. The goal was to create a new fast and effective blockchain that could be used for trusted timestamping of documents. Currently, BlockStamp blockchain is used as the core of an online gambling platform. Future uses will cover dedicated timestamping and domain naming. 
+BlockStamp (BST) is a new digital currency intended to store user's data in blockchain. It is based on Bitcon peer-to-peer technology to operate with no central authority, and is a hardfork fromt he bitcoin blockchain. The goal was to create a new fast and effective blockchain that could be used for trusted timestamping of documents. Currently, BlockStamp blockchain is used as the core of an online gaming platform. Future uses will cover dedicated timestamping and domain naming. 
 
-There are three areas where BlockStamp is going to be applied, which are gambling, document timestamping, domain naming. 
+There are three areas where BlockStamp is going to be applied, which are gaming, document timestamping, domain naming. 
 
-## Gambling
-The whole concept was to enable gambling in a completely new form, where there is no casino side, no house edge, and all the transactions can be verified by the players. 
+## Gaming
+The whole concept was to enable gaming in a completely new form, where there is no casino side, no house edge, and all the transactions can be verified by the players. 
 There were many attempts in order to create such a platform, however most of them failed during implementation, while some are still suffering from long implementation processes. The majority of those were ICOs, which after the initial fundraising, failed to produce the actual product. We took a completely different approach and decided to build our own currency as part of the project instead of raising funds for building the casino. 
 
-Our goal was to build the whole new platform which would be able to host players and to provide gambling base with 0% edges and minimal fees at the same time providing transparency of all the transactions happening in the casino. Hence, we decided to develop a new currency which blockchain would be used for the fairness purposes. 
+Our goal was to build the whole new platform which would be able to host players and to provide gaming base with 0% edges and minimal fees at the same time providing transparency of all the transactions happening in the casino. Hence, we decided to develop a new currency which blockchain would be used for the fairness purposes. 
 
 BlockStamp blockchain levels all issues with provably fairness, transparency, or any kind of tampering with the game results. It also enables 1mln jackpot and fast and efficient transactions. 
 
@@ -24,7 +24,12 @@ Current cryptocurrency casino market is still in its infancy, while its older br
 -No possibility to host one’s own game
 -Overall casinos’ profit orientation
 
-BlockStamp gamin gets rid of all that. A comprehensive comparison of online gambling solutions can be found on our website.
+BlockStamp gaming gets rid of all that. A comprehensive comparison of online gaming solutions can be found on our website.
+
+## Domain naming
+The concept is based on the fact that more and more domains are being watched and blocked, against the will of the users. Peer-to-peer domain naming prevents this kind of situations. This functionality is under development and will be made available shortly. 
+Future applications
+Given that BlockStamp can be perceived as a solid timestamping device, its applications can only be limited by its users’ imagination and requirements, but not by its functionality. A set of flexible procedures will be issued which will make purpose oriented timestamping possible. This document will be updated accordingly. 
 
 ## Timestamping of documents
 Sensitivity of banking transactions requires a very solid, hacking-proof, and secure system to store the data. BlockStamp blockchain is designed for this very purpose and can offer tamper-proof tramstamping of banking transactions. This can include but is not limited to:
@@ -37,12 +42,6 @@ Sensitivity of banking transactions requires a very solid, hacking-proof, and se
 -Other debts units
 	
 This functionality is under development currently and will be made available shortly. 
-
-## Domain naming
-The concept is based on the fact that more and more domains are being watched and blocked, against the will of the users. Peer-to-peer domain naming prevents this kind of situations. This functionality is under development and will be made available shortly. 
-Future applications
-Given that BlockStamp can be perceived as a solid timestamping device, its applications can only be limited by its users’ imagination and requirements, but not by its functionality. A set of flexible procedures will be issued which will make purpose oriented timestamping possible. This document will be updated accordingly. 
-
 
 ## Current project's status
 
