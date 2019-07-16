@@ -98,10 +98,32 @@ UniValue _setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& 
     return UniValue(UniValue::VSTR, txid);
 }
 
+bool checkRSApublicKey(const std::string& rsaPublicKey) {
+    const std::string keyBeg = "-----BEGIN PUBLIC KEY-----\n";
+    const std::string keyEnd = "-----END PUBLIC KEY-----";
+
+    auto posbeg = rsaPublicKey.find(keyBeg);
+    if (posbeg != 0) {
+        return false;
+    }
+
+    auto posend = rsaPublicKey.find(keyEnd);
+    if (posend == std::string::npos) {
+        return false;
+    }
+    std::size_t encodingLength = posend - keyBeg.length();
+
+    // RSA 2048
+    if (encodingLength == 399) {
+        return true;
+    }
+
+    return false;
+}
+
 UniValue sendmessage(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 5 || request.params[1].empty()
-            || !(request.params[1].size() == 1024 || request.params[1].size() == 2048 || request.params[1].size() == 4096))
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 5 || !checkRSApublicKey(request.params[1].get_str()))
     throw std::runtime_error(
         "sendmessage \"string\" \"public_key\" \n"
         "\nStores encrypted message in a blockchain.\n"
@@ -123,8 +145,26 @@ UniValue sendmessage(const JSONRPCRequest& request)
 
 
         "\nExamples:\n"
-        + HelpExampleCli("storemessage", "\"mystring\" \"public_key\"")
-        + HelpExampleRpc("storemessage", "\"mystring\" \"public_key\"")
+
+        + HelpExampleCli("storemessage", "\"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
+                         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApk9zWv53rDBLE1Xh1iuX\n"\
+                         "wvY1Zk7HOmcE3kD/hcGjtXQQAKMmf6i2n79fiyJcC43nGaIUAKW2YCJEfuyA97aw\n"\
+                         "ye3ccyGsX2sw9tWwfcHZi8P+jI9Zti9dVRiR3D1ClA2ot/U5FG1pR3BUPA/jCuIG\n"\
+                         "qT4JeIWAnySuKykMutjuf/5JD7paVlem8EUV4Hmq2yF9ZxS5yi50zBsNZuylhaKC\n"\
+                         "oiMQc7ovPhn63zKazPr3v2nyzs0aSEWAssEPZBKFEuWkzOqVHfAV9xiILFF2Cp8D\n"\
+                         "i1e3225cLPCpJak6K66t0B1xX+nC9ABABbzuD/gzwXQ2wT97iL6k3YB/c2Ou11v3\n"\
+                         "bQIDAQAB\n"
+                         "-----END PUBLIC KEY-----\"")
+
+        + HelpExampleRpc("storemessage", "\"mystring\"  \"-----BEGIN PUBLIC KEY-----\n"\
+                         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApk9zWv53rDBLE1Xh1iuX\n"\
+                         "wvY1Zk7HOmcE3kD/hcGjtXQQAKMmf6i2n79fiyJcC43nGaIUAKW2YCJEfuyA97aw\n"\
+                         "ye3ccyGsX2sw9tWwfcHZi8P+jI9Zti9dVRiR3D1ClA2ot/U5FG1pR3BUPA/jCuIG\n"\
+                         "qT4JeIWAnySuKykMutjuf/5JD7paVlem8EUV4Hmq2yF9ZxS5yi50zBsNZuylhaKC\n"\
+                         "oiMQc7ovPhn63zKazPr3v2nyzs0aSEWAssEPZBKFEuWkzOqVHfAV9xiILFF2Cp8D\n"\
+                         "i1e3225cLPCpJak6K66t0B1xX+nC9ABABbzuD/gzwXQ2wT97iL6k3YB/c2Ou11v3\n"\
+                         "bQIDAQAB\n"
+                         "-----END PUBLIC KEY-----\"")
     );
 
     std::string msg=request.params[0].get_str();
