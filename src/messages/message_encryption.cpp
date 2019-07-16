@@ -13,7 +13,7 @@ const size_t AES_256_KEY_LENGTH = 256;
 const size_t AES_256_KEY_LENGTH_IN_BYTES = AES_256_KEY_LENGTH/8;
 const size_t AES_256_IV_LENGTH_IN_BYTES = 16;
 const size_t RSA_ENCRYPTION_SIZE = 256; /* RSA with key 2048 bit long assumed */
-const int padding = RSA_PKCS1_PADDING; // TODO: change to safer schema
+const int padding = RSA_PKCS1_OAEP_PADDING;
 
 void generateRandomKey(unsigned char* key)
 {
@@ -48,7 +48,7 @@ void encryptMessageWithAES(
     AES_cbc_encrypt(dataToEncrypt, encryptedData, dataLength, &encKey, mixedIv, AES_ENCRYPT);
 }
 
-void encryptWithRSA(unsigned char* data, int data_len, char* rsaKey, unsigned char* encrypted)
+void encryptWithRSA(unsigned char* data, int data_len, const char* rsaKey, unsigned char* encrypted)
 {
     BIO* keybio = BIO_new_mem_buf(rsaKey, -1);
     if (keybio == nullptr) {
@@ -102,12 +102,7 @@ std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage(
 
     const size_t sizeAfterEncryption = dataLength + AES_BLOCK_SIZE - (dataLength % AES_BLOCK_SIZE);
     unsigned char encryptedMessageWithAES[sizeAfterEncryption];
-    encryptMessageWithAES(
-        data,
-        dataLength,
-        aesKey,
-        aesIv,
-        encryptedMessageWithAES);
+    encryptMessageWithAES(data, dataLength, aesKey, aesIv, encryptedMessageWithAES);
 
     unsigned char encryptedKeyDataWithRSA[RSA_ENCRYPTION_SIZE];
     encryptWithRSA(aesKey, AES_256_KEY_LENGTH_IN_BYTES, publicRSAKey, encryptedKeyDataWithRSA);
