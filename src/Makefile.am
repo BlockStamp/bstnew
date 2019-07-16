@@ -143,6 +143,7 @@ BITCOIN_CORE_H = \
   games/modulo/moduloutils.h \
   memusage.h \
   merkleblock.h \
+  messages/message_encryption.h \
   miner.h \
   names/common.h \
   names/encoding.h \
@@ -257,6 +258,7 @@ libbitcoin_server_a_SOURCES = \
   games/modulo/moduloutils.cpp \
   dbwrapper.cpp \
   merkleblock.cpp \
+  messages/message_encryption.cpp \
   miner.cpp \
   names/main.cpp \
   net.cpp \
