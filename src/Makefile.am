@@ -279,6 +279,7 @@ libbitcoin_server_a_SOURCES = \
   rpc/server.cpp \
   rpc/data.cpp \
   rpc/game.cpp \
+  rpc/messenger.cpp \
   rpc/util.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
