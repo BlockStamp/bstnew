@@ -19,7 +19,7 @@ void generateRandomKey(unsigned char* key)
 {
     const int result = RAND_bytes(key, AES_256_KEY_LENGTH_IN_BYTES);
     if (result != 1) {
-        throw std::runtime_error("Could not create random key");
+        throw std::runtime_error("Could not create random key for message encryption");
     }
 }
 
@@ -27,7 +27,7 @@ void generateRandomIv(unsigned char* iv)
 {
     const int result = RAND_bytes(iv, AES_256_IV_LENGTH_IN_BYTES);
     if (result != 1) {
-        throw std::runtime_error("Could not create random iv");
+        throw std::runtime_error("Could not create random iv for message encryption");
     }
 }
 
@@ -52,13 +52,13 @@ void encryptWithRSA(unsigned char* data, int data_len, const char* rsaKey, unsig
 {
     BIO* keybio = BIO_new_mem_buf(rsaKey, -1);
     if (keybio == nullptr) {
-        throw std::runtime_error("Failed to create key BIO");
+        throw std::runtime_error("Failed to create key BIO for message encryption");
     }
 
     RSA* rsa = nullptr;
     rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa, nullptr, nullptr);
     if (rsa == nullptr) {
-        throw std::runtime_error("Failed to create key RSA");
+        throw std::runtime_error("Failed to create key RSA for message encryption");
     }
 
     const int encrypteLength = RSA_public_encrypt(data_len, data, encrypted, rsa, padding);
@@ -90,9 +90,9 @@ std::pair<std::unique_ptr<unsigned char[]>, size_t> combineData(
 
 //Note: publicRSAKey must be null terminated
 std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage(
-    unsigned char* data,
-    size_t dataLength,
-    char* publicRSAKey)
+    const unsigned char* data,
+    const size_t dataLength,
+    const char* publicRSAKey)
 {
     unsigned char aesKey[AES_256_KEY_LENGTH_IN_BYTES];
     generateRandomKey(aesKey);
@@ -101,11 +101,11 @@ std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage(
     generateRandomIv(aesIv);
 
     const size_t sizeAfterEncryption = dataLength + AES_BLOCK_SIZE - (dataLength % AES_BLOCK_SIZE);
-    unsigned char encryptedMessageWithAES[sizeAfterEncryption];
-    encryptMessageWithAES(data, dataLength, aesKey, aesIv, encryptedMessageWithAES);
+    std::unique_ptr<unsigned char[]> encryptedMessageWithAES(new unsigned char[sizeAfterEncryption]);
+    encryptMessageWithAES(data, dataLength, aesKey, aesIv, encryptedMessageWithAES.get());
 
     unsigned char encryptedKeyDataWithRSA[RSA_ENCRYPTION_SIZE];
     encryptWithRSA(aesKey, AES_256_KEY_LENGTH_IN_BYTES, publicRSAKey, encryptedKeyDataWithRSA);
 
-    return combineData(encryptedKeyDataWithRSA, aesIv, encryptedMessageWithAES, sizeAfterEncryption);
+    return combineData(encryptedKeyDataWithRSA, aesIv, encryptedMessageWithAES.get(), sizeAfterEncryption);
 }

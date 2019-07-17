@@ -4,6 +4,8 @@
 #include <memory>
 #include <utility>
 
-std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage();
+std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage(const unsigned char *data,
+    const size_t dataLength,
+    const char *publicRSAKey);
 
 #endif

@@ -18,6 +18,8 @@
 #include <wallet/coincontrol.h>
 #include <wallet/fees.h>
 #include <univalue.h>
+#include <memory>
+#include "messages/message_encryption.h"
 
 #include <boost/algorithm/string.hpp>
 
@@ -175,8 +177,8 @@ UniValue sendmessage(const JSONRPCRequest& request)
     }
 
     std::string public_key=request.params[1].get_str();
-    std::cout << msg << std::endl;
-    std::cout << public_key << std::endl;
+    std::cout << "msg: " << msg << std::endl;
+    std::cout << "public_key: " << public_key << std::endl;
 
     CCoinControl coin_control;
     if (!request.params[2].isNull())
@@ -195,7 +197,12 @@ UniValue sendmessage(const JSONRPCRequest& request)
             throw std::runtime_error("Invalid estimate_mode parameter");
         }
     }
-    std::vector<unsigned char> data(msg.begin(), msg.end());
+
+    std::unique_ptr<unsigned char[]> buffer;
+    size_t bufferLength{};
+    std::tie(buffer, bufferLength) = createEncryptedMessage((unsigned char*)msg.c_str(), msg.length()+1, public_key.c_str());
+
+    std::vector<unsigned char> data(buffer.get(), buffer.get() + bufferLength);
     return _setOPreturnData(data, coin_control);
 }
 
