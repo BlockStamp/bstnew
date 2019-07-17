@@ -41,7 +41,10 @@ void encryptMessageWithAES(
 {
 
     AES_KEY encKey;
-    AES_set_encrypt_key(key, AES_256_KEY_LENGTH, &encKey);
+    const int result = AES_set_encrypt_key(key, AES_256_KEY_LENGTH, &encKey);
+    if (result != 0) {
+        throw std::runtime_error("Failed to set key for encryption");
+    }
 
     unsigned char mixedIv[AES_256_IV_LENGTH_IN_BYTES];
     memcpy(mixedIv, iv, AES_256_IV_LENGTH_IN_BYTES);
