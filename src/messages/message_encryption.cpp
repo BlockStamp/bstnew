@@ -6,6 +6,7 @@
 #include <openssl/pem.h>
 #include <stdexcept>
 #include <cstring>
+#include <memory>
 
 namespace {
 
@@ -66,32 +67,12 @@ void encryptWithRSA(unsigned char* data, int data_len, const char* rsaKey, unsig
         throw std::runtime_error("Failed to encrypt with RSA key");
     }
 }
-
-std::pair<std::unique_ptr<unsigned char[]>, size_t> combineData(
-    unsigned char* encryptedKey,
-    unsigned char* iv,
-    unsigned char* encryptedMsg,
-    size_t sizeAfterEncryption)
-{
-    const size_t totalDataSize = RSA_ENCRYPTION_SIZE + AES_256_IV_LENGTH_IN_BYTES + sizeAfterEncryption;
-    std::unique_ptr<unsigned char[]> totalData(new unsigned char[totalDataSize]);
-    unsigned char* data = totalData.get();
-
-    memcpy(data, encryptedKey, RSA_ENCRYPTION_SIZE);
-    data += RSA_ENCRYPTION_SIZE;
-
-    memcpy(data, iv, AES_256_IV_LENGTH_IN_BYTES);
-    data += AES_256_IV_LENGTH_IN_BYTES;
-
-    memcpy(data, encryptedMsg, sizeAfterEncryption);
-    return std::make_pair(std::move(totalData), totalDataSize);
-}
 }
 
 //Note: publicRSAKey must be null terminated
-std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage(
+std::vector<unsigned char> createEncryptedMessage(
     const unsigned char* data,
-    const size_t dataLength,
+    std::size_t dataLength,
     const char* publicRSAKey)
 {
     unsigned char aesKey[AES_256_KEY_LENGTH_IN_BYTES];
@@ -107,5 +88,11 @@ std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage(
     unsigned char encryptedKeyDataWithRSA[RSA_ENCRYPTION_SIZE];
     encryptWithRSA(aesKey, AES_256_KEY_LENGTH_IN_BYTES, publicRSAKey, encryptedKeyDataWithRSA);
 
-    return combineData(encryptedKeyDataWithRSA, aesIv, encryptedMessageWithAES.get(), sizeAfterEncryption);
+    std::vector<unsigned char> result;
+    result.reserve(RSA_ENCRYPTION_SIZE + AES_256_IV_LENGTH_IN_BYTES + sizeAfterEncryption);
+    result.insert(result.end(), encryptedKeyDataWithRSA, encryptedKeyDataWithRSA+RSA_ENCRYPTION_SIZE);
+    result.insert(result.end(), aesIv, aesIv+AES_256_IV_LENGTH_IN_BYTES);
+    result.insert(result.end(), encryptedMessageWithAES.get(), encryptedMessageWithAES.get()+sizeAfterEncryption);
+
+    return result;
 }

@@ -1,11 +1,9 @@
 #ifndef MESSAGE_ENCRYPTION_H
 #define MESSAGE_ENCRYPTION_H
 
-#include <memory>
+#include <vector>
 #include <utility>
 
-std::pair<std::unique_ptr<unsigned char[]>, size_t> createEncryptedMessage(const unsigned char *data,
-    const size_t dataLength,
-    const char *publicRSAKey);
+std::vector<unsigned char> createEncryptedMessage(const unsigned char *data, std::size_t dataLength, const char *publicRSAKey);
 
 #endif

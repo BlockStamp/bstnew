@@ -198,11 +198,8 @@ UniValue sendmessage(const JSONRPCRequest& request)
         }
     }
 
-    std::unique_ptr<unsigned char[]> buffer;
-    size_t bufferLength{};
-    std::tie(buffer, bufferLength) = createEncryptedMessage((unsigned char*)msg.c_str(), msg.length()+1, public_key.c_str());
-
-    std::vector<unsigned char> data(buffer.get(), buffer.get() + bufferLength);
+    const auto data = createEncryptedMessage((unsigned char*)msg.c_str(), msg.length()+1, public_key.c_str());
+    std::cout << "data.size(): " << data.size() << std::endl;
     return _setOPreturnData(data, coin_control);
 }
 
