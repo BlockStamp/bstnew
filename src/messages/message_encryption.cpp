@@ -11,14 +11,13 @@
 namespace {
 
 const size_t AES_256_KEY_LENGTH = 256;
-const size_t AES_256_KEY_LENGTH_IN_BYTES = AES_256_KEY_LENGTH/8;
-const size_t AES_256_IV_LENGTH_IN_BYTES = 16;
-const size_t RSA_ENCRYPTION_SIZE = 256; /* RSA with key 2048 bit long assumed */
+const size_t AES_256_KEY_LENGTH_BYTES = AES_256_KEY_LENGTH/8;
+const size_t AES_256_IV_LENGTH_BYTES = 16;
 const int padding = RSA_PKCS1_OAEP_PADDING;
 
 void generateRandomKey(unsigned char* key)
 {
-    const int result = RAND_bytes(key, AES_256_KEY_LENGTH_IN_BYTES);
+    const int result = RAND_bytes(key, AES_256_KEY_LENGTH_BYTES);
     if (result != 1) {
         throw std::runtime_error("Could not create random key for message encryption");
     }
@@ -26,33 +25,38 @@ void generateRandomKey(unsigned char* key)
 
 void generateRandomIv(unsigned char* iv)
 {
-    const int result = RAND_bytes(iv, AES_256_IV_LENGTH_IN_BYTES);
+    const int result = RAND_bytes(iv, AES_256_IV_LENGTH_BYTES);
     if (result != 1) {
         throw std::runtime_error("Could not create random iv for message encryption");
     }
 }
 
-void encryptMessageWithAES(
-    const unsigned char* dataToEncrypt,
-    size_t dataLength,
+std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
+    const unsigned char* data,
+    std::size_t dataLength,
     unsigned char* key,
-    unsigned char* iv,
-    unsigned char* encryptedData)
+    unsigned char* iv)
 {
-
     AES_KEY encKey;
     const int result = AES_set_encrypt_key(key, AES_256_KEY_LENGTH, &encKey);
     if (result != 0) {
         throw std::runtime_error("Failed to set key for encryption");
     }
 
-    unsigned char mixedIv[AES_256_IV_LENGTH_IN_BYTES];
-    memcpy(mixedIv, iv, AES_256_IV_LENGTH_IN_BYTES);
+    unsigned char mixedIv[AES_256_IV_LENGTH_BYTES];
+    memcpy(mixedIv, iv, AES_256_IV_LENGTH_BYTES);
 
-    AES_cbc_encrypt(dataToEncrypt, encryptedData, dataLength, &encKey, mixedIv, AES_ENCRYPT);
+    const size_t encryptedSize = dataLength + AES_BLOCK_SIZE - (dataLength % AES_BLOCK_SIZE);
+    std::unique_ptr<unsigned char[]> encryptedData(new unsigned char[encryptedSize]);
+    AES_cbc_encrypt(data, encryptedData.get(), dataLength, &encKey, mixedIv, AES_ENCRYPT);
+
+    return std::make_pair(std::move(encryptedData), encryptedSize);
 }
 
-void encryptWithRSA(unsigned char* data, int data_len, const char* rsaKey, unsigned char* encrypted)
+std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithRsa(
+    unsigned char* data,
+    int dataLength,
+    const char* rsaKey)
 {
     BIO* keybio = BIO_new_mem_buf(rsaKey, -1);
     if (keybio == nullptr) {
@@ -65,10 +69,15 @@ void encryptWithRSA(unsigned char* data, int data_len, const char* rsaKey, unsig
         throw std::runtime_error("Failed to create key RSA for message encryption");
     }
 
-    const int encrypteLength = RSA_public_encrypt(data_len, data, encrypted, rsa, padding);
-    if (encrypteLength == -1) {
+    const int encryptedSize = RSA_size(rsa);
+    std::unique_ptr<unsigned char[]> encryptedData(new unsigned char[encryptedSize]);
+
+    const int encrypteLength = RSA_public_encrypt(dataLength, data, encryptedData.get(), rsa, padding);
+    if (encrypteLength == -1 || encrypteLength != encryptedSize) {
         throw std::runtime_error("Failed to encrypt with RSA key");
     }
+
+    return std::make_pair(std::move(encryptedData), encryptedSize);
 }
 }
 
@@ -76,26 +85,27 @@ void encryptWithRSA(unsigned char* data, int data_len, const char* rsaKey, unsig
 std::vector<unsigned char> createEncryptedMessage(
     const unsigned char* data,
     std::size_t dataLength,
-    const char* publicRSAKey)
+    const char* publicRsaKey)
 {
-    unsigned char aesKey[AES_256_KEY_LENGTH_IN_BYTES];
+    unsigned char aesKey[AES_256_KEY_LENGTH_BYTES];
     generateRandomKey(aesKey);
 
-    unsigned char aesIv[AES_256_IV_LENGTH_IN_BYTES];
+    unsigned char aesIv[AES_256_IV_LENGTH_BYTES];
     generateRandomIv(aesIv);
 
-    const size_t sizeAfterEncryption = dataLength + AES_BLOCK_SIZE - (dataLength % AES_BLOCK_SIZE);
-    std::unique_ptr<unsigned char[]> encryptedMessageWithAES(new unsigned char[sizeAfterEncryption]);
-    encryptMessageWithAES(data, dataLength, aesKey, aesIv, encryptedMessageWithAES.get());
+    std::unique_ptr<unsigned char[]> encryptedMsg;
+    std::size_t encryptedMsgSize;
+    std::tie(encryptedMsg, encryptedMsgSize) = encryptWithAES(data, dataLength, aesKey, aesIv);
 
-    unsigned char encryptedKeyDataWithRSA[RSA_ENCRYPTION_SIZE];
-    encryptWithRSA(aesKey, AES_256_KEY_LENGTH_IN_BYTES, publicRSAKey, encryptedKeyDataWithRSA);
+    std::unique_ptr<unsigned char[]> encryptedKey;
+    std::size_t encryptedKeySize;
+    std::tie(encryptedKey, encryptedKeySize) = encryptWithRsa(aesKey, AES_256_KEY_LENGTH_BYTES, publicRsaKey);
 
     std::vector<unsigned char> result;
-    result.reserve(RSA_ENCRYPTION_SIZE + AES_256_IV_LENGTH_IN_BYTES + sizeAfterEncryption);
-    result.insert(result.end(), encryptedKeyDataWithRSA, encryptedKeyDataWithRSA+RSA_ENCRYPTION_SIZE);
-    result.insert(result.end(), aesIv, aesIv+AES_256_IV_LENGTH_IN_BYTES);
-    result.insert(result.end(), encryptedMessageWithAES.get(), encryptedMessageWithAES.get()+sizeAfterEncryption);
+    result.reserve(encryptedKeySize + AES_256_IV_LENGTH_BYTES + encryptedMsgSize);
+    result.insert(result.end(), encryptedKey.get(), encryptedKey.get()+encryptedKeySize);
+    result.insert(result.end(), aesIv, aesIv+AES_256_IV_LENGTH_BYTES);
+    result.insert(result.end(), encryptedMsg.get(), encryptedMsg.get()+encryptedMsgSize);
 
     return result;
 }

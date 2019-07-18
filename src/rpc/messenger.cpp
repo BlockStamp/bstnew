@@ -115,8 +115,18 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
     }
     std::size_t encodingLength = posend - keyBeg.length();
 
+    // RSA 1024
+    if (encodingLength == 220) {
+        return true;
+    }
+
     // RSA 2048
     if (encodingLength == 399) {
+        return true;
+    }
+
+    // RSA 4096
+    if (encodingLength == 748) {
         return true;
     }
 
@@ -198,7 +208,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
         }
     }
 
-    const auto data = createEncryptedMessage((unsigned char*)msg.c_str(), msg.length()+1, public_key.c_str());
+    std::vector<unsigned char> data = createEncryptedMessage((unsigned char*)msg.c_str(), msg.length()+1, public_key.c_str());
     std::cout << "data.size(): " << data.size() << std::endl;
     return _setOPreturnData(data, coin_control);
 }
