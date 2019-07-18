@@ -22,6 +22,7 @@
 
 #include <data/datautils.h>
 #include <data/retrievedatatxs.h>
+#include <rpc/util.h>
 
 static constexpr size_t maxDataSize=MAX_OP_RETURN_RELAY-6;
 static std::string changeAddress("");
@@ -139,92 +140,6 @@ static void computeHash(char* binaryData, size_t size, std::vector<unsigned char
     fileHasher.Finalize(fileHash);
 
     hash.insert(hash.end(), &fileHash[0], &fileHash[hashSize]);
-}
-
-static UniValue callRPC(std::string args)
-{
-    std::vector<std::string> vArgs;
-    boost::split(vArgs, args, boost::is_any_of(" \t"));
-    std::string strMethod = vArgs[0];
-    vArgs.erase(vArgs.begin());
-    JSONRPCRequest request;
-    request.strMethod = strMethod;
-    request.params = RPCConvertValues(strMethod, vArgs);
-    request.fHelp = false;
-
-    rpcfn_type method = tableRPC[strMethod]->actor;
-    try {
-        UniValue result = (*method)(request);
-        return result;
-    }
-    catch (const UniValue& objError) {
-        throw std::runtime_error(find_value(objError, "message").get_str());
-    }
-}
-
-static std::vector<char> getOPreturnData(const std::string& txid)
-{
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
-    CWallet* pwallet=nullptr;
-    if(wallet!=nullptr)
-    {
-        pwallet=wallet.get();
-    }
-    
-    RetrieveDataTxs retrieveDataTxs(txid, pwallet);
-    return retrieveDataTxs.getTxData();
-}
-
-UniValue setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& coin_control)
-{
-    UniValue res(UniValue::VARR);
-    
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
-    if(wallet==nullptr)
-    {
-        throw std::runtime_error(std::string("No wallet found"));
-    }
-    CWallet* const pwallet=wallet.get();
-
-    pwallet->BlockUntilSyncedToCurrentChain();
-
-    LOCK2(cs_main, pwallet->cs_wallet);
-    
-    CAmount curBalance = pwallet->GetBalance();
-
-    CRecipient recipient;
-    recipient.scriptPubKey << OP_RETURN << data;
-    recipient.nAmount=0;
-    recipient.fSubtractFeeFromAmount=false;
-    
-    std::vector<CRecipient> vecSend;
-    vecSend.push_back(recipient);
-
-    CReserveKey reservekey(pwallet);
-    CAmount nFeeRequired;
-    int nChangePosInOut=1;
-    std::string strFailReason;
-    CTransactionRef tx;
-
-    EnsureWalletIsUnlocked(pwallet);
-
-    if(!pwallet->CreateTransaction(vecSend, nullptr, tx, reservekey, nFeeRequired, nChangePosInOut, strFailReason, coin_control))
-    {
-        if (nFeeRequired > curBalance)
-        {
-            strFailReason = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
-        }        
-        throw std::runtime_error(std::string("CreateTransaction failed with reason: ")+strFailReason);
-    }
-    
-    CValidationState state;
-    if(!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state))
-    {
-        throw std::runtime_error(std::string("CommitTransaction failed with reason: ")+FormatStateMessage(state));
-    }
-
-    std::string txid=tx->GetHash().GetHex();
-    return UniValue(UniValue::VSTR, txid);
 }
 
 UniValue retrievedata(const JSONRPCRequest& request)
