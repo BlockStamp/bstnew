@@ -9,6 +9,7 @@
 #include <memory>
 
 namespace {
+using EVP_CIPHER_CTX_free_ptr = std::unique_ptr<EVP_CIPHER_CTX, decltype(&::EVP_CIPHER_CTX_free)>;
 
 const size_t AES_256_KEY_LENGTH = 256;
 const size_t AES_256_KEY_LENGTH_BYTES = AES_256_KEY_LENGTH/8;
@@ -59,34 +60,27 @@ std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
     unsigned char* key,
     unsigned char* iv)
 {
-    EVP_CIPHER_CTX *ctx;
-    int len;
-    int ciphertext_len;
+    EVP_CIPHER_CTX_free_ptr ctx(EVP_CIPHER_CTX_new(), ::EVP_CIPHER_CTX_free);
 
-    if(!(ctx = EVP_CIPHER_CTX_new())) {
-        throw std::runtime_error("Failed to encrypt data");
-    }
-
-    if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
+    if(1 != EVP_EncryptInit_ex(ctx.get(), EVP_aes_256_cbc(), NULL, key, iv)) {
         throw std::runtime_error("Failed to encrypt data");
     }
 
     const size_t encryptedSize = dataLength + AES_BLOCK_SIZE - (dataLength % AES_BLOCK_SIZE);
     std::unique_ptr<unsigned char[]> encryptedData(new unsigned char[encryptedSize]);
 
-    if(1 != EVP_EncryptUpdate(ctx, encryptedData.get(), &len, data, dataLength)) {
+    int len;
+    if(1 != EVP_EncryptUpdate(ctx.get(), encryptedData.get(), &len, data, dataLength)) {
         throw std::runtime_error("Failed to encrypt data");
     }
-    ciphertext_len = len;
+    int totalLength = len;
 
-    if(1 != EVP_EncryptFinal_ex(ctx, encryptedData.get() + len, &len)) {
+    if(1 != EVP_EncryptFinal_ex(ctx.get(), encryptedData.get() + len, &len)) {
         throw std::runtime_error("Failed to encrypt data");
     }
-    ciphertext_len += len;
+    totalLength += len;
 
-    EVP_CIPHER_CTX_free(ctx);
-
-    if (ciphertext_len != encryptedSize) {
+    if (totalLength != encryptedSize) {
         std::runtime_error("Failed to encrypt data");
     }
 
@@ -196,12 +190,9 @@ std::vector<unsigned char> decryptData(
         throw std::runtime_error("Failed to decrypt message");
     }
 
-    EVP_CIPHER_CTX* ctx;
-    if (!(ctx = EVP_CIPHER_CTX_new()))  {
-        throw std::runtime_error("Failed to decrypt message");
-    }
+    EVP_CIPHER_CTX_free_ptr ctx(EVP_CIPHER_CTX_new(), ::EVP_CIPHER_CTX_free);
 
-    if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, key, iv)) {
+    if (1 != EVP_DecryptInit_ex(ctx.get(), EVP_aes_256_cbc(), nullptr, key, iv)) {
         throw std::runtime_error("Failed to decrypt message");
     }
 
@@ -209,17 +200,15 @@ std::vector<unsigned char> decryptData(
     decryptedData.resize(dataLength);
 
     int len;
-    if (1 != EVP_DecryptUpdate(ctx, decryptedData.data(), &len, encryptedData, dataLength)) {
+    if (1 != EVP_DecryptUpdate(ctx.get(), decryptedData.data(), &len, encryptedData, dataLength)) {
         throw std::runtime_error("Failed to decrypt message");
     }
     int totalLength = len;
 
-    if (1 != EVP_DecryptFinal_ex(ctx, decryptedData.data() + len, &len)) {
+    if (1 != EVP_DecryptFinal_ex(ctx.get(), decryptedData.data() + len, &len)) {
         throw std::runtime_error("Failed to decrypt message");
     }
     totalLength += len;
-
-    EVP_CIPHER_CTX_free(ctx); // what if exception if thrown
 
     decryptedData.resize(totalLength);
     return decryptedData;
