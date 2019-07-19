@@ -135,7 +135,11 @@ UniValue sendmessage(const JSONRPCRequest& request)
         }
     }
 
-    std::vector<unsigned char> data = createEncryptedMessage((unsigned char*)msg.c_str(), msg.length()+1, public_key.c_str());
+    std::vector<unsigned char> data = createEncryptedMessage(
+    reinterpret_cast<unsigned char*>(msg.c_str()),
+    msg.length(),
+    public_key.c_str());
+
     std::cout << "data.size(): " << data.size() << std::endl;
     return setOPreturnData(data, coin_control);
 }
@@ -163,9 +167,43 @@ UniValue readmessage(const JSONRPCRequest& request)
 
     std::string txid=request.params[0].get_str();
     std::vector<char> OPreturnData=getOPreturnData(txid);
+
     if(!OPreturnData.empty())
     {
-        return UniValue(UniValue::VSTR, std::string("\"")+std::string(OPreturnData.begin(), OPreturnData.end())+std::string("\""));
+        std::string privateRsaKey = "-----BEGIN RSA PRIVATE KEY-----\n"\
+                "MIIEogIBAAKCAQEAqZSulRpOGFkqG+ohYaGfiKhYEmQF/qTg9Mtl6ATsXyLSQ9pI\n"\
+                "iNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBdYsvWJKzuONckyBGqcZHvSKkscDG0\n"\
+                "luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4QOwquEtyyIcVmSdqgYdmzEm7x4M6\n"\
+                "jQURuM9xQrVA7aA0cupS4YalgJj1W1npNkruu4abrhiTGJ7dGbkEtppBdZqLirKO\n"\
+                "Wz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVhkW8r13uDYCKOaXLpQjiEWtjoOCU5\n"\
+                "6iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6LQIDAQABAoIBAGu2V8m3IqGOiROf\n"\
+                "/EICIc3wd7h+tdwPqB90zi64adbnzDxy+p2GY/6ydg7Dh/2WKWL79nGa5q/hM7+N\n"\
+                "dz12ZRqqtEMpYErURLWbmvJ2KlGxutsshzNSDTBUC1Yp9bN0fqR/m/5LGhS+zG9+\n"\
+                "xI0MS8OY/m1+5tJ+EvbrtVe+xEm/AZE9mXYdzam46L4jAn87uPkR9+ciUGaJcQwi\n"\
+                "IOz0PytY9pVqDUmnJBPkx9gQic9uuDExa8wPcv6uvxw7UHYr4oobn47zya0CO40n\n"\
+                "foOQFT1zVLa0qHU8SzievEdHNcJBjTvA1YJNlAAN+Hr3SKTOTIsun06S2hkr1gDI\n"\
+                "TV1+pqECgYEA/z9iVkZItrVt6mJPGGnMKdU1mNaNaHnBnZ7J7WUFG4Dolr4jSHAX\n"\
+                "UtzraVgEVdHfZdGBfx32GgkIOIZcatr6Ao6CyISqpwlYgIf5xn+lYUe/yS9hd6FN\n"\
+                "8cGKs5JMwTWEOGY5meW8mGh3NYxSIfzzEn4MzzJNqbZbp8AtTNp2H9kCgYEAqhSm\n"\
+                "0aTdIrbWG1cE24X/ciTbBBFq1D2CGiX9Agc/vGpevNpB8Gk4X+OvvRo1jZJS3dgt\n"\
+                "TuS/qNkYL6WhQQixTYF3fjabu3tk84QLlKkl5pvha2nvzTCUarzwmUchbPozMRHS\n"\
+                "uQJvBQTk0CRSBdowltdtpyR5P9IvOT+nGwPYzHUCgYBazh7a2Ig3z9W5o53F7qV+\n"\
+                "YGZ/6BxIhcBWpc3qkZy+ix6zuhLtS0tQ5F0vjeuE6HQUUfNC2NLbskjlaw9nyF1X\n"\
+                "GYH3ehMH97AvkbBPaMvaDt9w4FVJbO5Aynzgo3SA69wNAHkPggaVJdz7BN+XTdjf\n"\
+                "xE4kTB4K+WAkDp9PDw0lCQKBgC1XKg2TVLxPX46USSA4fZuxRY21EvSXnRpZbDRh\n"\
+                "OFWDSdQwnwl3E2dErHHODd661kp7ucBhbNKXZUI2dmF+7r1JuVA1QJjfUU81sVyl\n"\
+                "JwxuG87lw97Ah6BY1A8Yjkmd/Y2kQbe+dVgyMMloFVGoE/HyZjH7oDMqVhp95I9o\n"\
+                "HCCNAoGAOlHZRK68QM4+20YMTlYy/dFRAtruu7NjmzpVd3xh356QpXfLTWOs5OzF\n"\
+                "o/y4deFoOrz1QQoxv1LaD1DmRsqIrnDiSrmJHzIIOFrEk+8S0nkmr10k6JpqCJHG\n"\
+                "UCLtsPgJ8/lejk8AkzQaM7AuG6p/YJHnpVQHe6zkA1HXX0SZt+M=\n"\
+                "-----END RSA PRIVATE KEY-----\n";
+
+        std::vector<unsigned char> decryptedData = createDecryptedMessage(
+            reinterpret_cast<unsigned char*>(OPreturnData.data()),
+            OPreturnData.size(),
+            privateRsaKey.c_str());
+
+        return UniValue(UniValue::VSTR, std::string("\"")+std::string(decryptedData.begin(), decryptedData.end())+std::string("\""));
     }
 
     return UniValue(UniValue::VSTR, std::string("\"\""));
