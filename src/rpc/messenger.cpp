@@ -136,7 +136,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
     }
 
     std::vector<unsigned char> data = createEncryptedMessage(
-    reinterpret_cast<unsigned char*>(msg.c_str()),
+    reinterpret_cast<const unsigned char*>(msg.c_str()),
     msg.length(),
     public_key.c_str());
 
