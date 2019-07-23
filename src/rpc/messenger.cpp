@@ -86,23 +86,23 @@ UniValue sendmessage(const JSONRPCRequest& request)
         "\nExamples:\n"
 
         + HelpExampleCli("sendmessage", "\"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
-                         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApk9zWv53rDBLE1Xh1iuX\n"\
-                         "wvY1Zk7HOmcE3kD/hcGjtXQQAKMmf6i2n79fiyJcC43nGaIUAKW2YCJEfuyA97aw\n"\
-                         "ye3ccyGsX2sw9tWwfcHZi8P+jI9Zti9dVRiR3D1ClA2ot/U5FG1pR3BUPA/jCuIG\n"\
-                         "qT4JeIWAnySuKykMutjuf/5JD7paVlem8EUV4Hmq2yF9ZxS5yi50zBsNZuylhaKC\n"\
-                         "oiMQc7ovPhn63zKazPr3v2nyzs0aSEWAssEPZBKFEuWkzOqVHfAV9xiILFF2Cp8D\n"\
-                         "i1e3225cLPCpJak6K66t0B1xX+nC9ABABbzuD/gzwXQ2wT97iL6k3YB/c2Ou11v3\n"\
-                         "bQIDAQAB\n"
+                         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
+                         "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
+                         "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
+                         "QOwquEtyyIcVmSdqgYdmzEm7x4M6jQURuM9xQrVA7aA0cupS4YalgJj1W1npNkru\n"\
+                         "u4abrhiTGJ7dGbkEtppBdZqLirKOWz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVh\n"\
+                         "kW8r13uDYCKOaXLpQjiEWtjoOCU56iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6\n"\
+                         "LQIDAQAB\n"
                          "-----END PUBLIC KEY-----\"")
 
         + HelpExampleRpc("sendmessage", "\"mystring\"  \"-----BEGIN PUBLIC KEY-----\n"\
-                         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApk9zWv53rDBLE1Xh1iuX\n"\
-                         "wvY1Zk7HOmcE3kD/hcGjtXQQAKMmf6i2n79fiyJcC43nGaIUAKW2YCJEfuyA97aw\n"\
-                         "ye3ccyGsX2sw9tWwfcHZi8P+jI9Zti9dVRiR3D1ClA2ot/U5FG1pR3BUPA/jCuIG\n"\
-                         "qT4JeIWAnySuKykMutjuf/5JD7paVlem8EUV4Hmq2yF9ZxS5yi50zBsNZuylhaKC\n"\
-                         "oiMQc7ovPhn63zKazPr3v2nyzs0aSEWAssEPZBKFEuWkzOqVHfAV9xiILFF2Cp8D\n"\
-                         "i1e3225cLPCpJak6K66t0B1xX+nC9ABABbzuD/gzwXQ2wT97iL6k3YB/c2Ou11v3\n"\
-                         "bQIDAQAB\n"
+                         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
+                         "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
+                         "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
+                         "QOwquEtyyIcVmSdqgYdmzEm7x4M6jQURuM9xQrVA7aA0cupS4YalgJj1W1npNkru\n"\
+                         "u4abrhiTGJ7dGbkEtppBdZqLirKOWz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVh\n"\
+                         "kW8r13uDYCKOaXLpQjiEWtjoOCU56iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6\n"\
+                         "LQIDAQAB\n"
                          "-----END PUBLIC KEY-----\"")
     );
 
@@ -170,33 +170,11 @@ UniValue readmessage(const JSONRPCRequest& request)
 
     if(!OPreturnData.empty())
     {
-        std::string privateRsaKey = "-----BEGIN RSA PRIVATE KEY-----\n"\
-                "MIIEogIBAAKCAQEAqZSulRpOGFkqG+ohYaGfiKhYEmQF/qTg9Mtl6ATsXyLSQ9pI\n"\
-                "iNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBdYsvWJKzuONckyBGqcZHvSKkscDG0\n"\
-                "luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4QOwquEtyyIcVmSdqgYdmzEm7x4M6\n"\
-                "jQURuM9xQrVA7aA0cupS4YalgJj1W1npNkruu4abrhiTGJ7dGbkEtppBdZqLirKO\n"\
-                "Wz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVhkW8r13uDYCKOaXLpQjiEWtjoOCU5\n"\
-                "6iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6LQIDAQABAoIBAGu2V8m3IqGOiROf\n"\
-                "/EICIc3wd7h+tdwPqB90zi64adbnzDxy+p2GY/6ydg7Dh/2WKWL79nGa5q/hM7+N\n"\
-                "dz12ZRqqtEMpYErURLWbmvJ2KlGxutsshzNSDTBUC1Yp9bN0fqR/m/5LGhS+zG9+\n"\
-                "xI0MS8OY/m1+5tJ+EvbrtVe+xEm/AZE9mXYdzam46L4jAn87uPkR9+ciUGaJcQwi\n"\
-                "IOz0PytY9pVqDUmnJBPkx9gQic9uuDExa8wPcv6uvxw7UHYr4oobn47zya0CO40n\n"\
-                "foOQFT1zVLa0qHU8SzievEdHNcJBjTvA1YJNlAAN+Hr3SKTOTIsun06S2hkr1gDI\n"\
-                "TV1+pqECgYEA/z9iVkZItrVt6mJPGGnMKdU1mNaNaHnBnZ7J7WUFG4Dolr4jSHAX\n"\
-                "UtzraVgEVdHfZdGBfx32GgkIOIZcatr6Ao6CyISqpwlYgIf5xn+lYUe/yS9hd6FN\n"\
-                "8cGKs5JMwTWEOGY5meW8mGh3NYxSIfzzEn4MzzJNqbZbp8AtTNp2H9kCgYEAqhSm\n"\
-                "0aTdIrbWG1cE24X/ciTbBBFq1D2CGiX9Agc/vGpevNpB8Gk4X+OvvRo1jZJS3dgt\n"\
-                "TuS/qNkYL6WhQQixTYF3fjabu3tk84QLlKkl5pvha2nvzTCUarzwmUchbPozMRHS\n"\
-                "uQJvBQTk0CRSBdowltdtpyR5P9IvOT+nGwPYzHUCgYBazh7a2Ig3z9W5o53F7qV+\n"\
-                "YGZ/6BxIhcBWpc3qkZy+ix6zuhLtS0tQ5F0vjeuE6HQUUfNC2NLbskjlaw9nyF1X\n"\
-                "GYH3ehMH97AvkbBPaMvaDt9w4FVJbO5Aynzgo3SA69wNAHkPggaVJdz7BN+XTdjf\n"\
-                "xE4kTB4K+WAkDp9PDw0lCQKBgC1XKg2TVLxPX46USSA4fZuxRY21EvSXnRpZbDRh\n"\
-                "OFWDSdQwnwl3E2dErHHODd661kp7ucBhbNKXZUI2dmF+7r1JuVA1QJjfUU81sVyl\n"\
-                "JwxuG87lw97Ah6BY1A8Yjkmd/Y2kQbe+dVgyMMloFVGoE/HyZjH7oDMqVhp95I9o\n"\
-                "HCCNAoGAOlHZRK68QM4+20YMTlYy/dFRAtruu7NjmzpVd3xh356QpXfLTWOs5OzF\n"\
-                "o/y4deFoOrz1QQoxv1LaD1DmRsqIrnDiSrmJHzIIOFrEk+8S0nkmr10k6JpqCJHG\n"\
-                "UCLtsPgJ8/lejk8AkzQaM7AuG6p/YJHnpVQHe6zkA1HXX0SZt+M=\n"\
-                "-----END RSA PRIVATE KEY-----\n";
+        std::string privateRsaKey;
+        std::shared_ptr<CWallet> pwallet = GetWallets()[0];
+        WalletDatabase& dbh = pwallet->GetDBHandle();
+        WalletBatch batch(dbh);
+        batch.ReadPrivateKey(privateRsaKey);
 
         std::vector<unsigned char> decryptedData = createDecryptedMessage(
             reinterpret_cast<unsigned char*>(OPreturnData.data()),
@@ -209,11 +187,32 @@ UniValue readmessage(const JSONRPCRequest& request)
     return UniValue(UniValue::VSTR, std::string("\"\""));
 }
 
+UniValue getmsgkey(const JSONRPCRequest& request)
+{
+    if (request.fHelp)
+    throw std::runtime_error(
+        "getmsgkey \n"
+        "\nGet public key for messenger to share with other users.\n"
+
+        "\nExamples:\n"
+        + HelpExampleCli("getmsgkey", "")
+        + HelpExampleRpc("getmsgkey", "")
+    );
+
+    WalletDatabase& dbh = GetWallets()[0]->GetDBHandle();
+    WalletBatch batch(dbh);
+    std::string publicRsaKey;
+    batch.ReadPublicKey(publicRsaKey);
+
+    return UniValue(UniValue::VSTR, publicRsaKey);
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
     { "blockstamp",         "sendmessage",                  &sendmessage,               {"message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
     { "blockstamp",         "readmessage",                  &readmessage,               {"txid"} },
+    { "blockstamp",         "getmsgkey",                    &getmsgkey,                 {} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)

@@ -232,3 +232,69 @@ std::vector<unsigned char> createDecryptedMessage(
 
     return decryptData(encryptedData, dataLength, aesKey, aesIv);
 }
+
+bool generateKeysPair(std::string& publicRsaKey, std::string& privateRsaKey)
+{
+    size_t privateKeyLength;
+    size_t publicKeyLength;
+
+    char *privateKey = nullptr;
+    char *publicKey = nullptr;
+
+    BIGNUM *bignum = nullptr;
+    RSA *rsa = nullptr;
+    unsigned long e = RSA_F4;
+    int bits = 2048;
+    BIO *bp_public = nullptr, *bp_private = nullptr;
+    EVP_PKEY* evp_pkey = nullptr;
+
+    int rv = 0;
+
+    bignum = BN_new();
+    rv = BN_set_word(bignum, e);
+    if (rv == 1) // generate new key
+    {
+        evp_pkey = EVP_PKEY_new();
+        rsa = RSA_new();
+        EVP_PKEY_assign_RSA(evp_pkey, rsa);
+        rv = RSA_generate_key_ex(rsa, bits, bignum, nullptr);
+    }
+
+    if (rv == 1) // save public key
+    {
+        bp_public = BIO_new(BIO_s_mem());
+        rv = PEM_write_bio_PUBKEY(bp_public, evp_pkey);
+    }
+
+    if (rv == 1) // save private key
+    {
+        bp_private = BIO_new(BIO_s_mem());
+        rv = PEM_write_bio_RSAPrivateKey(bp_private, rsa, nullptr, nullptr, 0, nullptr, nullptr);
+    }
+
+    publicKeyLength = BIO_pending(bp_public);
+    privateKeyLength = BIO_pending(bp_private);
+
+    publicKey = new char[publicKeyLength + 1];
+    privateKey = new char[privateKeyLength + 1];
+
+    BIO_read(bp_public, publicKey, publicKeyLength);
+    BIO_read(bp_private, privateKey, privateKeyLength);
+
+    publicKey[publicKeyLength] = '\0';
+    privateKey[privateKeyLength] = '\0';
+
+    publicRsaKey = publicKey;
+    privateRsaKey = privateKey;
+
+    delete publicKey;
+    delete privateKey;
+
+    BIO_free_all(bp_public);
+    BIO_free_all(bp_private);
+    RSA_free(rsa);
+    BN_free(bignum);
+
+    return (rv == 1);
+
+}

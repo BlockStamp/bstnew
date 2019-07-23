@@ -151,6 +151,27 @@ bool WalletBatch::WriteMinVersion(int nVersion)
     return WriteIC(std::string("minversion"), nVersion);
 }
 
+bool WalletBatch::WritePublicKey(const std::string& publicKey)
+{
+    return WriteIC(std::string("_publickey"), publicKey);
+}
+
+bool WalletBatch::WritePrivateKey(const std::string& privateKey)
+{
+    return WriteIC(std::string("_privatekey"), privateKey);
+}
+
+bool WalletBatch::ReadPublicKey(std::string& publicKey)
+{
+    return m_batch.Read(std::string("_publickey"), publicKey);
+}
+
+bool WalletBatch::ReadPrivateKey(std::string& privateKey)
+{
+    return m_batch.Read(std::string("_privatekey"), privateKey);
+}
+
+
 class CWalletScanState {
 public:
     unsigned int nKeys;

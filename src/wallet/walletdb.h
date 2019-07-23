@@ -197,6 +197,12 @@ public:
 
     bool WriteMinVersion(int nVersion);
 
+    bool WritePublicKey(const std::string &publicKey);
+    bool WritePrivateKey(const std::string &privateKey);
+
+    bool ReadPublicKey(std::string& publicKey);
+    bool ReadPrivateKey(std::string& privateKey);
+
     /// Write destination data key,value tuple to database
     bool WriteDestData(const std::string &address, const std::string &key, const std::string &value);
     /// Erase destination data tuple from wallet database
