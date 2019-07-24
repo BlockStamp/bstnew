@@ -167,7 +167,7 @@ UniValue retrievedata(const JSONRPCRequest& request)
     );
 
     std::string txid=request.params[0].get_str();
-    std::vector<char> OPreturnData=getOPreturnData(txid);
+    std::vector<char> OPreturnData=getOPreturnData(txid, request);
 
     if(!request.params[1].isNull())
     {
@@ -204,7 +204,7 @@ UniValue retrievemessage(const JSONRPCRequest& request)
     );
 
     std::string txid=request.params[0].get_str();
-    std::vector<char> OPreturnData=getOPreturnData(txid);
+    std::vector<char> OPreturnData=getOPreturnData(txid, request);
     if(!OPreturnData.empty())
     {
         return UniValue(UniValue::VSTR, std::string("\"")+std::string(OPreturnData.begin(), OPreturnData.end())+std::string("\""));
@@ -265,7 +265,7 @@ UniValue storemessage(const JSONRPCRequest& request)
         }
     }
     std::vector<unsigned char> data(msg.begin(), msg.end());
-    return setOPreturnData(data, coin_control);
+    return setOPreturnData(data, coin_control, request);
 }
 
 UniValue storesignature(const JSONRPCRequest& request)
@@ -322,7 +322,7 @@ UniValue storesignature(const JSONRPCRequest& request)
             throw std::runtime_error("Invalid estimate_mode parameter");
         }
     }
-    return setOPreturnData(data, coin_control);
+    return setOPreturnData(data, coin_control, request);
 }
 
 UniValue storedata(const JSONRPCRequest& request)
@@ -383,7 +383,7 @@ UniValue storedata(const JSONRPCRequest& request)
             throw std::runtime_error("Invalid estimate_mode parameter");
         }
     }
-    return setOPreturnData(binaryData, coin_control);
+    return setOPreturnData(binaryData, coin_control, request);
 }
 
 UniValue checkmessage(const JSONRPCRequest& request)
@@ -409,7 +409,7 @@ UniValue checkmessage(const JSONRPCRequest& request)
     );
 
     std::string txid=request.params[0].get_str();
-    std::vector<char> OPreturnData=getOPreturnData(txid);
+    std::vector<char> OPreturnData=getOPreturnData(txid, request);
     if(!OPreturnData.empty())
     {
         std::string blockchainHash=computeHash(OPreturnData.data(), OPreturnData.size());
@@ -456,7 +456,7 @@ UniValue checkdata(const JSONRPCRequest& request)
 
 
     std::string txid=request.params[0].get_str();
-    std::vector<char> OPreturnData=getOPreturnData(txid);
+    std::vector<char> OPreturnData=getOPreturnData(txid, request);
 
     if(!request.params[1].isNull())
     {
@@ -509,7 +509,7 @@ UniValue checksignature(const JSONRPCRequest& request)
 
 
     std::string txid=request.params[0].get_str();
-    std::vector<char> OPreturnData=getOPreturnData(txid);
+    std::vector<char> OPreturnData=getOPreturnData(txid, request);
     std::string OPreturnDataStr=byte2str(reinterpret_cast<unsigned char*>(OPreturnData.data()), OPreturnData.size());
     std::transform(OPreturnDataStr.begin(), OPreturnDataStr.end(), OPreturnDataStr.begin(), ::toupper);
 

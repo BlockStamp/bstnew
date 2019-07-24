@@ -141,7 +141,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
     public_key.c_str());
 
     std::cout << "data.size(): " << data.size() << std::endl;
-    return setOPreturnData(data, coin_control);
+    return setOPreturnData(data, coin_control, request);
 }
 
 UniValue readmessage(const JSONRPCRequest& request)
@@ -166,13 +166,12 @@ UniValue readmessage(const JSONRPCRequest& request)
     );
 
     std::string txid=request.params[0].get_str();
-    std::vector<char> OPreturnData=getOPreturnData(txid);
+    std::vector<char> OPreturnData=getOPreturnData(txid, request);
 
     if(!OPreturnData.empty())
     {
         std::string privateRsaKey;
-        std::shared_ptr<CWallet> pwallet = GetWallets()[0];
-        WalletDatabase& dbh = pwallet->GetDBHandle();
+        WalletDatabase& dbh = GetWalletForJSONRPCRequest(request)->GetDBHandle();
         WalletBatch batch(dbh);
         batch.ReadPrivateKey(privateRsaKey);
 
@@ -199,6 +198,7 @@ UniValue getmsgkey(const JSONRPCRequest& request)
         + HelpExampleRpc("getmsgkey", "")
     );
 
+    //TODO: replace with new "messenger" database
     WalletDatabase& dbh = GetWallets()[0]->GetDBHandle();
     WalletBatch batch(dbh);
     std::string publicRsaKey;

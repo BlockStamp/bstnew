@@ -16,6 +16,7 @@
 #include <consensus/validation.h>
 #include <validation.h>
 #include <net.h>
+#include <wallet/rpcwallet.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -159,9 +160,9 @@ UniValue callRPC(std::string args)
     }
 }
 
-std::vector<char> getOPreturnData(const std::string& txid)
+std::vector<char> getOPreturnData(const std::string& txid, const JSONRPCRequest& request)
 {
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* pwallet=nullptr;
     if(wallet!=nullptr)
     {
@@ -172,11 +173,11 @@ std::vector<char> getOPreturnData(const std::string& txid)
     return retrieveDataTxs.getTxData();
 }
 
-UniValue setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& coin_control)
+UniValue setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& coin_control, const JSONRPCRequest& request)
 {
     UniValue res(UniValue::VARR);
 
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if(wallet==nullptr)
     {
         throw std::runtime_error(std::string("No wallet found"));
