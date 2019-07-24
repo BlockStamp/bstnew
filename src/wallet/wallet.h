@@ -22,6 +22,7 @@
 #include <wallet/coinselection.h>
 #include <wallet/walletdb.h>
 #include <wallet/rpcwallet.h>
+#include <wallet/walletutil.h>
 
 #include <algorithm>
 #include <atomic>
@@ -684,6 +685,7 @@ private:
 
     /** Internal database handle. */
     std::unique_ptr<WalletDatabase> database;
+    std::unique_ptr<WalletDatabase> m_msgDatabase;
 
     /**
      * The following is used to keep track of how far behind the wallet is
@@ -740,6 +742,8 @@ public:
     /** Construct wallet with specified name and database implementation. */
     CWallet(std::string name, std::unique_ptr<WalletDatabase> database) : m_name(std::move(name)), database(std::move(database))
     {
+        m_msgDatabase = WalletDatabase::Create(GetWalletDir());
+        m_msgDatabase->setDbName("msg_wallet.dat");
     }
 
     ~CWallet()

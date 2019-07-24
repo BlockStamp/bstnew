@@ -133,6 +133,11 @@ public:
         return MakeUnique<BerkeleyDatabase>("", true /* mock */);
     }
 
+    void setDbName(const std::string& dbName)
+    {
+        strFile = dbName;
+    }
+
     /** Rewrite the entire database on disk, with the exception of key pszSkip if non-zero
      */
     bool Rewrite(const char* pszSkip=nullptr);

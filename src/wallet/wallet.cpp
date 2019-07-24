@@ -3131,6 +3131,8 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
         fFirstRunRet = mapKeys.empty() && mapCryptedKeys.empty() && mapWatchKeys.empty() && setWatchOnly.empty() && mapScripts.empty() && !IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS);
     }
 
+    nLoadWalletRet = WalletBatch(*m_msgDatabase,"cr+").LoadWallet(this);
+
     if (nLoadWalletRet != DBErrors::LOAD_OK)
         return nLoadWalletRet;
 
@@ -3985,6 +3987,7 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(const std::string& name, 
 
     if (gArgs.GetBoolArg("-zapwallettxes", false)) {
         uiInterface.InitMessage(_("Zapping all transactions from wallet..."));
+
 
         std::unique_ptr<CWallet> tempWallet = MakeUnique<CWallet>(name, WalletDatabase::Create(path));
         DBErrors nZapWalletRet = tempWallet->ZapWalletTx(vWtx);
