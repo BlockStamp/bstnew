@@ -137,7 +137,8 @@ std::vector<unsigned char> createEncryptedMessage(
     std::tie(encryptedKey, encryptedKeySize) = encryptWithRsa(aesKey, AES_256_KEY_LENGTH_BYTES, publicRsaKey);
 
     std::vector<unsigned char> result;
-    result.reserve(encryptedKeySize + AES_256_IV_LENGTH_BYTES + encryptedMsgSize);
+    result.reserve(ENCR_MARKER_SIZE + encryptedKeySize + AES_256_IV_LENGTH_BYTES + encryptedMsgSize);
+    result.insert(result.end(), ENCR_MARKER.begin(), ENCR_MARKER.end());
     result.insert(result.end(), encryptedKey.get(), encryptedKey.get()+encryptedKeySize);
     result.insert(result.end(), aesIv, aesIv+AES_256_IV_LENGTH_BYTES);
     result.insert(result.end(), encryptedMsg.get(), encryptedMsg.get()+encryptedMsgSize);
@@ -214,12 +215,26 @@ std::vector<unsigned char> decryptData(
     return decryptedData;
 }
 
+void checkMessageMarker(unsigned char* data, int dataLength)
+{
+    if (dataLength < ENCR_MARKER_SIZE ||
+        std::string(data, data+ENCR_MARKER_SIZE) != ENCR_MARKER)
+    {
+        throw std::runtime_error("Failed to decrypt message");
+    }
+}
+
 //Note: privateRsaKey must be null terminated
 std::vector<unsigned char> createDecryptedMessage(
     unsigned char* encryptedData,
     int dataLength,
     const char* privateRsaKey)
 {
+    //Check encrypted message marker and skip it
+    checkMessageMarker(encryptedData, dataLength);
+    encryptedData += ENCR_MARKER_SIZE;
+    dataLength -= ENCR_MARKER_SIZE;
+
     unsigned char aesKey[AES_256_KEY_LENGTH_BYTES];
     const int encKeyLen = decryptKey(encryptedData, dataLength, privateRsaKey, aesKey);
     encryptedData += encKeyLen;

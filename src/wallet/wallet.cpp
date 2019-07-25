@@ -29,6 +29,7 @@
 #include <utilmoneystr.h>
 #include <wallet/fees.h>
 #include <wallet/walletutil.h>
+#include <messages/message_encryption.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -844,7 +845,7 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
 bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 {
     LOCK(cs_wallet);
-
+    std::cout << "AddToWallet, tx " << wtxIn.GetHash().ToString() << std::endl;
     WalletBatch batch(*database, "r+", fFlushOnClose);
 
     uint256 hash = wtxIn.GetHash();
@@ -949,6 +950,7 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
 bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockIndex* pIndex, int posInBlock, bool fUpdate)
 {
     const CTransaction& tx = *ptx;
+    std::cout << "\n\n\nAddToWalletIfInvolvingMe txid: " << tx.GetHash().ToString() << std::endl;
     {
         AssertLockHeld(cs_wallet);
 
@@ -967,6 +969,34 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
 
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
+
+        /* Check if this is encrypted msg to me  */
+        std::vector<char> opReturn;
+        tx.loadOpReturn(opReturn);
+        std::cout << "\tOP_RETURN: " << std::string(opReturn.begin(), opReturn.end()) << std::endl;
+        std::cout << "\tOP_RETURN size: " << opReturn.size() << std::endl;
+
+        if (IsEnrcyptedMsg(opReturn)) {
+            std::string privateRsaKey;
+            WalletBatch batch(*database);
+            batch.ReadPrivateKey(privateRsaKey);
+
+            try {
+                std::vector<unsigned char> decryptedData = createDecryptedMessage(
+                    reinterpret_cast<unsigned char*>(opReturn.data()),
+                    opReturn.size(),
+                    privateRsaKey.c_str());
+
+                std::cout << "\tIs encrypted message \"" << std::string(decryptedData.begin(), decryptedData.end()) << "\"\n";
+            }
+            catch(const std::exception& exc) {
+                std::cout << "\tIs encrypted message, but failed to decrypt\n";
+            }
+        }
+        else {
+            std::cout << "\tIs not encrypted message\n";
+        }
+
         if (fExisted || IsMine(tx) || IsFromMe(tx))
         {
             /* Check if any keys in the wallet keypool that were supposed to be unused
@@ -1328,6 +1358,12 @@ bool CWallet::IsMine(const CTransaction& tx) const
 bool CWallet::IsFromMe(const CTransaction& tx) const
 {
     return (GetDebit(tx, ISMINE_ALL) > 0);
+}
+
+bool CWallet::IsEnrcyptedMsg(const std::vector<char>& opReturn) const
+{
+    return opReturn.size() >= ENCR_MARKER_SIZE &&
+        std::string(opReturn.data(), opReturn.data() + ENCR_MARKER_SIZE) == ENCR_MARKER;
 }
 
 CAmount CWallet::GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames) const

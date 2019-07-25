@@ -373,6 +373,34 @@ public:
         }
         return size;
     }
+
+    void loadOpReturn(std::vector<char>& retHex) const {
+        for(size_t i=0;i<vout.size();++i)
+        {
+            CScript::const_iterator it_beg=vout[i].scriptPubKey.begin();
+            CScript::const_iterator it_end=vout[i].scriptPubKey.end();
+            int order = *(it_beg+1);
+            if(*it_beg==OP_RETURN)
+            {
+                if(order<=0x4b)
+                {
+                    retHex=std::vector<char>(it_beg+2, it_end);
+                }
+                else if(order==0x4c)
+                {
+                    retHex=std::vector<char>(it_beg+3, it_end);
+                }
+                else if(order==0x4d)
+                {
+                    retHex=std::vector<char>(it_beg+4, it_end);
+                }
+                else if(order==0x4e)
+                {
+                    retHex=std::vector<char>(it_beg+6, it_end);
+                }
+            }
+        }
+    }
 };
 
 /** A mutable version of CTransaction. */
