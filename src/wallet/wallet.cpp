@@ -959,11 +959,13 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
     }
 }
 
-void CWallet::AddEncrMsgToWallet(const CWalletTx& wtxIn, bool fFlushOnClose) {
+void CWallet::LoadEncrMsgToWallet(const CWalletTx& wtxIn)
+{
+    uint256 hash = wtxIn.GetHash();
+    encrMsgMapWallet.emplace(hash, wtxIn);
+}
 
-    LOCK(cs_wallet);
-    WalletBatch batch(*msgDatabase, "r+", fFlushOnClose);
-
+void CWallet::AddEncrMsgToWallet(const CWalletTx& wtxIn, WalletBatch& batch) {
     uint256 hash = wtxIn.GetHash();
     std::pair<std::map<uint256, CWalletTx>::iterator, bool> ret = encrMsgMapWallet.insert(std::make_pair(hash, wtxIn));
     CWalletTx& wtx = (*ret.first).second;
@@ -971,15 +973,12 @@ void CWallet::AddEncrMsgToWallet(const CWalletTx& wtxIn, bool fFlushOnClose) {
     bool fInsertedNew = ret.second;
     if (fInsertedNew) {
         wtx.nTimeReceived = GetAdjustedTime();
-        wtx.nOrderPos = IncEncrMsgOrderPosNext(&batch);
-        batch.WriteTx(wtx);
     }
 
     bool fUpdated = false;
     if (!fInsertedNew)
     {
         //TODO: which of the following should stay?
-
         // Merge
         if (!wtxIn.hashUnset() && wtxIn.hashBlock != wtx.hashBlock)
         {
@@ -1004,7 +1003,9 @@ void CWallet::AddEncrMsgToWallet(const CWalletTx& wtxIn, bool fFlushOnClose) {
 
     // Write to disk
     if (fInsertedNew || fUpdated) {
-       batch.WriteTx(wtx);
+        //TODO: Check if setting of wtx.nOrderPos is needed
+        wtx.nOrderPos = IncEncrMsgOrderPosNext(&batch);
+        batch.WriteEncrMsgTx(wtx);
     }
 
     // Notify UI of new or updated transaction
@@ -1012,13 +1013,14 @@ void CWallet::AddEncrMsgToWallet(const CWalletTx& wtxIn, bool fFlushOnClose) {
 }
 
 void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
+    AssertLockHeld(cs_wallet);
     const CTransaction& tx = *ptx;
     std::vector<char> opReturn;
     tx.loadOpReturn(opReturn);
 
     if (IsEnrcyptedMsg(opReturn)) {
         std::string privateRsaKey;
-        WalletBatch batch(*database);
+        WalletBatch batch(*msgDatabase);
         batch.ReadPrivateKey(privateRsaKey);
 
         try {
@@ -1027,18 +1029,25 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
                 opReturn.size(),
                 privateRsaKey.c_str());
 
+std::cout << "DECRYPTED TX: " << std::string(decryptedData.begin(), decryptedData.end()) << std::endl;
+
             CWalletTx wtx(this, ptx);
-            AddEncrMsgToWallet(wtx);
+            AddEncrMsgToWallet(wtx, batch);
         }
         catch(...) {
+            std::cout << "Is encrypted message, but failed to decrypt\n";
             //Is encrypted message, but failed to decrypt
         }
+    }
+    else {
+        std::cout << "Is not encrypted message\n";
     }
 }
 
 bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockIndex* pIndex, int posInBlock, bool fUpdate)
 {
     const CTransaction& tx = *ptx;
+
     {
         AssertLockHeld(cs_wallet);
 
@@ -1288,6 +1297,32 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
     }
 
     m_last_block_processed = pindex;
+
+    std::cout << "BLOCK CONNECTED: " << pblock->ToString() << std::endl;
+
+    std::cout << "Prining mapWallet txs:\n";
+    for (const auto& it : mapWallet) {
+        std::cout << it.first.ToString() << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << "Prining encrMsgMapWallet txs:\n";
+    for (const auto& it : encrMsgMapWallet) {
+        std::cout << it.first.ToString() << std::endl;
+    }
+    std::cout << std::endl;
+
+    {
+        LOCK(cs_wallet);
+        WalletBatch batch(*database, "r+", false);
+        batch.printTransaction();
+    }
+
+    {
+        LOCK(cs_wallet);
+        WalletBatch batch(*msgDatabase, "r+", false);
+        batch.printTransaction();
+    }
 }
 
 void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDelete, const std::vector<CTransactionRef>& vNameConflicts) {

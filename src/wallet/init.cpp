@@ -248,8 +248,7 @@ void WalletInit::Start(CScheduler& scheduler) const
         pwallet->postInitProcess();
     }
 
-    //TODO: replace with new "messenger" database
-    WalletDatabase& dbh = GetWallets()[0]->GetDBHandle();
+    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
     WalletBatch walletBatch(dbh);
     std::string publicRsaKey, privateRsaKey;
     walletBatch.ReadPublicKey(publicRsaKey);

@@ -52,6 +52,12 @@ bool WalletBatch::WriteTx(const CWalletTx& wtx)
     return WriteIC(std::make_pair(std::string("tx"), wtx.GetHash()), wtx);
 }
 
+bool WalletBatch::WriteEncrMsgTx(const CWalletTx& wtx)
+{
+    return WriteIC(std::make_pair(std::string("msg_tx"), wtx.GetHash()), wtx);
+}
+
+//TODO: Should we write similar function for Encrypted Msgs?
 bool WalletBatch::EraseTx(uint256 hash)
 {
     return EraseIC(std::make_pair(std::string("tx"), hash));
@@ -253,6 +259,20 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                 wss.fAnyUnordered = true;
 
             pwallet->LoadToWallet(wtx);
+        }
+        else if (strType == "msg_tx") {
+            uint256 hash;
+            ssKey >> hash;
+            CWalletTx wtx(nullptr /* pwallet */, MakeTransactionRef());
+            ssValue >> wtx;
+
+            //TODO: Should we validate this transaction? If this was an encrypted message
+            //and we decrypted it correctly then it should probably always stay
+            CValidationState state;
+            if (!(CheckTransaction(*wtx.tx, state) && (wtx.GetHash() == hash) && state.IsValid()))
+                return false;
+
+            pwallet->LoadEncrMsgToWallet(wtx);
         }
         else if (strType == "watchs")
         {
@@ -466,6 +486,8 @@ bool WalletBatch::IsKeyType(const std::string& strType)
 
 DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
 {
+    std::cout << "WalletBatch::LoadWallet name: " << pwallet->GetName() << std::endl;
+
     CWalletScanState wss;
     bool fNoncriticalErrors = false;
     DBErrors result = DBErrors::LOAD_OK;
@@ -623,6 +645,24 @@ DBErrors WalletBatch::FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CW
     }
 
     return result;
+}
+
+void WalletBatch::printTransaction() {
+    std::cout << "Printing wallet transactions form " << m_database.getDbName() << std::endl;
+
+    std::vector<uint256> vTxHash;
+    std::vector<CWalletTx> vWtx;
+
+    DBErrors err = FindWalletTx(vTxHash, vWtx);
+    if (err != DBErrors::LOAD_OK) {
+        std::cout << "Error: " << (int)err << std::endl;
+    }
+
+    for (const auto& it : vTxHash) {
+        std::cout << "\t" << it.ToString() << std::endl;
+    }
+
+    std::cout << std::endl;
 }
 
 DBErrors WalletBatch::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<uint256>& vTxHashOut)

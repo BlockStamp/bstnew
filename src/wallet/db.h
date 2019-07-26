@@ -138,6 +138,11 @@ public:
         strFile = dbName;
     }
 
+    std::string getDbName() const
+    {
+        return strFile;
+    }
+
     /** Rewrite the entire database on disk, with the exception of key pszSkip if non-zero
      */
     bool Rewrite(const char* pszSkip=nullptr);

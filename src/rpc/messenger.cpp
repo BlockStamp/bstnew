@@ -171,7 +171,7 @@ UniValue readmessage(const JSONRPCRequest& request)
     if(!OPreturnData.empty())
     {
         std::string privateRsaKey;
-        WalletDatabase& dbh = GetWalletForJSONRPCRequest(request)->GetDBHandle();
+        WalletDatabase& dbh = GetWalletForJSONRPCRequest(request)->GetMsgDBHandle();
         WalletBatch batch(dbh);
         batch.ReadPrivateKey(privateRsaKey);
 
@@ -198,8 +198,8 @@ UniValue getmsgkey(const JSONRPCRequest& request)
         + HelpExampleRpc("getmsgkey", "")
     );
 
-    //TODO: replace with new "messenger" database
-    WalletDatabase& dbh = GetWallets()[0]->GetDBHandle();
+    //TODO: Locking wallet may be needed - to be checked
+    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
     WalletBatch batch(dbh);
     std::string publicRsaKey;
     batch.ReadPublicKey(publicRsaKey);

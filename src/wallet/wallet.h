@@ -714,6 +714,14 @@ public:
         return *database;
     }
 
+    /** Get encr msg database handle used by this wallet. Ideally this function would
+     * not be necessary.
+     */
+    WalletDatabase& GetMsgDBHandle()
+    {
+        return *msgDatabase;
+    }
+
     /**
      * Select a set of coins such that nValueRet >= nTargetValue and at least
      * all coins from coinControl are selected; Never select unconfirmed coins
@@ -872,9 +880,10 @@ public:
 
     void MarkDirty();
     void AddEncrMsgToWalletIfNeeded(const CTransactionRef &ptx);
-    void AddEncrMsgToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
+    void AddEncrMsgToWallet(const CWalletTx& wtxIn, WalletBatch& batch);
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn);
+    void LoadEncrMsgToWallet(const CWalletTx& wtxIn);
     void TransactionAddedToMempool(const CTransactionRef& tx) override;
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindex, const std::vector<CTransactionRef>& vtxConflicted, const std::vector<CTransactionRef>& vNameConflicts) override;
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindexDelete, const std::vector<CTransactionRef>& vNameConflicts) override;
