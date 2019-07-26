@@ -685,7 +685,7 @@ private:
 
     /** Internal database handle. */
     std::unique_ptr<WalletDatabase> database;
-    std::unique_ptr<WalletDatabase> m_msgDatabase;
+    std::unique_ptr<WalletDatabase> msgDatabase;
 
     /**
      * The following is used to keep track of how far behind the wallet is
@@ -742,8 +742,8 @@ public:
     /** Construct wallet with specified name and database implementation. */
     CWallet(std::string name, std::unique_ptr<WalletDatabase> database) : m_name(std::move(name)), database(std::move(database))
     {
-        m_msgDatabase = WalletDatabase::Create(GetWalletDir());
-        m_msgDatabase->setDbName("msg_wallet.dat");
+        msgDatabase = WalletDatabase::Create(GetWalletDir());
+        msgDatabase->setDbName("msg_wallet.dat");
     }
 
     ~CWallet()
@@ -753,11 +753,13 @@ public:
     }
 
     std::map<uint256, CWalletTx> mapWallet;
+    std::map<uint256, CWalletTx> encrMsgMapWallet;
 
     typedef std::multimap<int64_t, CWalletTx*> TxItems;
     TxItems wtxOrdered;
 
     int64_t nOrderPosNext = 0;
+    int64_t nEncrMsgOrderPosNext = 0;
     uint64_t nAccountingEntryNumber = 0;
 
     std::map<CTxDestination, CAddressBookData> mapAddressBook;
@@ -865,9 +867,12 @@ public:
      * @return next transaction order id
      */
     int64_t IncOrderPosNext(WalletBatch *batch = nullptr) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    int64_t IncEncrMsgOrderPosNext(WalletBatch *batch) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     DBErrors ReorderTransactions();
 
     void MarkDirty();
+    void AddEncrMsgToWalletIfNeeded(const CTransactionRef &ptx);
+    void AddEncrMsgToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn);
     void TransactionAddedToMempool(const CTransactionRef& tx) override;
@@ -1050,6 +1055,13 @@ public:
      */
     boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx,
             ChangeType status)> NotifyTransactionChanged;
+
+    /**
+     * Wallet encrypted msg transaction added, removed or updated.
+     * @note called with lock cs_wallet held.
+     */
+    boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx,
+            ChangeType status)> NotifyEncrMsgTransactionChanged;
 
     /** Show progress e.g. for rescan */
     boost::signals2::signal<void (const std::string &title, int nProgress)> ShowProgress;

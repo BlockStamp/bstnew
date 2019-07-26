@@ -804,6 +804,18 @@ int64_t CWallet::IncOrderPosNext(WalletBatch *batch)
     return nRet;
 }
 
+//TODO: Check if this function is needed
+int64_t CWallet::IncEncrMsgOrderPosNext(WalletBatch *batch) {
+    AssertLockHeld(cs_wallet); // nEncrMsgOrderPosNext
+    int64_t nRet = nEncrMsgOrderPosNext++;
+    if (batch) {
+        batch->WriteEncrMsgOrderPosNext(nEncrMsgOrderPosNext);
+    } else {
+        WalletBatch(*msgDatabase).WriteEncrMsgOrderPosNext(nEncrMsgOrderPosNext);
+    }
+    return nRet;
+}
+
 void CWallet::MarkDirty()
 {
     {
@@ -845,7 +857,6 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
 bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 {
     LOCK(cs_wallet);
-    std::cout << "AddToWallet, tx " << wtxIn.GetHash().ToString() << std::endl;
     WalletBatch batch(*database, "r+", fFlushOnClose);
 
     uint256 hash = wtxIn.GetHash();
@@ -855,6 +866,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
     CWalletTx& wtx = (*ret.first).second;
     wtx.BindWallet(this);
     bool fInsertedNew = ret.second;
+
     if (fInsertedNew) {
         wtx.nTimeReceived = GetAdjustedTime();
         wtx.nOrderPos = IncOrderPosNext(&batch);
@@ -947,10 +959,86 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
     }
 }
 
+void CWallet::AddEncrMsgToWallet(const CWalletTx& wtxIn, bool fFlushOnClose) {
+
+    LOCK(cs_wallet);
+    WalletBatch batch(*msgDatabase, "r+", fFlushOnClose);
+
+    uint256 hash = wtxIn.GetHash();
+    std::pair<std::map<uint256, CWalletTx>::iterator, bool> ret = encrMsgMapWallet.insert(std::make_pair(hash, wtxIn));
+    CWalletTx& wtx = (*ret.first).second;
+
+    bool fInsertedNew = ret.second;
+    if (fInsertedNew) {
+        wtx.nTimeReceived = GetAdjustedTime();
+        wtx.nOrderPos = IncEncrMsgOrderPosNext(&batch);
+        batch.WriteTx(wtx);
+    }
+
+    bool fUpdated = false;
+    if (!fInsertedNew)
+    {
+        //TODO: which of the following should stay?
+
+        // Merge
+        if (!wtxIn.hashUnset() && wtxIn.hashBlock != wtx.hashBlock)
+        {
+            std::cout << "Updated because wtxIn.hashBlock != wtx.hashBlock\n";
+            wtx.hashBlock = wtxIn.hashBlock;
+            fUpdated = true;
+        }
+        // If no longer abandoned, update
+        if (wtxIn.hashBlock.IsNull() && wtx.isAbandoned())
+        {
+            std::cout << "Updated because wtxIn.hashBlock.IsNull() && wtx.isAbandoned()\n";
+            wtx.hashBlock = wtxIn.hashBlock;
+            fUpdated = true;
+        }
+        if (wtxIn.nIndex != -1 && (wtxIn.nIndex != wtx.nIndex))
+        {
+            std::cout << "Updated because wtxIn.nIndex != -1 && (wtxIn.nIndex != wtx.nIndex)\n";
+            wtx.nIndex = wtxIn.nIndex;
+            fUpdated = true;
+        }
+    }
+
+    // Write to disk
+    if (fInsertedNew || fUpdated) {
+       batch.WriteTx(wtx);
+    }
+
+    // Notify UI of new or updated transaction
+    NotifyEncrMsgTransactionChanged(this, hash, fInsertedNew ? CT_NEW : CT_UPDATED);
+}
+
+void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
+    const CTransaction& tx = *ptx;
+    std::vector<char> opReturn;
+    tx.loadOpReturn(opReturn);
+
+    if (IsEnrcyptedMsg(opReturn)) {
+        std::string privateRsaKey;
+        WalletBatch batch(*database);
+        batch.ReadPrivateKey(privateRsaKey);
+
+        try {
+            std::vector<unsigned char> decryptedData = createDecryptedMessage(
+                reinterpret_cast<unsigned char*>(opReturn.data()),
+                opReturn.size(),
+                privateRsaKey.c_str());
+
+            CWalletTx wtx(this, ptx);
+            AddEncrMsgToWallet(wtx);
+        }
+        catch(...) {
+            //Is encrypted message, but failed to decrypt
+        }
+    }
+}
+
 bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockIndex* pIndex, int posInBlock, bool fUpdate)
 {
     const CTransaction& tx = *ptx;
-    std::cout << "\n\n\nAddToWalletIfInvolvingMe txid: " << tx.GetHash().ToString() << std::endl;
     {
         AssertLockHeld(cs_wallet);
 
@@ -967,35 +1055,11 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
             }
         }
 
+        /* Add tx to encr msgs if this is encrypted msg to me  */
+        AddEncrMsgToWalletIfNeeded(ptx);
+
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
-
-        /* Check if this is encrypted msg to me  */
-        std::vector<char> opReturn;
-        tx.loadOpReturn(opReturn);
-        std::cout << "\tOP_RETURN: " << std::string(opReturn.begin(), opReturn.end()) << std::endl;
-        std::cout << "\tOP_RETURN size: " << opReturn.size() << std::endl;
-
-        if (IsEnrcyptedMsg(opReturn)) {
-            std::string privateRsaKey;
-            WalletBatch batch(*database);
-            batch.ReadPrivateKey(privateRsaKey);
-
-            try {
-                std::vector<unsigned char> decryptedData = createDecryptedMessage(
-                    reinterpret_cast<unsigned char*>(opReturn.data()),
-                    opReturn.size(),
-                    privateRsaKey.c_str());
-
-                std::cout << "\tIs encrypted message \"" << std::string(decryptedData.begin(), decryptedData.end()) << "\"\n";
-            }
-            catch(const std::exception& exc) {
-                std::cout << "\tIs encrypted message, but failed to decrypt\n";
-            }
-        }
-        else {
-            std::cout << "\tIs not encrypted message\n";
-        }
 
         if (fExisted || IsMine(tx) || IsFromMe(tx))
         {
@@ -3167,7 +3231,7 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
         fFirstRunRet = mapKeys.empty() && mapCryptedKeys.empty() && mapWatchKeys.empty() && setWatchOnly.empty() && mapScripts.empty() && !IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS);
     }
 
-    nLoadWalletRet = WalletBatch(*m_msgDatabase,"cr+").LoadWallet(this);
+    nLoadWalletRet = WalletBatch(*msgDatabase,"cr+").LoadWallet(this);
 
     if (nLoadWalletRet != DBErrors::LOAD_OK)
         return nLoadWalletRet;

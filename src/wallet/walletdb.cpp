@@ -131,6 +131,11 @@ bool WalletBatch::WriteOrderPosNext(int64_t nOrderPosNext)
     return WriteIC(std::string("orderposnext"), nOrderPosNext);
 }
 
+bool WalletBatch::WriteEncrMsgOrderPosNext(int64_t nEncrMsgOrderPosNext)
+{
+    return WriteIC(std::string("encrmsgorderposnext"), nEncrMsgOrderPosNext);
+}
+
 bool WalletBatch::ReadPool(int64_t nPool, CKeyPool& keypool)
 {
     return m_batch.Read(std::make_pair(std::string("pool"), nPool), keypool);
@@ -415,6 +420,10 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             }
         }
         else if (strType == "orderposnext")
+        {
+            ssValue >> pwallet->nOrderPosNext;
+        }
+        else if (strType == "encrmsgorderposnext")
         {
             ssValue >> pwallet->nOrderPosNext;
         }

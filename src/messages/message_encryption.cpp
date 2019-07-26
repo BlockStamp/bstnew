@@ -212,6 +212,7 @@ std::vector<unsigned char> decryptData(
     totalLength += len;
 
     decryptedData.resize(totalLength);
+    //TODO: Add some check to know if decryption was successful
     return decryptedData;
 }
 
@@ -230,7 +231,6 @@ std::vector<unsigned char> createDecryptedMessage(
     int dataLength,
     const char* privateRsaKey)
 {
-    //Check encrypted message marker and skip it
     checkMessageMarker(encryptedData, dataLength);
     encryptedData += ENCR_MARKER_SIZE;
     dataLength -= ENCR_MARKER_SIZE;
