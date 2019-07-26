@@ -15,6 +15,7 @@
 #include <qt/receivecoinsdialog.h>
 #include <qt/datapage.h>
 #include <qt/gamepage.h>
+#include <qt/messengerpage.h>
 #include <qt/sendcoinsdialog.h>
 #include <qt/signverifymessagedialog.h>
 #include <qt/transactiontablemodel.h>
@@ -64,6 +65,7 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     
     dataPage = new DataPage(platformStyle);
     gamePage = new GamePage(platformStyle);
+    messengerPage = new MessengerPage(platformStyle);
 
     addWidget(overviewPage);
     addWidget(transactionsPage);
@@ -71,6 +73,7 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     addWidget(sendCoinsPage);
     addWidget(dataPage);
     addWidget(gamePage);
+    addWidget(messengerPage);
 
     // Clicking on a transaction on the overview pre-selects the transaction on the transaction history page
     connect(overviewPage, &OverviewPage::transactionClicked, transactionView, static_cast<void (TransactionView::*)(const QModelIndex&)>(&TransactionView::focusTransaction));
@@ -127,6 +130,7 @@ void WalletView::setClientModel(ClientModel *_clientModel)
     sendCoinsPage->setClientModel(_clientModel);
     dataPage->setClientModel(_clientModel);
     gamePage->setClientModel(_clientModel);
+    messengerPage->setClientModel(_clientModel);
 }
 
 void WalletView::setWalletModel(WalletModel *_walletModel)
@@ -140,6 +144,7 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
     sendCoinsPage->setModel(_walletModel);
     dataPage->setModel(_walletModel);
     gamePage->setModel(_walletModel);
+    messengerPage->setModel(_walletModel);
     usedReceivingAddressesPage->setModel(_walletModel ? _walletModel->getAddressTableModel() : nullptr);
     usedSendingAddressesPage->setModel(_walletModel ? _walletModel->getAddressTableModel() : nullptr);
 
@@ -218,6 +223,12 @@ void WalletView::gotoGamePage()
 {
 	setCurrentWidget(gamePage);
 }
+
+void WalletView::gotoMessengerPage()
+{
+    setCurrentWidget(messengerPage);
+}
+
 
 void WalletView::gotoSignMessageTab(QString addr)
 {

@@ -14,6 +14,7 @@ class ClientModel;
 class OverviewPage;
 class DataPage;
 class GamePage;
+class MessengerPage;
 class PlatformStyle;
 class ReceiveCoinsDialog;
 class SendCoinsDialog;
@@ -63,6 +64,7 @@ private:
 
     DataPage *dataPage;
     GamePage *gamePage;
+    MessengerPage *messengerPage;
     OverviewPage *overviewPage;
     QWidget *transactionsPage;
     ReceiveCoinsDialog *receiveCoinsPage;
@@ -90,6 +92,9 @@ public Q_SLOTS:
 
     /** Switch to game page */
     void gotoGamePage();
+
+    /** Switch to messenger page */
+    void gotoMessengerPage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

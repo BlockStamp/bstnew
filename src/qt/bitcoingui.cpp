@@ -292,6 +292,18 @@ void BitcoinGUI::createActions()
     gameMenuAction->setStatusTip(gameAction->statusTip());
     gameMenuAction->setToolTip(gameMenuAction->statusTip());
 
+    messengerAction = new QAction(platformStyle->SingleColorIcon(":/icons/debugwindow"), tr("&Messenger"), this);
+    messengerAction->setStatusTip(tr("Send encypted message to other blockstamp user"));
+    messengerAction->setToolTip(messengerAction->statusTip());
+    messengerAction->setCheckable(true);
+    messengerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_8));
+    tabGroup->addAction(messengerAction);
+
+    messengerMenuAction = new QAction(platformStyle->TextColorIcon(":/icons/debugwindow"), messengerAction->text(), this);
+    messengerMenuAction->setStatusTip(messengerAction->statusTip());
+    messengerMenuAction->setToolTip(messengerMenuAction->statusTip());
+
+
 #ifdef ENABLE_WALLET
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
@@ -311,6 +323,11 @@ void BitcoinGUI::createActions()
     connect(gameAction, &QAction::triggered, this, [this]{ gotoGamePage(); });
     connect(gameAction, &QAction::triggered, this, static_cast<void (BitcoinGUI::*)()>(&BitcoinGUI::showNormalIfMinimized));
     connect(gameMenuAction, &QAction::triggered, this, [this]{ gotoGamePage(); });
+
+    connect(messengerAction, &QAction::triggered, this, static_cast<void (BitcoinGUI::*)()>(&BitcoinGUI::showNormalIfMinimized));
+    connect(messengerAction, &QAction::triggered, this, [this]{ gotoMessengerPage(); });
+    connect(messengerAction, &QAction::triggered, this, static_cast<void (BitcoinGUI::*)()>(&BitcoinGUI::showNormalIfMinimized));
+    connect(messengerMenuAction, &QAction::triggered, this, [this]{ gotoMessengerPage(); });
 
     connect(receiveCoinsAction, &QAction::triggered, this, static_cast<void (BitcoinGUI::*)()>(&BitcoinGUI::showNormalIfMinimized));
     connect(receiveCoinsAction, &QAction::triggered, this, &BitcoinGUI::gotoReceiveCoinsPage);
@@ -454,6 +471,7 @@ void BitcoinGUI::createToolBars()
         toolbar->addAction(receiveCoinsAction);
         toolbar->addAction(dataAction);
         toolbar->addAction(gameAction);
+        toolbar->addAction(messengerAction);
         toolbar->addAction(historyAction);
         overviewAction->setChecked(true);
 
@@ -608,6 +626,8 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     dataMenuAction->setEnabled(enabled);
     gameAction->setEnabled(enabled);
     gameMenuAction->setEnabled(enabled);
+    messengerAction->setEnabled(enabled);
+    messengerMenuAction->setEnabled(enabled);
     receiveCoinsAction->setEnabled(enabled);
     receiveCoinsMenuAction->setEnabled(enabled);
     historyAction->setEnabled(enabled);
@@ -663,6 +683,7 @@ void BitcoinGUI::createTrayIconMenu()
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(dataAction);
     trayIconMenu->addAction(gameAction);
+    trayIconMenu->addAction(messengerAction);
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(signMessageAction);
     trayIconMenu->addAction(verifyMessageAction);
@@ -763,6 +784,12 @@ void BitcoinGUI::gotoGamePage()
 {
     gameAction->setChecked(true);
     if (walletFrame) walletFrame->gotoGamePage();
+}
+
+void BitcoinGUI::gotoMessengerPage()
+{
+    messengerAction->setChecked(true);
+    if (walletFrame) walletFrame->gotoMessengerPage();
 }
 
 void BitcoinGUI::gotoSignMessageTab(QString addr)

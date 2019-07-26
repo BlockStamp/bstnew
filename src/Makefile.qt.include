@@ -109,6 +109,7 @@ QT_FORMS_UI = \
   qt/forms/receiverequestdialog.ui \
   qt/forms/datapage.ui \
   qt/forms/gamepage.ui \
+  qt/forms/messengerpage.ui \
   qt/forms/debugwindow.ui \
   qt/forms/sendcoinsdialog.ui \
   qt/forms/sendcoinsentry.ui \
@@ -149,6 +150,7 @@ QT_MOC_CPP = \
   qt/moc_recentrequeststablemodel.cpp \
   qt/moc_datapage.cpp \
   qt/moc_gamepage.cpp \
+  qt/moc_messengerpage.cpp \
   qt/moc_gametxdialog.cpp \
   qt/moc_rpcconsole.cpp \
   qt/moc_sendcoinsdialog.cpp \
@@ -227,6 +229,7 @@ BITCOIN_QT_H = \
   qt/recentrequeststablemodel.h \
   qt/datapage.h \
   qt/gamepage.h \
+  qt/messengerpage.h \
   qt/rpcconsole.h \
   qt/sendcoinsdialog.h \
   qt/sendcoinsentry.h \
@@ -344,6 +347,7 @@ BITCOIN_QT_WALLET_CPP = \
   qt/coincontroltreewidget.cpp \
   qt/datapage.cpp \
   qt/gamepage.cpp \
+  qt/messengerpage.cpp \
   qt/gametxdialog.cpp \
   qt/editaddressdialog.cpp \
   qt/openuridialog.cpp \
