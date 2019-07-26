@@ -16,6 +16,7 @@ class ClientModel;
 class QPlainTextEdit;
 class PlatformStyle;
 class QButtonGroup;
+class CWalletTx;
 
 namespace Ui {
     class MessengerPage;
@@ -51,6 +52,8 @@ private:
     void updateFeeMinimizedLabel();
     void updateCoinControlState(CCoinControl& ctrl);
 
+    void fillUpTable(std::map<uint256, CWalletTx>& transactions);
+
     std::vector<unsigned char> getData();
 
 protected:
@@ -58,6 +61,7 @@ protected:
 
 public Q_SLOTS:
     void setBalance(const interfaces::WalletBalances& balances);
+    void on_tabChanged();
 
 private Q_SLOTS:
 

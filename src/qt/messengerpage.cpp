@@ -119,6 +119,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
+    connect(ui->tabWidget, SIGNAL(currentChanged(int)), this, SLOT(on_tabChanged()));
 }
 
 MessengerPage::~MessengerPage()
@@ -482,6 +483,18 @@ void MessengerPage::unlockWallet()
     }
 }
 
+void MessengerPage::on_tabChanged()
+{
+    ////TODO: just for test
+    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    CWallet* pwallet=nullptr;
+    if(wallet!=nullptr)
+    {
+        pwallet=wallet.get();
+        this->fillUpTable(pwallet->encrMsgMapWallet);
+    }
+}
+
 void MessengerPage::send()
 {
 #ifdef ENABLE_WALLET
@@ -590,4 +603,24 @@ std::vector<unsigned char> MessengerPage::getData()
         publicKey.c_str());
 
     return retData;
+}
+
+void MessengerPage::fillUpTable(std::map<uint256, CWalletTx> &transactions)
+{
+    ui->transactionTable->setRowCount(transactions.size());
+
+    int row = 0;
+    for (auto &it : transactions)
+    {
+        //TODO: use QDateTime instead
+        time_t t = it.second.nTimeReceived;
+        std::tm *ptm = std::localtime(&t);
+        char buffer[32];
+        std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
+
+        ui->transactionTable->setItem(row, 0, new QTableWidgetItem(buffer));
+        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(it.first.ToString().c_str()));
+        ++row;
+    }
+
 }
