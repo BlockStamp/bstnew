@@ -114,6 +114,7 @@ static std::string random_string( size_t length )
 
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx)
 {
+    std::cout << "CreateNewBlock called\n";
     int64_t nTimeStart = GetTimeMicros();
 
     resetBlock();

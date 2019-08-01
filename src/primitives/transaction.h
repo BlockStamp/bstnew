@@ -201,6 +201,11 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     s >> tx.nVersion;
+
+    if (s.GetType() & SER_DISK) {
+        s >> tx.fee;
+    }
+
     unsigned char flags = 0;
     tx.vin.clear();
     tx.vout.clear();
@@ -234,8 +239,12 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 template<typename Stream, typename TxType>
 inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
-
     s << tx.nVersion;
+
+    if (s.GetType() & SER_DISK) {
+        s << tx.fee;
+    }
+
     unsigned char flags = 0;
     // Consistency check
     if (fAllowWitness) {
@@ -252,6 +261,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     }
     s << tx.vin;
     s << tx.vout;
+
     if (flags & 1) {
         for (size_t i = 0; i < tx.vin.size(); i++) {
             s << tx.vin[i].scriptWitness.stack;
@@ -259,7 +269,6 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     }
     s << tx.nLockTime;
 }
-
 
 /** The basic transaction that is broadcasted on the network and contained in
  * blocks.  A transaction can contain multiple inputs and outputs.
@@ -284,6 +293,9 @@ public:
     // structure, including the hash.
     const std::vector<CTxIn> vin;
     const std::vector<CTxOut> vout;
+
+    CAmount fee{};
+
     const int32_t nVersion;
     const uint32_t nLockTime;
 
@@ -380,6 +392,9 @@ struct CMutableTransaction
 {
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
+
+    CAmount fee{};
+
     int32_t nVersion;
     uint32_t nLockTime;
 
