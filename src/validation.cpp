@@ -700,6 +700,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
 
         CAmount nFees = 0;
+        std::cout << "Calling CheckTxInputs from AcceptToMemoryPoolWorker\n";
         if (!Consensus::CheckTxInputs(tx, state, view, GetSpendHeight(view), SCRIPT_VERIFY_NAMES_MEMPOOL, nFees)) {
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
@@ -1814,7 +1815,14 @@ static void updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockI
         const CTransaction& tx = *(blockInMemory.vtx[i]);
         CTransaction& txOnDisk = const_cast<CTransaction&>(*(blockOnDisk.vtx[i]));
         assert(tx.GetHash() == txOnDisk.GetHash());
-        assert(txOnDisk.fee == 0);
+
+        if (txOnDisk.fee != 0) {
+            std::cout << "!!!!!!!!!txOnDisk.fee == " << txOnDisk.fee << std::endl;
+        }
+        else {
+            std::cout << "txOnDisk.fee == 0\n";
+        }
+
         txOnDisk.fee = tx.fee;
         std::cout << "SET tx fee to " << txOnDisk.fee << " for tx " << txOnDisk.GetHash().ToString() << std::endl;
     }
@@ -2039,6 +2047,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         if (!tx.IsCoinBase() && !modulo::ver_2::isGetBetTx(tx))
         {
             CAmount txfee = 0;
+            std::cout << "Calling CheckTxInputs from ConnectBlock\n";
             if (!Consensus::CheckTxInputs(tx, state, view, pindex->nHeight, flags, txfee)) {
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
