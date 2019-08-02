@@ -136,7 +136,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
         if(txDetails)
         {
             UniValue objTx(UniValue::VOBJ);
-            TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags());
+            TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(), true);
             txs.push_back(objTx);
         }
         else
