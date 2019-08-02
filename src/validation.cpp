@@ -1068,7 +1068,6 @@ bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus
 
 static bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart)
 {
-    std::cout << "WriteBlockToDisk, nFile: " << pos.nFile << ", nFile: " << pos.nFile << std::endl;
     // Open history file to append
     CAutoFile fileout(OpenBlockFile(pos), SER_DISK, CLIENT_VERSION);
     if (fileout.IsNull())
@@ -1794,20 +1793,19 @@ static int64_t nBlocksTotal = 0;
 
 
 static void updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
+
     CDiskBlockPos position = pindex->GetBlockPos();
     if (position.IsNull()) { // block is not on disk
         std::cout << "Position is null\n";
         return;
     }
 
-    std::cout << "Position is not null, nfile: " << position.nFile << ", nPos: " << position.nPos << std::endl;
-
     CBlock blockOnDisk;
     auto result = ReadBlockFromDisk(blockOnDisk, pindex, chainparams.GetConsensus());
     if (!result) {
         std::cout << "Failed to read block\n";
     }
-    std::cout << "Read block " << blockOnDisk.ToString() << std::endl;
+
     assert(!blockOnDisk.IsNull());
     assert(blockOnDisk.vtx.size() == blockInMemory.vtx.size());
 
@@ -1815,16 +1813,7 @@ static void updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockI
         const CTransaction& tx = *(blockInMemory.vtx[i]);
         CTransaction& txOnDisk = const_cast<CTransaction&>(*(blockOnDisk.vtx[i]));
         assert(tx.GetHash() == txOnDisk.GetHash());
-
-        if (txOnDisk.fee != 0) {
-            std::cout << "!!!!!!!!!txOnDisk.fee == " << txOnDisk.fee << std::endl;
-        }
-        else {
-            std::cout << "txOnDisk.fee == 0\n";
-        }
-
         txOnDisk.fee = tx.fee;
-        std::cout << "SET tx fee to " << txOnDisk.fee << " for tx " << txOnDisk.GetHash().ToString() << std::endl;
     }
 
     position.nPos-=8;
@@ -1832,7 +1821,6 @@ static void updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockI
     if (!write) {
         std::cout << "\n\n\n\nFAILED TO WRITE: " << blockOnDisk.GetHash().ToString() << "\n\n\n\n";
     }
-    std::cout << "wrtiting block to disk to nPos " << position.nPos << ", nFile: " << position.nFile << std::endl;
 }
 
 
@@ -2072,8 +2060,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
         }
 
-        updateTxFeesOnDiskIfNeeded(pindex, block, chainparams);
-
         // GetTransactionSigOpCost counts 3 types of sigops:
         // * legacy (always)
         // * p2sh (when P2SH enabled in flags and excludes coinbase)
@@ -2108,6 +2094,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             ApplyNameTransaction(tx, pindex->nHeight, view, blockundo);
         }
     }
+
+    updateTxFeesOnDiskIfNeeded(pindex, block, chainparams);
 
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
@@ -2534,7 +2522,6 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
         pthisBlock = pblock;
     }
     const CBlock& blockConnecting = *pthisBlock;
-
     // Apply the block atomically to the chain state.
     std::set<valtype> expiredNames;
     int64_t nTime2 = GetTimeMicros(); nTimeReadFromDisk += nTime2 - nTime1;
@@ -2655,6 +2642,7 @@ void CChainState::PruneBlockIndexCandidates() {
 bool CChainState::ActivateBestChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace)
 {
     AssertLockHeld(cs_main);
+
     const CBlockIndex *pindexOldTip = chainActive.Tip();
     const CBlockIndex *pindexFork = chainActive.FindFork(pindexMostWork);
 
@@ -3622,7 +3610,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
 }
 
 /** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */
-CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CChainParams& chainparams, const CDiskBlockPos* dbp) {
+static CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CChainParams& chainparams, const CDiskBlockPos* dbp) {
     std::cout << "SaveBlockToDisk, block: " << block.GetHash().ToString() << std::endl;
 
     unsigned int nBlockSize = ::GetSerializeSizeForDisk(block, CLIENT_VERSION);
@@ -3759,7 +3747,6 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
 
 bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW, bool fCheckMerkleRoot)
 {
-    std::cout << "TestBlockValidity " << block.GetHash().ToString() << std::endl;
     AssertLockHeld(cs_main);
     assert(pindexPrev && pindexPrev == chainActive.Tip());
     std::set<valtype> namesDummy;
