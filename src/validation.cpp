@@ -1791,6 +1791,43 @@ static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 static int64_t nBlocksTotal = 0;
 
+
+static void updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
+    CDiskBlockPos position = pindex->GetBlockPos();
+    if (position.IsNull()) { // block is not on disk
+        std::cout << "Position is null\n";
+        return;
+    }
+
+    std::cout << "Position is not null, nfile: " << position.nFile << ", nPos: " << position.nPos << std::endl;
+
+    CBlock blockOnDisk;
+    auto result = ReadBlockFromDisk(blockOnDisk, pindex, chainparams.GetConsensus());
+    if (!result) {
+        std::cout << "Failed to read block\n";
+    }
+    std::cout << "Read block " << blockOnDisk.ToString() << std::endl;
+    assert(!blockOnDisk.IsNull());
+    assert(blockOnDisk.vtx.size() == blockInMemory.vtx.size());
+
+    for (unsigned int i=0; i<blockInMemory.vtx.size(); i++) {
+        const CTransaction& tx = *(blockInMemory.vtx[i]);
+        CTransaction& txOnDisk = const_cast<CTransaction&>(*(blockOnDisk.vtx[i]));
+        assert(tx.GetHash() == txOnDisk.GetHash());
+        assert(txOnDisk.fee == 0);
+        txOnDisk.fee = tx.fee;
+        std::cout << "SET tx fee to " << txOnDisk.fee << " for tx " << txOnDisk.GetHash().ToString() << std::endl;
+    }
+
+    position.nPos-=8;
+    bool write = WriteBlockToDisk(blockOnDisk, position, chainparams.MessageStart());
+    if (!write) {
+        std::cout << "\n\n\n\nFAILED TO WRITE: " << blockOnDisk.GetHash().ToString() << "\n\n\n\n";
+    }
+    std::cout << "wrtiting block to disk to nPos " << position.nPos << ", nFile: " << position.nFile << std::endl;
+}
+
+
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
  *  can fail if those validity checks fail (among other reasons). */
@@ -1992,24 +2029,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
 
-
-    std::cout << "Reading block on disk";
-    CBlock blockOnDisk;
-    CDiskBlockPos position = pindex->GetBlockPos();
-    if (!position.IsNull()) {
-        std::cout << "Position is not null, nfile: " << position.nFile << ", nPos: " << position.nPos << std::endl;
-        auto result = ReadBlockFromDisk(blockOnDisk, pindex, chainparams.GetConsensus());
-        if (!result) {
-            std::cout << "Failed to read block\n";
-        }
-        std::cout << "Read block " << blockOnDisk.ToString() << std::endl;
-    }
-    else {
-        std::cout << "Position is null\n";
-    }
-
-
-
     std::cout << "Checking inputs: \n";
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
@@ -2022,16 +2041,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             CAmount txfee = 0;
             if (!Consensus::CheckTxInputs(tx, state, view, pindex->nHeight, flags, txfee)) {
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
-            }
-
-            std::cout << "\t" << tx.GetHash().ToString() << ", tx.fee: " << tx.fee << ", txfee: " << txfee << std::endl;
-
-            if (!position.IsNull()) {
-                assert(!blockOnDisk.IsNull());
-                CTransaction &txOnDisk = const_cast<CTransaction&>(*(blockOnDisk.vtx[i]));
-                assert(txOnDisk.GetHash() == tx.GetHash());
-                assert(txOnDisk.fee == 0);
-                txOnDisk.fee = txfee;
             }
 
             nFees += txfee;
@@ -2054,15 +2063,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
         }
 
-        position.nPos-=8;
-        if (!position.IsNull()) {
-            bool write = WriteBlockToDisk(blockOnDisk, position, chainparams.MessageStart());
-            if (!write) {
-                std::cout << "\n\n\n\nFAILED TO WRITE: " << blockOnDisk.GetHash().ToString() << "\n\n\n\n";
-            }
-            std::cout << "wrtiting block to disk to nPos " << position.nPos << ", nFile: " << position.nFile << std::endl;
-        }
-
+        updateTxFeesOnDiskIfNeeded(pindex, block, chainparams);
 
         // GetTransactionSigOpCost counts 3 types of sigops:
         // * legacy (always)
@@ -2098,6 +2099,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             ApplyNameTransaction(tx, pindex->nHeight, view, blockundo);
         }
     }
+
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 

@@ -303,6 +303,8 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         }
 
         txfee = txfee_aux;
+        assert(tx.fee == 0);
+        tx.fee = txfee_aux;
         return true;
     }
 
