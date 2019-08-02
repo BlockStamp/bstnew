@@ -1067,6 +1067,7 @@ bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus
 
 static bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart)
 {
+    std::cout << "WriteBlockToDisk, nFile: " << pos.nFile << ", nFile: " << pos.nFile << std::endl;
     // Open history file to append
     CAutoFile fileout(OpenBlockFile(pos), SER_DISK, CLIENT_VERSION);
     if (fileout.IsNull())
@@ -1126,6 +1127,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
     if (!ReadBlockFromDisk(block, blockPos, consensusParams))
         return false;
+
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
@@ -1990,6 +1992,24 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
 
+
+    std::cout << "Reading block on disk";
+    CBlock blockOnDisk;
+    CDiskBlockPos position = pindex->GetBlockPos();
+    if (!position.IsNull()) {
+        std::cout << "Position is not null, nfile: " << position.nFile << ", nPos: " << position.nPos << std::endl;
+        auto result = ReadBlockFromDisk(blockOnDisk, pindex, chainparams.GetConsensus());
+        if (!result) {
+            std::cout << "Failed to read block\n";
+        }
+        std::cout << "Read block " << blockOnDisk.ToString() << std::endl;
+    }
+    else {
+        std::cout << "Position is null\n";
+    }
+
+
+
     std::cout << "Checking inputs: \n";
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
@@ -2005,7 +2025,14 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
 
             std::cout << "\t" << tx.GetHash().ToString() << ", tx.fee: " << tx.fee << ", txfee: " << txfee << std::endl;
-//            assert(tx.fee == txfee);
+
+            if (!position.IsNull()) {
+                assert(!blockOnDisk.IsNull());
+                CTransaction &txOnDisk = const_cast<CTransaction&>(*(blockOnDisk.vtx[i]));
+                assert(txOnDisk.GetHash() == tx.GetHash());
+                assert(txOnDisk.fee == 0);
+                txOnDisk.fee = txfee;
+            }
 
             nFees += txfee;
             if (!MoneyRange(nFees)) {
@@ -2026,6 +2053,16 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                                  REJECT_INVALID, "bad-txns-nonfinal");
             }
         }
+
+        position.nPos-=8;
+        if (!position.IsNull()) {
+            bool write = WriteBlockToDisk(blockOnDisk, position, chainparams.MessageStart());
+            if (!write) {
+                std::cout << "\n\n\n\nFAILED TO WRITE: " << blockOnDisk.GetHash().ToString() << "\n\n\n\n";
+            }
+            std::cout << "wrtiting block to disk to nPos " << position.nPos << ", nFile: " << position.nFile << std::endl;
+        }
+
 
         // GetTransactionSigOpCost counts 3 types of sigops:
         // * legacy (always)
@@ -2476,6 +2513,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     // Read block from disk.
     int64_t nTime1 = GetTimeMicros();
     std::shared_ptr<const CBlock> pthisBlock;
+
     if (!pblock) {
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus()))
@@ -2485,6 +2523,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
         pthisBlock = pblock;
     }
     const CBlock& blockConnecting = *pthisBlock;
+
     // Apply the block atomically to the chain state.
     std::set<valtype> expiredNames;
     int64_t nTime2 = GetTimeMicros(); nTimeReadFromDisk += nTime2 - nTime1;
@@ -3571,50 +3610,9 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
     return true;
 }
 
-void updateTxFees(CBlock& block) {
-    const CChainParams& chainparams = Params();
-    if (block.GetHash() == chainparams.GetConsensus().hashGenesisBlock) {
-        return;
-    }
-
-    CCoinsViewCache inputs(pcoinsTip.get());
-
-    for (unsigned int i = 0; i < block.vtx.size(); i++)
-    {
-        CTransaction &tx = const_cast<CTransaction&>(*(block.vtx[i]));
-        if (tx.IsCoinBase() || modulo::ver_2::isGetBetTx(tx)) {
-            continue;
-        }
-
-        if (!inputs.HaveInputs(tx)) {
-            std::cout << "NO INPUTS!!!\n";
-            throw std::runtime_error("No INPUTS!!!");
-        }
-
-        CAmount nValueIn = 0;
-        for (unsigned int i = 0; i < tx.vin.size(); ++i) {
-            const COutPoint &prevout = tx.vin[i].prevout;
-            const Coin& coin = inputs.AccessCoin(prevout);
-            assert(!coin.IsSpent());
-
-//            if (coin.IsCoinBase() && nSpendHeight - coin.nHeight < COINBASE_MATURITY) {
-//                std::cout << "PREMATURE COIN!!!\n";
-//                throw std::runtime_error("PREMATURE COIN!!!");
-//            }
-
-            nValueIn += coin.out.nValue;
-        }
-
-        const CAmount value_out = tx.GetValueOut();
-        tx.fee = nValueIn - value_out;
-        std::cout << "Set " << tx.fee << " as fee for tx " << tx.GetHash().ToString() << std::endl;
-    }
-}
-
 /** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */
 CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CChainParams& chainparams, const CDiskBlockPos* dbp) {
-    std::cout << "SaveBlockToDisk, block: " << block.GetHash().ToString() << ", nHeight: " << nHeight << ", dpb: " << dbp << std::endl;
-    updateTxFees(const_cast<CBlock&>(block));
+    std::cout << "SaveBlockToDisk, block: " << block.GetHash().ToString() << std::endl;
 
     unsigned int nBlockSize = ::GetSerializeSizeForDisk(block, CLIENT_VERSION);
     CDiskBlockPos blockPos;
