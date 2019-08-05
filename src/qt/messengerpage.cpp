@@ -39,6 +39,7 @@
 #include <data/retrievedatatxs.h>
 
 #include <messages/message_encryption.h>
+#include <rpc/util.h>
 
 #include <QSettings>
 #include <QButtonGroup>
@@ -118,8 +119,12 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->checkBoxMinimumFee->setChecked(settings.value("fPayOnlyMinFee").toBool());
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
 
+    ui->transactionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->messageViewEdit->setReadOnly(true);
+
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
     connect(ui->tabWidget, SIGNAL(currentChanged(int)), this, SLOT(on_tabChanged()));
+    connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
 }
 
 MessengerPage::~MessengerPage()
@@ -493,6 +498,59 @@ void MessengerPage::on_tabChanged()
         pwallet=wallet.get();
         this->fillUpTable(pwallet->encrMsgMapWallet);
     }
+}
+
+void MessengerPage::on_transactionsTableCellSelected(int row, int col)
+{
+    QTableWidgetItem* item = ui->transactionTable->item(row, 1);
+    QString txnId = item->text();
+    read(txnId.toUtf8().constData());
+}
+
+void MessengerPage::read(const std::string& txnId)
+{
+#ifdef ENABLE_WALLET
+    if (walletModel)
+    {
+        try
+        {
+            interfaces::Wallet& wlt = walletModel->wallet();
+            std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
+            CWallet* pwallet = nullptr;
+            if (wallet != nullptr)
+            {
+                pwallet = wallet.get();
+            }
+
+            std::string privateRsaKey;
+            WalletDatabase& dbh = pwallet->GetMsgDBHandle();
+            WalletBatch batch(dbh);
+            batch.ReadPrivateKey(privateRsaKey);
+
+            RetrieveDataTxs retrieveDataTxs(txnId, pwallet);
+            std::vector<char> OPreturnData = retrieveDataTxs.getTxData();
+
+            std::vector<unsigned char> decryptedData = createDecryptedMessage(
+                        reinterpret_cast<unsigned char*>(OPreturnData.data()),
+                        OPreturnData.size(),
+                        privateRsaKey.c_str());
+
+            ui->messageViewEdit->setPlainText(std::string(decryptedData.begin(), decryptedData.end()).c_str());
+        }
+        catch(std::exception const& e)
+        {
+            QMessageBox msgBox;
+            msgBox.setText(e.what());
+            msgBox.exec();
+        }
+        catch(...)
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Unknown exception occured");
+            msgBox.exec();
+        }
+    }
+#endif
 }
 
 void MessengerPage::send()

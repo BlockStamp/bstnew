@@ -66,6 +66,7 @@ public Q_SLOTS:
 private Q_SLOTS:
 
     void send();
+    void read(const std::string& txnId);
 
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();
@@ -86,6 +87,8 @@ private Q_SLOTS:
     void coinControlClipboardBytes();
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
+
+    void on_transactionsTableCellSelected(int row, int col);
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H
