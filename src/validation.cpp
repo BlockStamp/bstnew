@@ -700,7 +700,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
 
         CAmount nFees = 0;
-        std::cout << "Calling CheckTxInputs from AcceptToMemoryPoolWorker\n";
         if (!Consensus::CheckTxInputs(tx, state, view, GetSpendHeight(view), SCRIPT_VERIFY_NAMES_MEMPOOL, nFees)) {
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
@@ -1065,6 +1064,15 @@ bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus
 //
 // CBlock and CBlockIndex
 //
+
+static bool WriteBlockToDiskWithoutHeader(const CBlock& block, CDiskBlockPos& pos) {
+    CAutoFile fileout(OpenBlockFile(pos), SER_DISK, CLIENT_VERSION);
+    if (fileout.IsNull())
+        return error("WriteBlockToDiskWithoutHeader: OpenBlockFile failed");
+
+    fileout << block;
+    return true;
+}
 
 static bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart)
 {
@@ -1792,18 +1800,15 @@ static int64_t nTimeTotal = 0;
 static int64_t nBlocksTotal = 0;
 
 
-static void updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
-
+static bool updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
     CDiskBlockPos position = pindex->GetBlockPos();
     if (position.IsNull()) { // block is not on disk
-        std::cout << "Position is null\n";
-        return;
+        return true;
     }
 
     CBlock blockOnDisk;
-    auto result = ReadBlockFromDisk(blockOnDisk, pindex, chainparams.GetConsensus());
-    if (!result) {
-        std::cout << "Failed to read block\n";
+    if (!ReadBlockFromDisk(blockOnDisk, pindex, chainparams.GetConsensus())) {
+        return false;
     }
 
     assert(!blockOnDisk.IsNull());
@@ -1816,11 +1821,7 @@ static void updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockI
         txOnDisk.fee = tx.fee;
     }
 
-    position.nPos-=8;
-    bool write = WriteBlockToDisk(blockOnDisk, position, chainparams.MessageStart());
-    if (!write) {
-        std::cout << "\n\n\n\nFAILED TO WRITE: " << blockOnDisk.GetHash().ToString() << "\n\n\n\n";
-    }
+    return WriteBlockToDiskWithoutHeader(blockOnDisk, position);
 }
 
 
@@ -1836,8 +1837,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     assert(pindex);
     assert(*pindex->phashBlock == block.GetHash());
     int64_t nTimeStart = GetTimeMicros();
-
-    std::cout << "CChainState::ConnectBlock " << block.GetHash().ToString() << std::endl;
 
     // Check it again in case a previous version let a bad block in
     // NOTE: We don't currently (re-)invoke ContextualCheckBlock() or
@@ -2025,22 +2024,21 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
 
-    std::cout << "Checking inputs: \n";
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
-        const CTransaction &tx = *(block.vtx[i]);
+        CTransaction& tx = const_cast<CTransaction&>(*(block.vtx[i]));
 
         nInputs += tx.vin.size();
 
         if (!tx.IsCoinBase() && !modulo::ver_2::isGetBetTx(tx))
         {
             CAmount txfee = 0;
-            std::cout << "Calling CheckTxInputs from ConnectBlock\n";
             if (!Consensus::CheckTxInputs(tx, state, view, pindex->nHeight, flags, txfee)) {
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
 
             nFees += txfee;
+            tx.fee = txfee;
             if (!MoneyRange(nFees)) {
                 return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
@@ -2095,7 +2093,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         }
     }
 
-    updateTxFeesOnDiskIfNeeded(pindex, block, chainparams);
+    if (!updateTxFeesOnDiskIfNeeded(pindex, block, chainparams)) {
+        return error("ConnectBlock(): Failed to update tx fees on disk");
+    }
 
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
@@ -3611,8 +3611,6 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
 
 /** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */
 static CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CChainParams& chainparams, const CDiskBlockPos* dbp) {
-    std::cout << "SaveBlockToDisk, block: " << block.GetHash().ToString() << std::endl;
-
     unsigned int nBlockSize = ::GetSerializeSizeForDisk(block, CLIENT_VERSION);
     CDiskBlockPos blockPos;
     if (dbp != nullptr)
@@ -3713,9 +3711,6 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
     AssertLockNotHeld(cs_main);
-
-    std::cout << "ProcessNewBlock\n";
-
     {
         CBlockIndex *pindex = nullptr;
         if (fNewBlock) *fNewBlock = false;
