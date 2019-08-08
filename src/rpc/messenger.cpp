@@ -106,7 +106,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
                          "-----END PUBLIC KEY-----\"")
     );
 
-    std::string msg=request.params[0].get_str();
+    std::string msg=MSG_RECOGNIZE_TAG + request.params[0].get_str();
 
     if(msg.length()>maxDataSize)
     {

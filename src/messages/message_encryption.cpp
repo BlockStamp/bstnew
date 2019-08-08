@@ -212,7 +212,14 @@ std::vector<unsigned char> decryptData(
     totalLength += len;
 
     decryptedData.resize(totalLength);
-    //TODO: Add some check to know if decryption was successful
+
+    std::string recognizeTag(decryptedData.begin(), decryptedData.begin()+MSG_RECOGNIZE_TAG.length());
+    if (recognizeTag.compare(MSG_RECOGNIZE_TAG) != 0) {
+        throw std::runtime_error("Failed to decrypt message");
+    }
+
+    decryptedData.erase(decryptedData.begin(), decryptedData.begin()+MSG_RECOGNIZE_TAG.length());
+
     return decryptedData;
 }
 

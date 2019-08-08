@@ -644,7 +644,7 @@ void MessengerPage::send()
 
 std::vector<unsigned char> MessengerPage::getData()
 {
-    std::string msg = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+    std::string msg = MSG_RECOGNIZE_TAG + ui->messageStoreEdit->toPlainText().toUtf8().constData();
     if (msg.length()>maxDataSize)
     {
         throw std::runtime_error(strprintf("Data size is grater than %d bytes", maxDataSize));
