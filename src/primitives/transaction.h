@@ -11,6 +11,7 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <util.h>
 
 constexpr int32_t MAKE_MODULO_GAME_INDICATOR=0x40000000;
 constexpr int32_t MAKE_MODULO_NEW_GAME_INDICATOR=0x20000000;
@@ -202,7 +203,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 
     s >> tx.nVersion;
 
-    if (s.GetType() & SER_DISK) {
+    if (gArgs.IsArgSet("-txfee") && (s.GetType() & SER_DISK)) {
         s >> tx.fee;
     }
 
@@ -241,7 +242,8 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
     s << tx.nVersion;
 
-    if (s.GetType() & SER_DISK) {
+    /* Include fee if node started with -txfee flag and the stream saves to disk */
+    if (gArgs.IsArgSet("-txfee") &&  (s.GetType() & SER_DISK)) {
         s << tx.fee;
     }
 

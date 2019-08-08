@@ -1801,6 +1801,10 @@ static int64_t nBlocksTotal = 0;
 
 
 static bool updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
+    if (!gArgs.IsArgSet("-txfee")) {
+        return true;
+    }
+
     CDiskBlockPos position = pindex->GetBlockPos();
     if (position.IsNull()) { // block is not on disk
         return true;
@@ -2038,7 +2042,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
 
             nFees += txfee;
-            tx.fee = txfee;
+            tx.fee = gArgs.IsArgSet("-txfee") ? txfee : 0;
+
             if (!MoneyRange(nFees)) {
                 return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
