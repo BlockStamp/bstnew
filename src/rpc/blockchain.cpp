@@ -33,6 +33,7 @@
 #include <hash.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <games/modulo/moduloverify.h>
 
 #include <assert.h>
 #include <stdint.h>
@@ -1854,7 +1855,7 @@ static UniValue getblockstats(const JSONRPCRequest& request)
             }
         }
 
-        if (tx->IsCoinBase()) {
+        if (tx->IsCoinBase() || modulo::ver_2::isGetBetTx(*tx)) {
             continue;
         }
 
