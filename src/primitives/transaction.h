@@ -203,6 +203,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 
     s >> tx.nVersion;
 
+    /* Include fee if node started with -txfee flag and the stream saves to disk */
     if (gArgs.IsArgSet("-txfee") && (s.GetType() & SER_DISK)) {
         s >> tx.fee;
     }
