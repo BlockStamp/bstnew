@@ -516,24 +516,33 @@ void MessengerPage::read(const std::string& txnId)
         {
             interfaces::Wallet& wlt = walletModel->wallet();
             std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
-            CWallet* pwallet = nullptr;
-            if (wallet != nullptr)
-            {
-                pwallet = wallet.get();
+
+            if (wallet == nullptr) {
+                throw std::runtime_error("Wallet " + wlt.getWalletName() + " unavailabel");
             }
 
+            wallet->BlockUntilSyncedToCurrentChain();
+            LOCK2(cs_main, wallet->cs_wallet);
+
             std::string privateRsaKey;
-            WalletDatabase& dbh = pwallet->GetMsgDBHandle();
+            WalletDatabase& dbh = wallet->GetMsgDBHandle();
             WalletBatch batch(dbh);
             batch.ReadPrivateKey(privateRsaKey);
 
-            RetrieveDataTxs retrieveDataTxs(txnId, pwallet);
-            std::vector<char> OPreturnData = retrieveDataTxs.getTxData();
+            const uint256 hash = uint256S(txnId);
+            auto it = wallet->encrMsgMapWallet.find(hash);
+            if (it == wallet->encrMsgMapWallet.end()) {
+                throw std::runtime_error("Message not found");
+            }
+
+            std::vector<char> OPreturnData;
+            const CWalletTx& wtx = it->second;
+            wtx.tx->loadOpReturn(OPreturnData);
 
             std::vector<unsigned char> decryptedData = createDecryptedMessage(
-                        reinterpret_cast<unsigned char*>(OPreturnData.data()),
-                        OPreturnData.size(),
-                        privateRsaKey.c_str());
+                reinterpret_cast<unsigned char*>(OPreturnData.data()),
+                OPreturnData.size(),
+                privateRsaKey.c_str());
 
             ui->messageViewEdit->setPlainText(std::string(decryptedData.begin(), decryptedData.end()).c_str());
         }
@@ -556,7 +565,7 @@ void MessengerPage::read(const std::string& txnId)
 void MessengerPage::send()
 {
 #ifdef ENABLE_WALLET
-    if(walletModel)
+    if (walletModel)
     {
         try
         {
