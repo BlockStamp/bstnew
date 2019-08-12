@@ -8,6 +8,10 @@
 #include <cstring>
 #include <memory>
 
+const int ENCR_MARKER_SIZE = 8;
+const std::string ENCR_MARKER = "MESSAGE:";
+const std::string MSG_RECOGNIZE_TAG = "MSG"; //< message prefix to recognize after decode
+
 namespace {
 using EVP_CIPHER_CTX_free_ptr = std::unique_ptr<EVP_CIPHER_CTX, decltype(&::EVP_CIPHER_CTX_free)>;
 
@@ -31,28 +35,6 @@ void generateRandomIv(unsigned char* iv)
         throw std::runtime_error("Could not create random iv for message encryption");
     }
 }
-
-//std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
-//    const unsigned char* data,
-//    std::size_t dataLength,
-//    unsigned char* key,
-//    unsigned char* iv)
-//{
-//    AES_KEY encKey;
-//    const int result = AES_set_encrypt_key(key, AES_256_KEY_LENGTH, &encKey);
-//    if (result != 0) {
-//        throw std::runtime_error("Failed to set key for encryption");
-//    }
-
-//    unsigned char mixedIv[AES_256_IV_LENGTH_BYTES];
-//    memcpy(mixedIv, iv, AES_256_IV_LENGTH_BYTES);
-
-//    const size_t encryptedSize = dataLength + AES_BLOCK_SIZE - (dataLength % AES_BLOCK_SIZE);
-//    std::unique_ptr<unsigned char[]> encryptedData(new unsigned char[encryptedSize]);
-//    AES_cbc_encrypt(data, encryptedData.get(), dataLength, &encKey, mixedIv, AES_ENCRYPT);
-
-//    return std::make_pair(std::move(encryptedData), encryptedSize);
-//}
 
 std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
     const unsigned char* data,
