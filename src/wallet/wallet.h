@@ -24,6 +24,10 @@
 #include <wallet/rpcwallet.h>
 #include <wallet/walletutil.h>
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+
 #include <algorithm>
 #include <atomic>
 #include <map>
@@ -585,6 +589,36 @@ struct CoinSelectionParams
     CoinSelectionParams() {}
 };
 
+struct TransactionItem
+{
+    uint256 hash;
+    CWalletTx wlt;
+    unsigned int ttime;
+
+    TransactionItem(uint256 _hash, CWalletTx _wlt) : hash(_hash), wlt(_wlt), ttime(_wlt.nTimeReceived){};
+};
+
+// tag names
+struct ti_hash{};
+struct ti_time{};
+
+typedef boost::multi_index_container<
+    TransactionItem,
+    boost::multi_index::indexed_by<
+        // sorted by hash
+        boost::multi_index::ordered_unique<
+            boost::multi_index::tag<ti_hash>,
+            BOOST_MULTI_INDEX_MEMBER(TransactionItem, uint256, hash)
+        >,
+        // sorted by time
+        boost::multi_index::ordered_non_unique<
+            boost::multi_index::tag<ti_time>,
+            BOOST_MULTI_INDEX_MEMBER(TransactionItem, unsigned int, ttime)
+        >
+    >
+> TransactionsMap;
+
+
 class WalletRescanReserver; //forward declarations for ScanForWalletTransactions/RescanFromTime
 /**
  * A CWallet is an extension of a keystore, which also maintains a set of transactions and balances,
@@ -761,7 +795,8 @@ public:
     }
 
     std::map<uint256, CWalletTx> mapWallet;
-    std::map<uint256, CWalletTx> encrMsgMapWallet;
+    TransactionsMap encrMsgMapWallet;
+
 
     typedef std::multimap<int64_t, CWalletTx*> TxItems;
     TxItems wtxOrdered;
@@ -880,10 +915,10 @@ public:
 
     void MarkDirty();
     void AddEncrMsgToWalletIfNeeded(const CTransactionRef &ptx);
-    void AddEncrMsgToWallet(const CWalletTx& wtxIn, WalletBatch& batch);
+    void AddEncrMsgToWallet(CWalletTx& wtxIn, WalletBatch& batch);
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn);
-    void LoadEncrMsgToWallet(const CWalletTx& wtxIn);
+    void LoadEncrMsgToWallet(CWalletTx& wtxIn);
     void TransactionAddedToMempool(const CTransactionRef& tx) override;
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindex, const std::vector<CTransactionRef>& vtxConflicted, const std::vector<CTransactionRef>& vNameConflicts) override;
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindexDelete, const std::vector<CTransactionRef>& vNameConflicts) override;

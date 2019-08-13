@@ -11,6 +11,8 @@
 #include <QWidget>
 #include <univalue.h>
 
+#include <wallet/wallet.h>
+
 class WalletModel;
 class ClientModel;
 class QPlainTextEdit;
@@ -20,6 +22,16 @@ class CWalletTx;
 
 namespace Ui {
     class MessengerPage;
+
+}
+
+namespace
+{
+    enum TabName
+    {
+        TAB_SEND = 0,
+        TAB_READ = 1
+    };
 }
 
 QT_BEGIN_NAMESPACE
@@ -52,7 +64,7 @@ private:
     void updateFeeMinimizedLabel();
     void updateCoinControlState(CCoinControl& ctrl);
 
-    void fillUpTable(std::map<uint256, CWalletTx>& transactions);
+    void fillUpTable(TransactionsMap &transactions);
 
     std::vector<unsigned char> getData();
 
@@ -61,7 +73,7 @@ protected:
 
 public Q_SLOTS:
     void setBalance(const interfaces::WalletBalances& balances);
-    void on_tabChanged();
+    void on_tabChanged(int tab);
 
 private Q_SLOTS:
 

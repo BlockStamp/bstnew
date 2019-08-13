@@ -959,20 +959,21 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
     }
 }
 
-void CWallet::LoadEncrMsgToWallet(const CWalletTx& wtxIn)
+void CWallet::LoadEncrMsgToWallet(CWalletTx& wtxIn)
 {
     uint256 hash = wtxIn.GetHash();
     encrMsgMapWallet.emplace(hash, wtxIn);
 }
 
-void CWallet::AddEncrMsgToWallet(const CWalletTx& wtxIn, WalletBatch& batch) {
+void CWallet::AddEncrMsgToWallet(CWalletTx& wtxIn, WalletBatch& batch) {
     uint256 hash = wtxIn.GetHash();
-    std::pair<std::map<uint256, CWalletTx>::iterator, bool> ret = encrMsgMapWallet.insert(std::make_pair(hash, wtxIn));
-    CWalletTx& wtx = (*ret.first).second;
+    std::pair<TransactionsMap::iterator, bool> ret = encrMsgMapWallet.insert(TransactionItem(hash, wtxIn));
+
+    CWalletTx& wtx = const_cast<CWalletTx&>(ret.first->wlt);
 
     bool fInsertedNew = ret.second;
     if (fInsertedNew) {
-        wtx.nTimeReceived = GetAdjustedTime();
+        encrMsgMapWallet.modify(ret.first, [](TransactionItem& item){ item.wlt.nTimeReceived = item.ttime = GetAdjustedTime(); });
     }
 
     bool fUpdated = false;
@@ -1307,8 +1308,8 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
     std::cout << std::endl;
 
     std::cout << "Prining encrMsgMapWallet txs:\n";
-    for (const auto& it : encrMsgMapWallet) {
-        std::cout << it.first.ToString() << std::endl;
+    for (auto it : encrMsgMapWallet) {
+        std::cout << it.hash.ToString() << std::endl;
     }
     std::cout << std::endl;
 

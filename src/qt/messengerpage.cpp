@@ -123,7 +123,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->messageViewEdit->setReadOnly(true);
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
-    connect(ui->tabWidget, SIGNAL(currentChanged(int)), this, SLOT(on_tabChanged()));
+    connect(ui->tabWidget, SIGNAL(currentChanged(int)), this, SLOT(on_tabChanged(int)));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
 }
 
@@ -488,15 +488,18 @@ void MessengerPage::unlockWallet()
     }
 }
 
-void MessengerPage::on_tabChanged()
+void MessengerPage::on_tabChanged(int tab)
 {
-    ////TODO: just for test
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
-    CWallet* pwallet=nullptr;
-    if(wallet!=nullptr)
+    TabName currentTab = static_cast<TabName>(tab);
+    if (currentTab == TabName::TAB_READ)
     {
-        pwallet=wallet.get();
-        this->fillUpTable(pwallet->encrMsgMapWallet);
+        std::shared_ptr<CWallet> wallet = GetWallets()[0];
+        CWallet* pwallet=nullptr;
+        if(wallet!=nullptr)
+        {
+            pwallet=wallet.get();
+            this->fillUpTable(pwallet->encrMsgMapWallet);
+        }
     }
 }
 
@@ -536,7 +539,7 @@ void MessengerPage::read(const std::string& txnId)
             }
 
             std::vector<char> OPreturnData;
-            const CWalletTx& wtx = it->second;
+            const CWalletTx& wtx = it->wlt;
             wtx.tx->loadOpReturn(OPreturnData);
 
             std::vector<unsigned char> decryptedData = createDecryptedMessage(
@@ -672,22 +675,21 @@ std::vector<unsigned char> MessengerPage::getData()
     return retData;
 }
 
-void MessengerPage::fillUpTable(std::map<uint256, CWalletTx> &transactions)
+void MessengerPage::fillUpTable(TransactionsMap &transactions)
 {
     ui->transactionTable->setRowCount(transactions.size());
 
     int row = 0;
-    for (auto &it : transactions)
+    auto &index = transactions.get<ti_time>();
+    for (auto it  = index.begin(); it != index.end(); ++it)
     {
-        //TODO: use QDateTime instead
-        time_t t = it.second.nTimeReceived;
+        time_t t = it->ttime;
         std::tm *ptm = std::localtime(&t);
         char buffer[32];
         std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
 
         ui->transactionTable->setItem(row, 0, new QTableWidgetItem(buffer));
-        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(it.first.ToString().c_str()));
+        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(it->hash.ToString().c_str()));
         ++row;
     }
-
 }
