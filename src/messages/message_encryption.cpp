@@ -11,6 +11,7 @@
 const int ENCR_MARKER_SIZE = 8;
 const std::string ENCR_MARKER = "MESSAGE:";
 const std::string MSG_RECOGNIZE_TAG = "MSG"; //< message prefix to recognize after decode
+const char MSG_DELIMITER = '\0';
 
 namespace {
 using EVP_CIPHER_CTX_free_ptr = std::unique_ptr<EVP_CIPHER_CTX, decltype(&::EVP_CIPHER_CTX_free)>;

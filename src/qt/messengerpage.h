@@ -66,7 +66,7 @@ private:
 
     void fillUpTable(TransactionsMap &transactions);
 
-    std::vector<unsigned char> getData();
+    std::vector<unsigned char> getData(const std::string &fromAddress);
 
 protected:
     virtual void showEvent(QShowEvent * event);

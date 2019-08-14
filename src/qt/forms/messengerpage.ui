@@ -627,6 +627,16 @@
              <widget class="QTextEdit" name="addressEdit"/>
             </item>
             <item>
+             <widget class="QLabel" name="subjectLabel">
+              <property name="text">
+               <string>Subject:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="subjectEdit"/>
+            </item>
+            <item>
              <widget class="QLabel" name="messageLabel">
               <property name="text">
                <string>Message:</string>
@@ -1289,11 +1299,66 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="readMessageLabel">
-              <property name="text">
-               <string>Message:</string>
-              </property>
-             </widget>
+             <layout class="QHBoxLayout" name="fromHorizontalLayout">
+              <item>
+               <widget class="QLabel" name="fromConstLabel">
+                <property name="text">
+                 <string>From: </string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="fromLabel">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="subjectHorizontalLayout">
+              <item>
+               <widget class="QLabel" name="subjectConstLabel">
+                <property name="text">
+                 <string>Subject: </string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="subjectReadLabel">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
             </item>
             <item>
              <widget class="QPlainTextEdit" name="messageViewEdit">

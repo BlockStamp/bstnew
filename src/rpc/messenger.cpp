@@ -62,19 +62,20 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
 
 UniValue sendmessage(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 5 || !checkRSApublicKey(request.params[1].get_str()))
+    if (request.fHelp || request.params.size() < 3 || request.params.size() > 6 || !checkRSApublicKey(request.params[2].get_str()))
     throw std::runtime_error(
-        "sendmessage \"string\" \"public_key\" \n"
+        "sendmessage \"subject\" \"string\" \"public_key\" \n"
         "\nStores encrypted message in a blockchain.\n"
         "A transaction fee is computed as a (string length)*(fee rate). \n"
         "Before this command walletpassphrase is required. \n"
 
         "\nArguments:\n"
-        "1. \"message\"                     (string, required) A user message string\n"
-        "2. \"public_key\"                  (string, required) Receiver public key (length: 1024, 2048 or 4096)\n"
-        "3. replaceable                     (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
-        "4. conf_target                     (numeric, optional) Confirmation target (in blocks)\n"
-        "5. \"estimate_mode\"               (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
+        "1. \"subject\"                     (string, required) A user message string\n"
+        "2. \"message\"                     (string, required) A user message string\n"
+        "3. \"public_key\"                  (string, required) Receiver public key (length: 1024, 2048 or 4096)\n"
+        "4. replaceable                     (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
+        "5. conf_target                     (numeric, optional) Confirmation target (in blocks)\n"
+        "6. \"estimate_mode\"               (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
         "       \"UNSET\"\n"
         "       \"ECONOMICAL\"\n"
         "       \"CONSERVATIVE\"\n"
@@ -85,7 +86,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
 
         "\nExamples:\n"
 
-        + HelpExampleCli("sendmessage", "\"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
+        + HelpExampleCli("sendmessage", " \"subject\" \"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
                          "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
                          "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
                          "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
@@ -95,7 +96,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
                          "LQIDAQAB\n"
                          "-----END PUBLIC KEY-----\"")
 
-        + HelpExampleRpc("sendmessage", "\"mystring\"  \"-----BEGIN PUBLIC KEY-----\n"\
+        + HelpExampleRpc("sendmessage", " \"subject\" \"mystring\"  \"-----BEGIN PUBLIC KEY-----\n"\
                          "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
                          "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
                          "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
@@ -106,31 +107,41 @@ UniValue sendmessage(const JSONRPCRequest& request)
                          "-----END PUBLIC KEY-----\"")
     );
 
-    std::string msg=MSG_RECOGNIZE_TAG + request.params[0].get_str();
+    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
+    WalletBatch batch(dbh);
+    std::string fromAddress;
+    batch.ReadPublicKey(fromAddress);
+
+    std::string msg=MSG_RECOGNIZE_TAG
+            + fromAddress
+            + MSG_DELIMITER
+            + request.params[0].get_str()
+            + MSG_DELIMITER
+            + request.params[1].get_str();
 
     if(msg.length()>maxDataSize)
     {
         throw std::runtime_error(strprintf("data size is grater than %d bytes", maxDataSize));
     }
 
-    std::string public_key=request.params[1].get_str();
+    std::string public_key=request.params[2].get_str();
     std::cout << "msg: " << msg << std::endl;
     std::cout << "public_key: " << public_key << std::endl;
 
     CCoinControl coin_control;
-    if (!request.params[2].isNull())
-    {
-        coin_control.m_signal_bip125_rbf = request.params[1].get_bool();
-    }
-
     if (!request.params[3].isNull())
     {
-        coin_control.m_confirm_target = ParseConfirmTarget(request.params[2]);
+        coin_control.m_signal_bip125_rbf = request.params[3].get_bool();
     }
 
     if (!request.params[4].isNull())
     {
-        if (!FeeModeFromString(request.params[4].get_str(), coin_control.m_fee_mode)) {
+        coin_control.m_confirm_target = ParseConfirmTarget(request.params[4]);
+    }
+
+    if (!request.params[5].isNull())
+    {
+        if (!FeeModeFromString(request.params[5].get_str(), coin_control.m_fee_mode)) {
             throw std::runtime_error("Invalid estimate_mode parameter");
         }
     }
@@ -180,6 +191,18 @@ UniValue readmessage(const JSONRPCRequest& request)
             OPreturnData.size(),
             privateRsaKey.c_str());
 
+        // replace msg_delimiter with new line character
+        int counter = 0;
+        for (auto &it : decryptedData)
+        {
+            if (it == MSG_DELIMITER)
+            {
+                it = '\n';
+                ++counter;
+            }
+            if (counter == 2) break;
+        }
+
         return UniValue(UniValue::VSTR, std::string("\"")+std::string(decryptedData.begin(), decryptedData.end())+std::string("\""));
     }
 
@@ -210,7 +233,7 @@ UniValue getmsgkey(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
-    { "blockstamp",         "sendmessage",                  &sendmessage,               {"message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
+    { "blockstamp",         "sendmessage",                  &sendmessage,               {"subject", "message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
     { "blockstamp",         "readmessage",                  &readmessage,               {"txid"} },
     { "blockstamp",         "getmsgkey",                    &getmsgkey,                 {} },
 };

@@ -547,7 +547,27 @@ void MessengerPage::read(const std::string& txnId)
                 OPreturnData.size(),
                 privateRsaKey.c_str());
 
-            ui->messageViewEdit->setPlainText(std::string(decryptedData.begin(), decryptedData.end()).c_str());
+            std::string message(decryptedData.begin(), decryptedData.end());
+            std::string from, subject;
+
+            int newlinepos, previous = 0;
+            if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
+                throw std::runtime_error("Incorrect message format");
+            from = message.substr(previous, newlinepos);
+            previous = newlinepos+1;
+
+            if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
+                throw std::runtime_error("Incorrect message format");
+            subject = message.substr(previous, newlinepos - previous);
+
+            message = message.substr(newlinepos+1);
+
+            if (from.empty() || subject.empty() || message.empty())
+                throw std::runtime_error("Incorrect message format");
+
+            ui->fromLabel->setText(from.c_str());
+            ui->subjectReadLabel->setText(subject.c_str());
+            ui->messageViewEdit->setPlainText(message.c_str());
         }
         catch(std::exception const& e)
         {
@@ -584,7 +604,12 @@ void MessengerPage::send()
 
                 CAmount curBalance = pwallet->GetBalance();
 
-                std::vector<unsigned char> data = getData();
+                std::string from;
+                WalletDatabase& dbh = wallet->GetMsgDBHandle();
+                WalletBatch batch(dbh);
+                batch.ReadPublicKey(from);
+
+                std::vector<unsigned char> data = getData(from);
 
                 CRecipient recipient;
                 recipient.scriptPubKey << OP_RETURN << data;
@@ -654,9 +679,16 @@ void MessengerPage::send()
 #endif
 }
 
-std::vector<unsigned char> MessengerPage::getData()
+std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress)
 {
-    std::string msg = MSG_RECOGNIZE_TAG + ui->messageStoreEdit->toPlainText().toUtf8().constData();
+
+
+    std::string msg = MSG_RECOGNIZE_TAG
+            + fromAddress
+            + MSG_DELIMITER
+            + ui->subjectEdit->text().toUtf8().constData()
+            + MSG_DELIMITER
+            + ui->messageStoreEdit->toPlainText().toUtf8().constData();
     if (msg.length()>maxDataSize)
     {
         throw std::runtime_error(strprintf("Data size is grater than %d bytes", maxDataSize));
