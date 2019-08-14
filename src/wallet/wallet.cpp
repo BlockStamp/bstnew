@@ -1010,7 +1010,7 @@ void CWallet::AddEncrMsgToWallet(CWalletTx& wtxIn, WalletBatch& batch) {
     }
 
     // Notify UI of new or updated transaction
-    NotifyEncrMsgTransactionChanged(this, hash, fInsertedNew ? CT_NEW : CT_UPDATED);
+    NotifyEncrMsgTransactionChanged(this/*, hash, fInsertedNew ? CT_NEW : CT_UPDATED*/);
 }
 
 void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
@@ -1301,23 +1301,11 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
 
     std::cout << "BLOCK CONNECTED: " << pblock->ToString() << std::endl;
 
-    std::cout << "Prining mapWallet txs:\n";
-    for (const auto& it : mapWallet) {
-        std::cout << it.first.ToString() << std::endl;
-    }
-    std::cout << std::endl;
-
     std::cout << "Prining encrMsgMapWallet txs:\n";
     for (auto it : encrMsgMapWallet) {
         std::cout << it.hash.ToString() << std::endl;
     }
     std::cout << std::endl;
-
-    {
-        LOCK(cs_wallet);
-        WalletBatch batch(*database, "r+", false);
-        batch.printTransaction();
-    }
 
     {
         LOCK(cs_wallet);

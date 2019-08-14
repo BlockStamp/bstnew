@@ -64,7 +64,6 @@ private:
     void updateFeeMinimizedLabel();
     void updateCoinControlState(CCoinControl& ctrl);
 
-    void fillUpTable(TransactionsMap &transactions);
 
     std::vector<unsigned char> getData(const std::string &fromAddress);
 
@@ -73,12 +72,11 @@ protected:
 
 public Q_SLOTS:
     void setBalance(const interfaces::WalletBalances& balances);
-    void on_tabChanged(int tab);
 
 private Q_SLOTS:
-
     void send();
     void read(const std::string& txnId);
+    void fillUpTable();
 
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();

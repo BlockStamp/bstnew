@@ -213,6 +213,7 @@ private:
     std::unique_ptr<interfaces::Handler> m_handler_status_changed;
     std::unique_ptr<interfaces::Handler> m_handler_address_book_changed;
     std::unique_ptr<interfaces::Handler> m_handler_transaction_changed;
+    std::unique_ptr<interfaces::Handler> m_handler_encr_msg_transaction_changed;
     std::unique_ptr<interfaces::Handler> m_handler_show_progress;
     std::unique_ptr<interfaces::Handler> m_handler_watch_only_changed;
     interfaces::Node& m_node;
@@ -266,6 +267,9 @@ Q_SIGNALS:
     // Signal that wallet is about to be removed
     void unload();
 
+    // Update list of messages on messenger page
+    void updateMsgs();
+
 public Q_SLOTS:
     /* Wallet status might have changed */
     void updateStatus();
@@ -277,6 +281,8 @@ public Q_SLOTS:
     void updateWatchOnlyFlag(bool fHaveWatchonly);
     /* Current, immature or unconfirmed balance might have changed - emit 'balanceChanged' if so */
     void pollBalanceChanged();
+    /* Update message transactions on Messenger Page */
+    void updateEncrMsgTransactions();
 };
 
 #endif // BITCOIN_QT_WALLETMODEL_H

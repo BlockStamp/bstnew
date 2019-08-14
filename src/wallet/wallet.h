@@ -1104,8 +1104,7 @@ public:
      * Wallet encrypted msg transaction added, removed or updated.
      * @note called with lock cs_wallet held.
      */
-    boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx,
-            ChangeType status)> NotifyEncrMsgTransactionChanged;
+    boost::signals2::signal<void (CWallet* wallet)> NotifyEncrMsgTransactionChanged;
 
     /** Show progress e.g. for rescan */
     boost::signals2::signal<void (const std::string &title, int nProgress)> ShowProgress;

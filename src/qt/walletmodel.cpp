@@ -89,6 +89,10 @@ void WalletModel::pollBalanceChanged()
     }
 }
 
+void WalletModel::updateEncrMsgTransactions() {
+    Q_EMIT updateMsgs();
+}
+
 void WalletModel::checkBalanceChanged(const interfaces::WalletBalances& new_balances)
 {
     if(new_balances.balanceChanged(m_cached_balances)) {
@@ -400,6 +404,11 @@ static void NotifyTransactionChanged(WalletModel *walletmodel, const uint256 &ha
     QMetaObject::invokeMethod(walletmodel, "updateTransaction", Qt::QueuedConnection);
 }
 
+static void NotifyEncrMsgTransactionChanged(WalletModel *walletmodel)
+{
+    QMetaObject::invokeMethod(walletmodel, "updateEncrMsgTransactions", Qt::QueuedConnection);
+}
+
 static void ShowProgress(WalletModel *walletmodel, const std::string &title, int nProgress)
 {
     // emits signal "showProgress"
@@ -421,6 +430,7 @@ void WalletModel::subscribeToCoreSignals()
     m_handler_status_changed = m_wallet->handleStatusChanged(boost::bind(&NotifyKeyStoreStatusChanged, this));
     m_handler_address_book_changed = m_wallet->handleAddressBookChanged(boost::bind(NotifyAddressBookChanged, this, _1, _2, _3, _4, _5));
     m_handler_transaction_changed = m_wallet->handleTransactionChanged(boost::bind(NotifyTransactionChanged, this, _1, _2));
+    m_handler_encr_msg_transaction_changed = m_wallet->handleMsgTransactionChanged(boost::bind(NotifyEncrMsgTransactionChanged, this));
     m_handler_show_progress = m_wallet->handleShowProgress(boost::bind(ShowProgress, this, _1, _2));
     m_handler_watch_only_changed = m_wallet->handleWatchOnlyChanged(boost::bind(NotifyWatchonlyChanged, this, _1));
 }
@@ -432,6 +442,7 @@ void WalletModel::unsubscribeFromCoreSignals()
     m_handler_status_changed->disconnect();
     m_handler_address_book_changed->disconnect();
     m_handler_transaction_changed->disconnect();
+    m_handler_encr_msg_transaction_changed->disconnect();
     m_handler_show_progress->disconnect();
     m_handler_watch_only_changed->disconnect();
 }

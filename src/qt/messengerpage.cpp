@@ -123,7 +123,6 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->messageViewEdit->setReadOnly(true);
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
-    connect(ui->tabWidget, SIGNAL(currentChanged(int)), this, SLOT(on_tabChanged(int)));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
 }
 
@@ -264,6 +263,7 @@ void MessengerPage::setClientModel(ClientModel *_clientModel)
 void MessengerPage::setModel(WalletModel *model)
 {
     walletModel = model;
+    connect(walletModel, &WalletModel::updateMsgs, this, &MessengerPage::fillUpTable);
 
     interfaces::WalletBalances balances = walletModel->wallet().getBalances();
     setBalance(balances);
@@ -305,6 +305,8 @@ void MessengerPage::setModel(WalletModel *model)
     connect(walletModel->getOptionsModel(), &OptionsModel::coinControlFeaturesChanged, this, &MessengerPage::coinControlFeatureChanged);
     ui->frameCoinControl->setVisible(walletModel->getOptionsModel()->getCoinControlFeatures());
     coinControlUpdateLabels();
+
+    fillUpTable();
 }
 
 void MessengerPage::showEvent(QShowEvent * event)
@@ -485,21 +487,6 @@ void MessengerPage::unlockWallet()
         AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
         dlg.setModel(walletModel);
         dlg.exec();
-    }
-}
-
-void MessengerPage::on_tabChanged(int tab)
-{
-    TabName currentTab = static_cast<TabName>(tab);
-    if (currentTab == TabName::TAB_READ)
-    {
-        std::shared_ptr<CWallet> wallet = GetWallets()[0];
-        CWallet* pwallet=nullptr;
-        if(wallet!=nullptr)
-        {
-            pwallet=wallet.get();
-            this->fillUpTable(pwallet->encrMsgMapWallet);
-        }
     }
 }
 
@@ -707,8 +694,14 @@ std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress
     return retData;
 }
 
-void MessengerPage::fillUpTable(TransactionsMap &transactions)
+void MessengerPage::fillUpTable()
 {
+    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    if (wallet == nullptr) {
+        return;
+    }
+
+    TransactionsMap& transactions = wallet->encrMsgMapWallet;
     ui->transactionTable->setRowCount(transactions.size());
 
     int row = 0;
