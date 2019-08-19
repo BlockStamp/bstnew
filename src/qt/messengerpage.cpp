@@ -529,23 +529,23 @@ void MessengerPage::read(const std::string& txnId)
             const CWalletTx& wtx = it->wlt;
             wtx.tx->loadOpReturn(OPreturnData);
 
+            //TODO: Consider storing decrypted message in memory instead of encrypted data
             std::vector<unsigned char> decryptedData = createDecryptedMessage(
                 reinterpret_cast<unsigned char*>(OPreturnData.data()),
                 OPreturnData.size(),
                 privateRsaKey.c_str());
 
             std::string message(decryptedData.begin(), decryptedData.end());
-            std::string from, subject;
 
-            int newlinepos, previous = 0;
+            std::size_t newlinepos, previous = 0;
             if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
                 throw std::runtime_error("Incorrect message format");
-            from = message.substr(previous, newlinepos);
+            const auto from = message.substr(previous, newlinepos);
             previous = newlinepos+1;
 
             if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
                 throw std::runtime_error("Incorrect message format");
-            subject = message.substr(previous, newlinepos - previous);
+            const auto subject = message.substr(previous, newlinepos - previous);
 
             message = message.substr(newlinepos+1);
 
@@ -668,18 +668,18 @@ void MessengerPage::send()
 
 std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress)
 {
-
-
     std::string msg = MSG_RECOGNIZE_TAG
             + fromAddress
             + MSG_DELIMITER
             + ui->subjectEdit->text().toUtf8().constData()
             + MSG_DELIMITER
             + ui->messageStoreEdit->toPlainText().toUtf8().constData();
+
     if (msg.length()>maxDataSize)
     {
-        throw std::runtime_error(strprintf("Data size is grater than %d bytes", maxDataSize));
+        throw std::runtime_error(strprintf("Data size is greater than %d bytes", maxDataSize));
     }
+
     std::string publicKey = ui->addressEdit->toPlainText().toUtf8().constData();
     if (publicKey.empty())
     {
@@ -706,6 +706,7 @@ void MessengerPage::fillUpTable()
 
     int row = 0;
     auto &index = transactions.get<ti_time>();
+
     for (auto it  = index.begin(); it != index.end(); ++it)
     {
         time_t t = it->ttime;

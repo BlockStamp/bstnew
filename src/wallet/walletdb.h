@@ -180,7 +180,7 @@ public:
     bool WriteTx(const CWalletTx& wtx);
     bool EraseTx(uint256 hash);
 
-    bool WriteEncrMsgTx(const CWalletTx& wtx);
+    bool WriteEncrMsgTx(const std::string& from, const std::string& subject, const CWalletTx& wtx);
 
     bool WriteKey(const CPubKey& vchPubKey, const CPrivKey& vchPrivKey, const CKeyMetadata &keyMeta);
     bool WriteCryptedKey(const CPubKey& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, const CKeyMetadata &keyMeta);

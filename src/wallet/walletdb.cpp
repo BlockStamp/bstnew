@@ -52,9 +52,9 @@ bool WalletBatch::WriteTx(const CWalletTx& wtx)
     return WriteIC(std::make_pair(std::string("tx"), wtx.GetHash()), wtx);
 }
 
-bool WalletBatch::WriteEncrMsgTx(const CWalletTx& wtx)
+bool WalletBatch::WriteEncrMsgTx(const std::string& from, const std::string& subject, const CWalletTx& wtx)
 {
-    return WriteIC(std::make_pair(std::string("msg_tx"), wtx.GetHash()), wtx);
+    return WriteIC(std::make_pair(std::string("msg_tx"), wtx.GetHash()), TransactionValue{from, subject, wtx});
 }
 
 //TODO: Should we write similar function for Encrypted Msgs?
@@ -263,6 +263,13 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         else if (strType == "msg_tx") {
             uint256 hash;
             ssKey >> hash;
+
+            std::string from;
+            ssValue >> from;
+
+            std::string subject;
+            ssValue >> subject;
+
             CWalletTx wtx(nullptr /* pwallet */, MakeTransactionRef());
             ssValue >> wtx;
 
@@ -272,7 +279,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             if (!(CheckTransaction(*wtx.tx, state) && (wtx.GetHash() == hash) && state.IsValid()))
                 return false;
 
-            pwallet->LoadEncrMsgToWallet(wtx);
+            pwallet->LoadEncrMsgToWallet(from, subject, wtx);
         }
         else if (strType == "watchs")
         {

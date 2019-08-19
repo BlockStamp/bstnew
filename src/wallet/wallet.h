@@ -592,15 +592,25 @@ struct CoinSelectionParams
 struct TransactionItem
 {
     uint256 hash;
+    std::string from;
+    std::string subject;
     CWalletTx wlt;
     unsigned int ttime;
 
-    TransactionItem(uint256 _hash, CWalletTx _wlt) : hash(_hash), wlt(_wlt), ttime(_wlt.nTimeReceived){};
+    TransactionItem(uint256 _hash, const std::string& _from, const std::string& _subject, const CWalletTx& _wlt) :
+        hash(_hash),
+        from(_from),
+        subject(_subject),
+        wlt(_wlt),
+        ttime(_wlt.nTimeReceived) {
+        }
 };
 
 // tag names
 struct ti_hash{};
 struct ti_time{};
+struct ti_from{};
+struct ti_subject{};
 
 typedef boost::multi_index_container<
     TransactionItem,
@@ -614,9 +624,40 @@ typedef boost::multi_index_container<
         boost::multi_index::ordered_non_unique<
             boost::multi_index::tag<ti_time>,
             BOOST_MULTI_INDEX_MEMBER(TransactionItem, unsigned int, ttime)
+        >,
+        // sorted by from
+        boost::multi_index::ordered_non_unique<
+            boost::multi_index::tag<ti_from>,
+            BOOST_MULTI_INDEX_MEMBER(TransactionItem, std::string, from)
+        >,
+        // sorted by subject
+        boost::multi_index::ordered_non_unique<
+            boost::multi_index::tag<ti_subject>,
+            BOOST_MULTI_INDEX_MEMBER(TransactionItem, std::string, subject)
         >
     >
 > TransactionsMap;
+
+struct TransactionValue {
+    std::string from;
+    std::string subject;
+    CWalletTx wltTx;
+
+    TransactionValue(const std::string& from_, const std::string& subject_, const CWalletTx& wltTx_) :
+        from(from_),
+        subject(subject_),
+        wltTx(wltTx_) {
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(from);
+        READWRITE(subject);
+        READWRITE(wltTx);
+    }
+};
 
 
 class WalletRescanReserver; //forward declarations for ScanForWalletTransactions/RescanFromTime
@@ -915,10 +956,10 @@ public:
 
     void MarkDirty();
     void AddEncrMsgToWalletIfNeeded(const CTransactionRef &ptx);
-    void AddEncrMsgToWallet(CWalletTx& wtxIn, WalletBatch& batch);
+    void AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn, WalletBatch& batch);
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn);
-    void LoadEncrMsgToWallet(CWalletTx& wtxIn);
+    void LoadEncrMsgToWallet(const std::string& from, const std::string& subject, const CWalletTx& wtxIn);
     void TransactionAddedToMempool(const CTransactionRef& tx) override;
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindex, const std::vector<CTransactionRef>& vtxConflicted, const std::vector<CTransactionRef>& vNameConflicts) override;
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindexDelete, const std::vector<CTransactionRef>& vNameConflicts) override;

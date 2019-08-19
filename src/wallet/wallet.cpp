@@ -959,15 +959,15 @@ void CWallet::LoadToWallet(const CWalletTx& wtxIn)
     }
 }
 
-void CWallet::LoadEncrMsgToWallet(CWalletTx& wtxIn)
+void CWallet::LoadEncrMsgToWallet(const std::string& from, const std::string& subject, const CWalletTx& wtxIn)
 {
-    uint256 hash = wtxIn.GetHash();
-    encrMsgMapWallet.emplace(hash, wtxIn);
+    const uint256 hash = wtxIn.GetHash();
+    encrMsgMapWallet.emplace(hash, from, subject, wtxIn);
 }
 
-void CWallet::AddEncrMsgToWallet(CWalletTx& wtxIn, WalletBatch& batch) {
+void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn, WalletBatch& batch) {
     uint256 hash = wtxIn.GetHash();
-    std::pair<TransactionsMap::iterator, bool> ret = encrMsgMapWallet.insert(TransactionItem(hash, wtxIn));
+    std::pair<TransactionsMap::iterator, bool> ret = encrMsgMapWallet.emplace(hash, from, subject, wtxIn);
 
     CWalletTx& wtx = const_cast<CWalletTx&>(ret.first->wlt);
 
@@ -1006,7 +1006,7 @@ void CWallet::AddEncrMsgToWallet(CWalletTx& wtxIn, WalletBatch& batch) {
     if (fInsertedNew || fUpdated) {
         //TODO: Check if setting of wtx.nOrderPos is needed
         wtx.nOrderPos = IncEncrMsgOrderPosNext(&batch);
-        batch.WriteEncrMsgTx(wtx);
+        batch.WriteEncrMsgTx(from, subject, wtx);
     }
 
     // Notify UI of new or updated transaction
@@ -1025,15 +1025,26 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
         batch.ReadPrivateKey(privateRsaKey);
 
         try {
+            //TODO: Consider returning std::string from createDecryptedMessage
             std::vector<unsigned char> decryptedData = createDecryptedMessage(
                 reinterpret_cast<unsigned char*>(opReturn.data()),
                 opReturn.size(),
                 privateRsaKey.c_str());
 
-std::cout << "DECRYPTED TX: " << std::string(decryptedData.begin(), decryptedData.end()) << std::endl;
+            std::string message(decryptedData.begin(), decryptedData.end());
+
+            std::size_t newlinepos, previous = 0;
+            if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
+                throw std::runtime_error("Incorrect message format");
+            const auto from = message.substr(previous, newlinepos);
+            previous = newlinepos+1;
+
+            if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
+                throw std::runtime_error("Incorrect message format");
+            const auto subject = message.substr(previous, newlinepos - previous);
 
             CWalletTx wtx(this, ptx);
-            AddEncrMsgToWallet(wtx, batch);
+            AddEncrMsgToWallet(from, subject, wtx, batch);
         }
         catch(...) {
             std::cout << "Is encrypted message, but failed to decrypt\n";
