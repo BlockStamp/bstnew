@@ -373,6 +373,43 @@ public:
         }
         return size;
     }
+
+    std::string GetOpReturn() const
+    {
+        for(size_t i=0;i<vout.size();++i)
+        {
+            CScript::const_iterator it_beg=vout[i].scriptPubKey.begin();
+            CScript::const_iterator it_end=vout[i].scriptPubKey.end();
+            int order = *(it_beg+1);
+
+            if(*it_beg==OP_RETURN)
+            {
+                if(order<=0x4b)
+                {
+                    return std::string(it_beg+2, it_end);
+                }
+
+                if(order==0x4c)
+                {
+                    return std::string(it_beg+3, it_end);
+                }
+
+                if(order==0x4d)
+                {
+                    return std::string(it_beg+4, it_end);
+                }
+
+                if(order==0x4e)
+                {
+                    return std::string(it_beg+6, it_end);
+                }
+
+                return std::string();
+            }
+        }
+
+        return std::string();
+    }
 };
 
 /** A mutable version of CTransaction. */

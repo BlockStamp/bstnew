@@ -357,6 +357,93 @@ static UniValue getdifficulty(const JSONRPCRequest& request)
     return GetDifficulty(chainActive.Tip());
 }
 
+static CBlock GetBlockChecked(const CBlockIndex* pblockindex)
+{
+    CBlock block;
+    if (IsBlockPruned(pblockindex)) {
+        throw JSONRPCError(RPC_MISC_ERROR, "Block not available (pruned data)");
+    }
+
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+        // Block not found on disk. This could be because we have the block
+        // header in our index but don't have the block (for example if a
+        // non-whitelisted node sends us an unrequested long chain of valid
+        // blocks, we add the headers to our index, but don't accept the
+        // block).
+        throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
+    }
+
+    return block;
+}
+
+static UniValue getgpgtxs(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+        "getgpgtxs \"blockhash_from\" \"blockhash_to\"\n"
+        "\nSaves all GPG transactions in the range between \"from\" and \"to\" blocks (inclusive) to a file.\n"
+        "\nThis command may take a long time if the range is large.\n"
+        "\nArguments:\n"
+        "1. \"blockhash_from\"            (string, required) First block of the range\n"
+        "1. \"blockhash_to\"              (string, required) Last block of the range\n"
+        "\nExamples:\n"
+        + HelpExampleCli("getgpgtxs", "\"80000000000002753ad07774483376df76fb4ed4acaa611503f35d91320c9f4b\""
+                                      " \"80000000000002ddd4c061f613b8d3d620ffc971ba24a7f9871f611fb3c218a9\"")
+
+        + HelpExampleRpc("getgpgtxs", "\"80000000000002753ad07774483376df76fb4ed4acaa611503f35d91320c9f4b\""
+                                      " \"80000000000002ddd4c061f613b8d3d620ffc971ba24a7f9871f611fb3c218a9\"")
+    );
+
+    LOCK(cs_main);
+
+    uint256 hashFrom = uint256S(request.params[0].get_str());
+    uint256 hashTo = uint256S(request.params[1].get_str());
+
+    const CBlockIndex* idxFrom = LookupBlockIndex(hashFrom);
+    const CBlockIndex* idxTo = LookupBlockIndex(hashTo);
+
+    if (!idxFrom || !idxTo) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+    }
+
+    if (idxFrom->nHeight > idxTo->nHeight) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block \"from\" is older than  block \"to\"");
+    }
+
+    const char* fileName = "gpg_txs.txt";
+
+    FILE* file = fopen(fileName, "wt");
+    if (file == nullptr) {
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not open file to write gpg transactions");
+    }
+
+    int counter = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    while (true) {
+        const CBlock block = GetBlockChecked(idxTo);
+
+        for (const CTransactionRef& tx : block.vtx) {
+            fprintf(file, "%s:%s\n", tx->GetHash().ToString().c_str(), tx->GetOpReturn().c_str());
+        }
+
+        if (idxTo == idxFrom) {
+            break;
+        }
+
+        idxTo = idxTo->pprev;
+        ++counter;
+    }
+
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+
+    fclose(file);
+    std::cout << counter << " txs, took: " << elapsed.count() << " s\n";
+
+    return UniValue(UniValue::VSTR, std::string("GPG transactions saved to file ") + fileName);
+}
+
 static std::string EntryDescriptionString()
 {
     return "    \"size\" : n,             (numeric) virtual transaction size as defined in BIP 141. This is different from actual serialized size for witness transactions as witness data is discounted.\n"
@@ -750,25 +837,6 @@ static UniValue getblockheader(const JSONRPCRequest& request)
     }
 
     return blockheaderToJSON(pblockindex);
-}
-
-static CBlock GetBlockChecked(const CBlockIndex* pblockindex)
-{
-    CBlock block;
-    if (IsBlockPruned(pblockindex)) {
-        throw JSONRPCError(RPC_MISC_ERROR, "Block not available (pruned data)");
-    }
-
-    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
-        // Block not found on disk. This could be because we have the block
-        // header in our index but don't have the block (for example if a
-        // non-whitelisted node sends us an unrequested long chain of valid
-        // blocks, we add the headers to our index, but don't accept the
-        // block).
-        throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
-    }
-
-    return block;
 }
 
 static UniValue getblock(const JSONRPCRequest& request)
@@ -2235,6 +2303,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "pruneblockchain",        &pruneblockchain,        {"height"} },
     { "blockchain",         "savemempool",            &savemempool,            {} },
     { "blockchain",         "verifychain",            &verifychain,            {"checklevel","nblocks"} },
+    { "blockchain",         "getgpgtxs",              &getgpgtxs,              {"blockhash_from","blockhash_to"} },
 
     { "blockchain",         "preciousblock",          &preciousblock,          {"blockhash"} },
     { "blockchain",         "scantxoutset",           &scantxoutset,           {"action", "scanobjects"} },
