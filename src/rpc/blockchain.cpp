@@ -376,6 +376,42 @@ static CBlock GetBlockChecked(const CBlockIndex* pblockindex)
     return block;
 }
 
+static UniValue SaveGpgTxsInRange(const CBlockIndex* idxFrom, const CBlockIndex* idxTo)
+{
+    const char* const fileName = "gpg_txs.txt";
+
+    FILE* file = fopen(fileName, "wt");
+    if (file == nullptr) {
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not open file to write gpg transactions");
+    }
+
+    int counter = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    while (true) {
+        const CBlock block = GetBlockChecked(idxTo);
+        ++counter;
+
+        for (const CTransactionRef& tx : block.vtx) {
+            fprintf(file, "%s:%s\n", tx->GetHash().ToString().c_str(), tx->GetOpReturn().c_str());
+        }
+
+        if (idxTo == idxFrom) {
+            break;
+        }
+
+        idxTo = idxTo->pprev;
+    }
+
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+
+    fclose(file);
+    std::cout << counter << " blocks, took: " << elapsed.count() << " s\n";
+
+    return UniValue(UniValue::VSTR, std::string("GPG transactions saved to file ") + fileName);
+}
+
 static UniValue getgpgtxs(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 2)
@@ -396,52 +432,49 @@ static UniValue getgpgtxs(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    uint256 hashFrom = uint256S(request.params[0].get_str());
-    uint256 hashTo = uint256S(request.params[1].get_str());
-
-    const CBlockIndex* idxFrom = LookupBlockIndex(hashFrom);
-    const CBlockIndex* idxTo = LookupBlockIndex(hashTo);
+    const CBlockIndex* idxFrom = LookupBlockIndex(uint256S(request.params[0].get_str()));
+    const CBlockIndex* idxTo = LookupBlockIndex(uint256S(request.params[1].get_str()));
 
     if (!idxFrom || !idxTo) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
     }
 
     if (idxFrom->nHeight > idxTo->nHeight) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block \"from\" is older than  block \"to\"");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block \"from\" is older than block \"to\"");
     }
 
-    const char* fileName = "gpg_txs.txt";
+    return SaveGpgTxsInRange(idxFrom, idxTo);
+}
 
-    FILE* file = fopen(fileName, "wt");
-    if (file == nullptr) {
-        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not open file to write gpg transactions");
+
+static UniValue getgpgtxsince(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        "getgpgtxsince \"blockhash\"\n"
+        "\nSaves all GPG transactions from all the blocks between \"blockhash\" and the current blockchain tip.\n"
+        "\nThis command may take a long time if the range is large.\n"
+        "\nArguments:\n"
+        "1. \"blockhash\"            (string, required) First block of the range\n"
+        "\nExamples:\n"
+        + HelpExampleCli("getgpgtxsince", "\"80000000000002753ad07774483376df76fb4ed4acaa611503f35d91320c9f4b\"")
+        + HelpExampleRpc("getgpgtxsince", "\"80000000000002753ad07774483376df76fb4ed4acaa611503f35d91320c9f4b\"")
+    );
+
+    LOCK(cs_main);
+
+    const CBlockIndex* idxFrom = LookupBlockIndex(uint256S(request.params[0].get_str()));
+    const CBlockIndex* idxTo = chainActive.Tip();
+
+    if (!idxFrom) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
     }
 
-    int counter = 0;
-    auto start = std::chrono::high_resolution_clock::now();
-
-    while (true) {
-        const CBlock block = GetBlockChecked(idxTo);
-
-        for (const CTransactionRef& tx : block.vtx) {
-            fprintf(file, "%s:%s\n", tx->GetHash().ToString().c_str(), tx->GetOpReturn().c_str());
-        }
-
-        if (idxTo == idxFrom) {
-            break;
-        }
-
-        idxTo = idxTo->pprev;
-        ++counter;
+    if (idxFrom->nHeight > idxTo->nHeight) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Current tip is older than \"from\" block");
     }
 
-    auto finish = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = finish - start;
-
-    fclose(file);
-    std::cout << counter << " txs, took: " << elapsed.count() << " s\n";
-
-    return UniValue(UniValue::VSTR, std::string("GPG transactions saved to file ") + fileName);
+    return SaveGpgTxsInRange(idxFrom, idxTo);
 }
 
 static std::string EntryDescriptionString()
@@ -2304,6 +2337,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "savemempool",            &savemempool,            {} },
     { "blockchain",         "verifychain",            &verifychain,            {"checklevel","nblocks"} },
     { "blockchain",         "getgpgtxs",              &getgpgtxs,              {"blockhash_from","blockhash_to"} },
+    { "blockchain",         "getgpgtxsince",          &getgpgtxsince,          {"blockhash"} },
 
     { "blockchain",         "preciousblock",          &preciousblock,          {"blockhash"} },
     { "blockchain",         "scantxoutset",           &scantxoutset,           {"action", "scanobjects"} },
