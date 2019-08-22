@@ -378,9 +378,9 @@ static CBlock GetBlockChecked(const CBlockIndex* pblockindex)
 
 static UniValue SaveGpgTxsInRange(const CBlockIndex* idxFrom, const CBlockIndex* idxTo)
 {
-    const char* const fileName = "gpg_txs.txt";
+    const char* const fileName = "gpg_txs.dat";
 
-    FILE* file = fopen(fileName, "wt");
+    FILE* file = fopen(fileName, "wb");
     if (file == nullptr) {
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not open file to write gpg transactions");
     }
@@ -393,7 +393,14 @@ static UniValue SaveGpgTxsInRange(const CBlockIndex* idxFrom, const CBlockIndex*
         ++counter;
 
         for (const CTransactionRef& tx : block.vtx) {
-            fprintf(file, "%s:%s\n", tx->GetHash().ToString().c_str(), tx->GetOpReturn().c_str());
+            const std::string txHash = tx->GetHash().ToString();
+            fwrite(txHash.c_str(), sizeof(char), txHash.size(), file);
+
+            const std::string opReturn = tx->GetOpReturn();
+            const uint32_t size = opReturn.size();
+
+            fwrite(&size, sizeof(uint32_t), 1, file);
+            fwrite(opReturn.c_str(), sizeof(char), opReturn.size(), file);
         }
 
         if (idxTo == idxFrom) {
