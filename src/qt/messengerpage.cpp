@@ -124,6 +124,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
+    connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
 }
 
 MessengerPage::~MessengerPage()
@@ -492,9 +493,15 @@ void MessengerPage::unlockWallet()
 
 void MessengerPage::on_transactionsTableCellSelected(int row, int col)
 {
-    QTableWidgetItem* item = ui->transactionTable->item(row, 1);
-    QString txnId = item->text();
+    ui->transactionTable->selectRow(row);
+    QTableWidgetItem* item = ui->transactionTable->item(row, 0);
+    QString txnId = item->data(Qt::UserRole).toString();
     read(txnId.toUtf8().constData());
+}
+
+void MessengerPage::on_transactionsTableCellPressed(int row, int)
+{
+    ui->transactionTable->selectRow(row);
 }
 
 void MessengerPage::read(const std::string& txnId)
@@ -526,7 +533,7 @@ void MessengerPage::read(const std::string& txnId)
             }
 
             std::vector<char> OPreturnData;
-            const CWalletTx& wtx = it->wlt;
+            const CWalletTx& wtx = it->second.wltTx;
             wtx.tx->loadOpReturn(OPreturnData);
 
             //TODO: Consider storing decrypted message in memory instead of encrypted data
@@ -696,26 +703,31 @@ std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress
 
 void MessengerPage::fillUpTable()
 {
+
     std::shared_ptr<CWallet> wallet = GetWallets()[0];
     if (wallet == nullptr) {
         return;
     }
+    ui->transactionTable->clearContents();
 
     TransactionsMap& transactions = wallet->encrMsgMapWallet;
     ui->transactionTable->setRowCount(transactions.size());
 
     int row = 0;
-    auto &index = transactions.get<ti_time>();
-
-    for (auto it  = index.begin(); it != index.end(); ++it)
+    for (auto index  = transactions.begin(); index != transactions.end(); ++index)
     {
-        time_t t = it->ttime;
+        auto &it  = index->second;
+        time_t t = it.wltTx.nTimeReceived;
         std::tm *ptm = std::localtime(&t);
         char buffer[32];
         std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
 
-        ui->transactionTable->setItem(row, 0, new QTableWidgetItem(buffer));
-        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(it->hash.ToString().c_str()));
+        QTableWidgetItem *item = new QTableWidgetItem(buffer);
+        item->setData(Qt::UserRole, index->first.ToString().c_str());
+
+        ui->transactionTable->setItem(row, 0, item);
+        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(it.from.c_str()));
+        ui->transactionTable->setItem(row, 2, new QTableWidgetItem(it.subject.c_str()));
         ++row;
     }
 }

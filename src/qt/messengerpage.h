@@ -99,6 +99,7 @@ private Q_SLOTS:
     void coinControlClipboardChange();
 
     void on_transactionsTableCellSelected(int row, int col);
+    void on_transactionsTableCellPressed(int row, int col);
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H

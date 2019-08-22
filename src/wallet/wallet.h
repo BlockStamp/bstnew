@@ -589,55 +589,6 @@ struct CoinSelectionParams
     CoinSelectionParams() {}
 };
 
-struct TransactionItem
-{
-    uint256 hash;
-    std::string from;
-    std::string subject;
-    CWalletTx wlt;
-    unsigned int ttime;
-
-    TransactionItem(uint256 _hash, const std::string& _from, const std::string& _subject, const CWalletTx& _wlt) :
-        hash(_hash),
-        from(_from),
-        subject(_subject),
-        wlt(_wlt),
-        ttime(_wlt.nTimeReceived) {
-        }
-};
-
-// tag names
-struct ti_hash{};
-struct ti_time{};
-struct ti_from{};
-struct ti_subject{};
-
-typedef boost::multi_index_container<
-    TransactionItem,
-    boost::multi_index::indexed_by<
-        // sorted by hash
-        boost::multi_index::ordered_unique<
-            boost::multi_index::tag<ti_hash>,
-            BOOST_MULTI_INDEX_MEMBER(TransactionItem, uint256, hash)
-        >,
-        // sorted by time
-        boost::multi_index::ordered_non_unique<
-            boost::multi_index::tag<ti_time>,
-            BOOST_MULTI_INDEX_MEMBER(TransactionItem, unsigned int, ttime)
-        >,
-        // sorted by from
-        boost::multi_index::ordered_non_unique<
-            boost::multi_index::tag<ti_from>,
-            BOOST_MULTI_INDEX_MEMBER(TransactionItem, std::string, from)
-        >,
-        // sorted by subject
-        boost::multi_index::ordered_non_unique<
-            boost::multi_index::tag<ti_subject>,
-            BOOST_MULTI_INDEX_MEMBER(TransactionItem, std::string, subject)
-        >
-    >
-> TransactionsMap;
-
 struct TransactionValue {
     std::string from;
     std::string subject;
@@ -658,6 +609,7 @@ struct TransactionValue {
         READWRITE(wltTx);
     }
 };
+typedef std::map<uint256, TransactionValue> TransactionsMap;
 
 
 class WalletRescanReserver; //forward declarations for ScanForWalletTransactions/RescanFromTime
