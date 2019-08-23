@@ -30,6 +30,7 @@
 #include <txmempool.h>
 #include <util.h>
 #include <utilstrencodings.h>
+#include <data/datautils.h>
 #include <hash.h>
 #include <validationinterface.h>
 #include <warnings.h>
@@ -376,7 +377,7 @@ static CBlock GetBlockChecked(const CBlockIndex* pblockindex)
     return block;
 }
 
-static UniValue SaveGpgTxsInRange(const CBlockIndex* idxFrom, const CBlockIndex* idxTo)
+static UniValue SaveGpgTxsInRange(const CBlockIndex* idxFrom, const CBlockIndex* idxTo, const std::string& prefix)
 {
     const char* const fileName = "gpg_txs.dat";
 
@@ -393,14 +394,17 @@ static UniValue SaveGpgTxsInRange(const CBlockIndex* idxFrom, const CBlockIndex*
         ++counter;
 
         for (const CTransactionRef& tx : block.vtx) {
-            const std::string txHash = tx->GetHash().ToString();
-            fwrite(txHash.c_str(), sizeof(char), txHash.size(), file);
-
             const std::string opReturn = tx->GetOpReturn();
-            const uint32_t size = opReturn.size();
 
-            fwrite(&size, sizeof(uint32_t), 1, file);
-            fwrite(opReturn.c_str(), sizeof(char), opReturn.size(), file);
+            if (opReturn.substr(0, prefix.size()) == prefix) {
+                const std::string txHash = tx->GetHash().ToString();
+                fwrite(txHash.c_str(), sizeof(char), txHash.size(), file);
+
+                const uint32_t size = opReturn.size();
+                fwrite(&size, sizeof(uint32_t), 1, file);
+
+                fwrite(opReturn.c_str(), sizeof(char), opReturn.size(), file);
+            }
         }
 
         if (idxTo == idxFrom) {
@@ -450,7 +454,7 @@ static UniValue getgpgtxs(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block \"from\" is older than block \"to\"");
     }
 
-    return SaveGpgTxsInRange(idxFrom, idxTo);
+    return SaveGpgTxsInRange(idxFrom, idxTo, gpgMarker);
 }
 
 
@@ -481,7 +485,7 @@ static UniValue getgpgtxsince(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Current tip is older than \"from\" block");
     }
 
-    return SaveGpgTxsInRange(idxFrom, idxTo);
+    return SaveGpgTxsInRange(idxFrom, idxTo, gpgMarker);
 }
 
 static std::string EntryDescriptionString()

@@ -7,6 +7,8 @@
 
 #include <data/datautils.h>
 
+const std::string gpgMarker = "GPG";
+
 static unsigned char hexval(unsigned char c)
 {
     if ('0' <= c && c <= '9')

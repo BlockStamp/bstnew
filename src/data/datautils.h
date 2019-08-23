@@ -12,6 +12,8 @@
 
 #include <univalue.h>
 
+extern const std::string gpgMarker;
+
 void hex2ascii(const std::string& in, std::string& out);
 std::string byte2str(const unsigned char* binaryData, size_t size);
 void hex2bin(std::vector<char>& binaryData, const std::string& hexstr);

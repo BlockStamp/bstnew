@@ -44,7 +44,6 @@
 static constexpr int maxDataSize=MAX_OP_RETURN_RELAY-6;
 
 static const std::array<int, 9> confTargets = { {2, 4, 6, 12, 24, 48, 144, 504, 1008} };
-static const std::string gpgMarker = "GPG";
 extern int getConfTargetForIndex(int index);
 extern int getIndexForConfTarget(int target);
 
