@@ -300,18 +300,20 @@ UniValue retrievemessage(const JSONRPCRequest& request)
 
 UniValue storemessage(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 4)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 5)
     throw std::runtime_error(
         "storemessage \"string\" \n"
         "\nStores a user data string in a blockchain.\n"
+        "\nOptionally appends a prefix to the string.\n"
         "A transaction fee is computed as a (string length)*(fee rate). \n"
         "Before this command walletpassphrase is required. \n"
 
         "\nArguments:\n"
         "1. \"message\"                     (string, required) A user message string\n"
-        "2. replaceable                     (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
-        "3. conf_target                     (numeric, optional) Confirmation target (in blocks)\n"
-        "4. \"estimate_mode\"               (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
+        "2. \"prefix\"                      (string, optional) Prefix appended to the message\n"
+        "3. replaceable                   (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
+        "4. conf_target                   (numeric, optional) Confirmation target (in blocks)\n"
+        "5. \"estimate_mode\"               (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
         "       \"UNSET\"\n"
         "       \"ECONOMICAL\"\n"
         "       \"CONSERVATIVE\"\n"
@@ -325,7 +327,8 @@ UniValue storemessage(const JSONRPCRequest& request)
         + HelpExampleRpc("storemessage", "\"mystring\"")
     );
 
-    std::string msg=request.params[0].get_str();
+    std::string prefix = request.params[1].isNull() ? "" : request.params[1].get_str();
+    std::string msg = prefix + request.params[0].get_str();
 
     if(msg.length()>maxDataSize)
     {
@@ -333,19 +336,19 @@ UniValue storemessage(const JSONRPCRequest& request)
     }
 
     CCoinControl coin_control;
-    if (!request.params[1].isNull())
-    {
-        coin_control.m_signal_bip125_rbf = request.params[1].get_bool();
-    }
-
     if (!request.params[2].isNull())
     {
-        coin_control.m_confirm_target = ParseConfirmTarget(request.params[2]);
+        coin_control.m_signal_bip125_rbf = request.params[2].get_bool();
     }
 
     if (!request.params[3].isNull())
     {
-        if (!FeeModeFromString(request.params[3].get_str(), coin_control.m_fee_mode)) {
+        coin_control.m_confirm_target = ParseConfirmTarget(request.params[3]);
+    }
+
+    if (!request.params[4].isNull())
+    {
+        if (!FeeModeFromString(request.params[4].get_str(), coin_control.m_fee_mode)) {
             throw std::runtime_error("Invalid estimate_mode parameter");
         }
     }
@@ -416,14 +419,16 @@ UniValue storedata(const JSONRPCRequest& request)
     throw std::runtime_error(
         "storedata \"string\" \n"
         "\nStores content of a user file into a blockchain.\n"
+        "\nOptionally appends a prefix to the file content.\n"
         "A transaction fee is computed as a (file size)*(fee rate). \n"
         "Before this command walletpassphrase is required. \n"
 
         "\nArguments:\n"
         "1. \"path to the file\"            (string, required) A path to the file\n"
-        "2. replaceable                     (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
-        "3. conf_target                     (numeric, optional) Confirmation target (in blocks)\n"
-        "4. \"estimate_mode\"               (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
+        "2. \"prefix\"                      (string, optional) Prefix appended to the data\n"
+        "3. replaceable                   (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
+        "4. conf_target                   (numeric, optional) Confirmation target (in blocks)\n"
+        "5. \"estimate_mode\"               (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
         "       \"UNSET\"\n"
         "       \"ECONOMICAL\"\n"
         "       \"CONSERVATIVE\"\n"
@@ -437,14 +442,14 @@ UniValue storedata(const JSONRPCRequest& request)
         + HelpExampleRpc("storedata", "\"/home/myfile.txt\"")
     );
 
-    UniValue res(UniValue::VARR);
-
     std::string filePath=request.params[0].get_str();
-
     std::vector<unsigned char> binaryData;
 
     FileReader<unsigned char> fileReader(filePath);
     fileReader.read(binaryData);
+
+    std::string prefix = request.params[1].isNull() ? "" : request.params[1].get_str();
+    binaryData.insert(binaryData.begin(), prefix.begin(), prefix.end());
 
     if(binaryData.size()>maxDataSize)
     {
@@ -452,19 +457,19 @@ UniValue storedata(const JSONRPCRequest& request)
     }
 
     CCoinControl coin_control;
-    if (!request.params[1].isNull())
-    {
-        coin_control.m_signal_bip125_rbf = request.params[1].get_bool();
-    }
-
     if (!request.params[2].isNull())
     {
-        coin_control.m_confirm_target = ParseConfirmTarget(request.params[2]);
+        coin_control.m_signal_bip125_rbf = request.params[2].get_bool();
     }
 
     if (!request.params[3].isNull())
     {
-        if (!FeeModeFromString(request.params[3].get_str(), coin_control.m_fee_mode)) {
+        coin_control.m_confirm_target = ParseConfirmTarget(request.params[3]);
+    }
+
+    if (!request.params[4].isNull())
+    {
+        if (!FeeModeFromString(request.params[4].get_str(), coin_control.m_fee_mode)) {
             throw std::runtime_error("Invalid estimate_mode parameter");
         }
     }
@@ -626,11 +631,11 @@ UniValue checksignature(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
-    { "blockstamp",         "storemessage",                	&storemessage,             {"message", "replaceable", "conf_target", "estimate_mode"} },
+    { "blockstamp",         "storemessage",                	&storemessage,             {"message", "prefix", "replaceable", "conf_target", "estimate_mode"} },
     { "blockstamp",         "retrievemessage",             	&retrievemessage,          {"txid"} },
     { "blockstamp",         "retrievedata",             	&retrievedata,             {"txid"} },
     { "blockstamp",         "storesignature",             	&storesignature,           {"file_path", "replaceable", "conf_target", "estimate_mode"} },
-    { "blockstamp",         "storedata",             		&storedata,          	   {"file_path", "replaceable", "conf_target", "estimate_mode"} },
+    { "blockstamp",         "storedata",             		&storedata,          	   {"file_path", "prefix", "replaceable", "conf_target", "estimate_mode"} },
     { "blockstamp",         "checkmessage",             	&checkmessage,             {"txid", "message"} },
     { "blockstamp",         "checkdata",             		&checkdata,          	   {"txid", "file_path"} },
     { "blockstamp",         "checksignature",             	&checksignature,           {"txid", "file_path"} },
