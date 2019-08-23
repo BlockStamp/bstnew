@@ -44,6 +44,7 @@
 static constexpr int maxDataSize=MAX_OP_RETURN_RELAY-6;
 
 static const std::array<int, 9> confTargets = { {2, 4, 6, 12, 24, 48, 144, 504, 1008} };
+static const std::string gpgMarker = "GPG";
 extern int getConfTargetForIndex(int index);
 extern int getIndexForConfTarget(int target);
 
@@ -687,8 +688,8 @@ std::vector<unsigned char> DataPage::getData()
     std::vector<unsigned char> retData;
     if(ui->storeMessageRadioButton->isChecked())
     {
-        QString qs=ui->messageStoreEdit->toPlainText();
-        std::string str=qs.toUtf8().constData();
+        QString qs = ui->messageStoreEdit->toPlainText();
+        std::string str = (ui->markGpgCheckBox->checkState() ? gpgMarker : std::string()) + qs.toUtf8().constData();
         
         if(str.length()>maxDataSize)
         {
@@ -698,26 +699,31 @@ std::vector<unsigned char> DataPage::getData()
         std::vector<unsigned char> retData_(str.begin(), str.end());
         retData.swap(retData_);
     }
-    else if(ui->storeFileRadioButton->isChecked() || ui->storeFileHashRadioButton->isChecked())
+    else if(ui->storeFileRadioButton->isChecked())
+    {
+        QByteArray binaryData;
+        if (ui->markGpgCheckBox->checkState())
+        {
+            binaryData += gpgMarker.c_str();
+        }
+
+        FileReader fileReader(ui->fileStoreEdit->text());
+        fileReader.read(binaryData);
+
+        if(binaryData.size()>maxDataSize)
+        {
+            throw std::runtime_error(strprintf("Data size is grater than %d bytes", maxDataSize));
+        }
+
+        std::vector<unsigned char> retData_(binaryData.begin(), binaryData.end());
+        retData.swap(retData_);
+    }
+    else if(ui->storeFileHashRadioButton->isChecked())
     {
         QByteArray binaryData;
         FileReader fileReader(ui->fileStoreEdit->text());
         fileReader.read(binaryData);
-
-        if(ui->storeFileRadioButton->isChecked())
-        {
-            if(binaryData.size()>maxDataSize)
-            {
-                throw std::runtime_error(strprintf("Data size is grater than %d bytes", maxDataSize));
-            }
-
-            std::vector<unsigned char> retData_(binaryData.begin(), binaryData.end());
-            retData.swap(retData_);
-        }
-        else if(ui->storeFileHashRadioButton->isChecked())
-        {
-            computeHash(binaryData, retData);
-        }
+        computeHash(binaryData, retData);
     }
     
     return retData;
@@ -730,6 +736,7 @@ void DataPage::storeMessageRadioClicked()
     ui->fileStoreLabel->setVisible(false);
 
     ui->messageStoreEdit->setVisible(true);
+    ui->markGpgCheckBox->setVisible(true);
     
     updateDataSize();
 }
@@ -741,6 +748,7 @@ void DataPage::storeFileRadioClicked()
     ui->fileStoreLabel->setVisible(true);
 
     ui->messageStoreEdit->setVisible(false);
+    ui->markGpgCheckBox->setVisible(true);
     
     updateDataSize();
 }
@@ -752,6 +760,7 @@ void DataPage::storeFileHashRadioClicked()
     ui->fileStoreLabel->setVisible(true);
 
     ui->messageStoreEdit->setVisible(false);
+    ui->markGpgCheckBox->setVisible(false);
     
     updateDataSize();
 }
@@ -1035,6 +1044,11 @@ void DataPage::FileReader::read(QByteArray &byteArray)
 {
     if(isOpen)
     {
-        byteArray=file.readAll();
+        byteArray+=file.readAll();
     }
+}
+
+void DataPage::on_markGpgCheckBox_clicked()
+{
+    updateDataSize();
 }

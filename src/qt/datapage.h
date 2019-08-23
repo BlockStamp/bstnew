@@ -88,7 +88,7 @@ private Q_SLOTS:
     void fileCheckClicked();
     void storeFileEditTextChanged(const QString&);
     void storeMessageEditTextChanged();
-    
+
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();
     void setMinimumFee();
@@ -109,6 +109,7 @@ private Q_SLOTS:
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
     
+    void on_markGpgCheckBox_clicked();
 private:
     class FileWriter
     {

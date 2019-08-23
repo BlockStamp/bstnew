@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>867</width>
-    <height>837</height>
+    <height>902</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -635,6 +635,13 @@
                      <property name="icon">
                       <iconset resource="../bitcoin.qrc">
                        <normaloff>:/icons/transaction_confirmed</normaloff>:/icons/transaction_confirmed</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="markGpgCheckBox">
+                     <property name="text">
+                      <string>Mark GPG Message</string>
                      </property>
                     </widget>
                    </item>
