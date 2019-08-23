@@ -64,7 +64,7 @@ std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
     totalLength += len;
 
     if (totalLength != encryptedSize) {
-        std::runtime_error("Failed to encrypt data");
+        throw std::runtime_error("Failed to encrypt data");
     }
 
     return std::make_pair(std::move(encryptedData), encryptedSize);
