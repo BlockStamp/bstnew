@@ -19,6 +19,7 @@ class QPlainTextEdit;
 class PlatformStyle;
 class QButtonGroup;
 class CWalletTx;
+class MessengerBookModel;
 
 namespace Ui {
     class MessengerPage;
@@ -58,6 +59,7 @@ private:
     CFeeRate feeRate;
     QButtonGroup *groupFee;
     const PlatformStyle *platformStyle;
+    MessengerBookModel *m_messengerBookModel;
 
     void unlockWallet();
     void minimizeFeeSection(bool fMinimize);
@@ -100,6 +102,7 @@ private Q_SLOTS:
 
     void on_transactionsTableCellSelected(int row, int col);
     void on_transactionsTableCellPressed(int row, int col);
+    void on_addressBookPressed();
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H

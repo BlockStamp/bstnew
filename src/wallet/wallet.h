@@ -799,6 +799,7 @@ public:
     uint64_t nAccountingEntryNumber = 0;
 
     std::map<CTxDestination, CAddressBookData> mapAddressBook;
+    std::map<std::string, CAddressBookData> mapMessengerAddressBook;
 
     std::set<COutPoint> setLockedCoins;
 
@@ -1045,6 +1046,11 @@ public:
     bool SetAddressBook(const CTxDestination& address, const std::string& strName, const std::string& purpose);
 
     bool DelAddressBook(const CTxDestination& address);
+
+    bool SetMsgAddressBook(const std::string& address, const std::string& name);
+
+    bool DelMsgAddressBook(const std::string& address);
+
 
     const std::string& GetLabelName(const CScript& scriptPubKey) const;
 

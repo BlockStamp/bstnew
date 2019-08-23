@@ -6,13 +6,15 @@
 #include <config/bitcoin-config.h>
 #endif
 
-#include <qt/addressbookpage.h>
+#include <qt/messengeraddressbook.h>
 #include <qt/forms/ui_addressbookpage.h>
 
-#include <qt/addresstablemodel.h>
+#include <qt/addresstablemodel.h> // TODO: remove
+#include <qt/messengerbookmodel.h>
+
 #include <qt/bitcoingui.h>
 #include <qt/csvmodelwriter.h>
-#include <qt/editaddressdialog.h>
+#include <qt/editmsgaddressdialog.h>
 #include <qt/guiutil.h>
 #include <qt/platformstyle.h>
 
@@ -38,30 +40,28 @@ public:
 protected:
     bool filterAcceptsRow(int row, const QModelIndex& parent) const
     {
-        auto model = sourceModel(); // QAbstractItemModel*
-        auto label = model->index(row, AddressTableModel::Label, parent);
+        auto model = sourceModel();
+        auto label = model->index(row, MessengerBookModel::Label, parent);
 
-        if (model->data(label, AddressTableModel::TypeRole).toString() != m_type) {
-            return false;
+        if (model->data(label, MessengerBookModel::TypeRole).toString() != m_type) {
+//            return false;
         }
 
-        auto address = model->index(row, AddressTableModel::Address, parent);
+        auto address = model->index(row, MessengerBookModel::Address, parent);
 
         if (filterRegExp().indexIn(model->data(address).toString()) < 0 &&
             filterRegExp().indexIn(model->data(label).toString()) < 0) {
-            return false;
+//            return false;
         }
 
         return true;
     }
 };
 
-AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode, Tabs _tab, QWidget *parent) :
+MessengerAddressBook::MessengerAddressBook(const PlatformStyle *platformStyle, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::AddressBookPage),
-    model(0),
-    mode(_mode),
-    tab(_tab)
+    model(0)
 {
     ui->setupUi(this);
 
@@ -77,41 +77,18 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
         ui->exportButton->setIcon(platformStyle->SingleColorIcon(":/icons/export"));
     }
 
-    switch(mode)
-    {
-    case ForSelection:
-        switch(tab)
-        {
-        case SendingTab: setWindowTitle(tr("Choose the address to send coins to")); break;
-        case ReceivingTab: setWindowTitle(tr("Choose the address to receive coins with")); break;
-        }
-        connect(ui->tableView, &QTableView::doubleClicked, this, &QDialog::accept);
-        ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        ui->tableView->setFocus();
-        ui->closeButton->setText(tr("C&hoose"));
-        ui->exportButton->hide();
-        break;
-    case ForEditing:
-        switch(tab)
-        {
-        case SendingTab: setWindowTitle(tr("Sending addresses")); break;
-        case ReceivingTab: setWindowTitle(tr("Receiving addresses")); break;
-        }
-        break;
-    }
-    switch(tab)
-    {
-    case SendingTab:
-        ui->labelExplanation->setText(tr("These are your BST addresses for sending payments. Always check the amount and the receiving address before sending coins."));
-        ui->deleteAddress->setVisible(true);
-        ui->newAddress->setVisible(true);
-        break;
-    case ReceivingTab:
-        ui->labelExplanation->setText(tr("These are your BST addresses for receiving payments. It is recommended to use a new receiving address for each transaction."));
-        ui->deleteAddress->setVisible(false);
-        ui->newAddress->setVisible(false);
-        break;
-    }
+    setWindowTitle(tr("Choose the address to send message"));
+
+    connect(ui->tableView, &QTableView::doubleClicked, this, &QDialog::accept);
+    ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableView->setFocus();
+    ui->closeButton->setText(tr("C&hoose"));
+    ui->exportButton->hide();
+
+    ui->labelExplanation->setText(tr("These are addresses for use in messenger"));
+    ui->deleteAddress->setVisible(true);
+    ui->newAddress->setVisible(true);
+
 
     // Context menu actions
     QAction *copyAddressAction = new QAction(tr("&Copy Address"), this);
@@ -124,34 +101,31 @@ AddressBookPage::AddressBookPage(const PlatformStyle *platformStyle, Mode _mode,
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(copyLabelAction);
     contextMenu->addAction(editAction);
-    if(tab == SendingTab)
-        contextMenu->addAction(deleteAction);
     contextMenu->addSeparator();
 
     // Connect signals for context menu actions
-    connect(copyAddressAction, &QAction::triggered, this, &AddressBookPage::on_copyAddress_clicked);
-    connect(copyLabelAction, &QAction::triggered, this, &AddressBookPage::onCopyLabelAction);
-    connect(editAction, &QAction::triggered, this, &AddressBookPage::onEditAction);
-    connect(deleteAction, &QAction::triggered, this, &AddressBookPage::on_deleteAddress_clicked);
+    connect(copyAddressAction, &QAction::triggered, this, &MessengerAddressBook::on_copyAddress_clicked);
+    connect(copyLabelAction, &QAction::triggered, this, &MessengerAddressBook::onCopyLabelAction);
+    connect(editAction, &QAction::triggered, this, &MessengerAddressBook::onEditAction);
+    connect(deleteAction, &QAction::triggered, this, &MessengerAddressBook::on_deleteAddress_clicked);
 
-    connect(ui->tableView, &QWidget::customContextMenuRequested, this, &AddressBookPage::contextualMenu);
+    connect(ui->tableView, &QWidget::customContextMenuRequested, this, &MessengerAddressBook::contextualMenu);
 
     connect(ui->closeButton, &QPushButton::clicked, this, &QDialog::accept);
 }
 
-AddressBookPage::~AddressBookPage()
+MessengerAddressBook::~MessengerAddressBook()
 {
     delete ui;
 }
 
-void AddressBookPage::setModel(AddressTableModel *_model)
+void MessengerAddressBook::setModel(MessengerBookModel *_model)
 {
     this->model = _model;
     if(!_model)
         return;
 
-    auto type = tab == ReceivingTab ? AddressTableModel::Receive : AddressTableModel::Send;
-    proxyModel = new AddressBookSortFilterProxyModel(type, this);
+    proxyModel = new AddressBookSortFilterProxyModel("send", this);
     proxyModel->setSourceModel(_model);
 
     connect(ui->searchLineEdit, &QLineEdit::textChanged, proxyModel, &QSortFilterProxyModel::setFilterWildcard);
@@ -160,30 +134,33 @@ void AddressBookPage::setModel(AddressTableModel *_model)
     ui->tableView->sortByColumn(0, Qt::AscendingOrder);
 
     // Set column widths
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(MessengerBookModel::Label, QHeaderView::Stretch);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(MessengerBookModel::Address, QHeaderView::ResizeToContents);
 
     connect(ui->tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
-        this, &AddressBookPage::selectionChanged);
+        this, &MessengerAddressBook::selectionChanged);
 
     // Select row for newly created address
-    connect(_model, &AddressTableModel::rowsInserted, this, &AddressBookPage::selectNewAddress);
+    connect(_model, &MessengerBookModel::rowsInserted, this, &MessengerAddressBook::selectNewAddress);
 
     selectionChanged();
 }
 
-void AddressBookPage::on_copyAddress_clicked()
+void MessengerAddressBook::on_copyAddress_clicked()
 {
-    GUIUtil::copyEntryData(ui->tableView, AddressTableModel::Address);
+    printf("%d\n", __LINE__);
+    GUIUtil::copyEntryData(ui->tableView, MessengerBookModel::Address);
 }
 
-void AddressBookPage::onCopyLabelAction()
+void MessengerAddressBook::onCopyLabelAction()
 {
-    GUIUtil::copyEntryData(ui->tableView, AddressTableModel::Label);
+    printf("%d\n", __LINE__);
+    GUIUtil::copyEntryData(ui->tableView, MessengerBookModel::Label);
 }
 
-void AddressBookPage::onEditAction()
+void MessengerAddressBook::onEditAction()
 {
+    printf("%d\n", __LINE__);
     if(!model)
         return;
 
@@ -193,26 +170,20 @@ void AddressBookPage::onEditAction()
     if(indexes.isEmpty())
         return;
 
-    EditAddressDialog dlg(
-        tab == SendingTab ?
-        EditAddressDialog::EditSendingAddress :
-        EditAddressDialog::EditReceivingAddress, this);
-    dlg.setModel(model);
-    QModelIndex origIndex = proxyModel->mapToSource(indexes.at(0));
-    dlg.loadRow(origIndex.row());
-    dlg.exec();
+//    EditAddressDialog dlg(EditAddressDialog::EditSendingAddress, this);
+//    dlg.setModel(model);
+//    QModelIndex origIndex = proxyModel->mapToSource(indexes.at(0));
+//    dlg.loadRow(origIndex.row());
+//    dlg.exec();
 }
 
-void AddressBookPage::on_newAddress_clicked()
+void MessengerAddressBook::on_newAddress_clicked()
 {
+    printf("%d\n", __LINE__);
     if(!model)
         return;
 
-    if (tab == ReceivingTab) {
-        return;
-    }
-
-    EditAddressDialog dlg(EditAddressDialog::NewSendingAddress, this);
+    EditMsgAddressDialog dlg(EditMsgAddressDialog::NewSendingAddress, this);
     dlg.setModel(model);
     if(dlg.exec())
     {
@@ -220,8 +191,9 @@ void AddressBookPage::on_newAddress_clicked()
     }
 }
 
-void AddressBookPage::on_deleteAddress_clicked()
+void MessengerAddressBook::on_deleteAddress_clicked()
 {
+    printf("%d\n", __LINE__);
     QTableView *table = ui->tableView;
     if(!table->selectionModel())
         return;
@@ -233,7 +205,7 @@ void AddressBookPage::on_deleteAddress_clicked()
     }
 }
 
-void AddressBookPage::selectionChanged()
+void MessengerAddressBook::selectionChanged()
 {
     // Set button states based on selected tab and selection
     QTableView *table = ui->tableView;
@@ -242,21 +214,10 @@ void AddressBookPage::selectionChanged()
 
     if(table->selectionModel()->hasSelection())
     {
-        switch(tab)
-        {
-        case SendingTab:
-            // In sending tab, allow deletion of selection
-            ui->deleteAddress->setEnabled(true);
-            ui->deleteAddress->setVisible(true);
-            deleteAction->setEnabled(true);
-            break;
-        case ReceivingTab:
-            // Deleting receiving addresses, however, is not allowed
-            ui->deleteAddress->setEnabled(false);
-            ui->deleteAddress->setVisible(false);
-            deleteAction->setEnabled(false);
-            break;
-        }
+        // In sending tab, allow deletion of selection
+        ui->deleteAddress->setEnabled(true);
+        ui->deleteAddress->setVisible(true);
+        deleteAction->setEnabled(true);
         ui->copyAddress->setEnabled(true);
     }
     else
@@ -266,14 +227,15 @@ void AddressBookPage::selectionChanged()
     }
 }
 
-void AddressBookPage::done(int retval)
+void MessengerAddressBook::done(int retval)
 {
+    printf("%d\n", __LINE__);
     QTableView *table = ui->tableView;
     if(!table->selectionModel() || !table->model())
         return;
 
     // Figure out which address was selected, and return it
-    QModelIndexList indexes = table->selectionModel()->selectedRows(AddressTableModel::Address);
+    QModelIndexList indexes = table->selectionModel()->selectedRows(MessengerBookModel::Address);
 
     for (const QModelIndex& index : indexes) {
         QVariant address = table->model()->data(index);
@@ -289,7 +251,7 @@ void AddressBookPage::done(int retval)
     QDialog::done(retval);
 }
 
-void AddressBookPage::on_exportButton_clicked()
+void MessengerAddressBook::on_exportButton_clicked()
 {
     // CSV is currently the only supported format
     QString filename = GUIUtil::getSaveFileName(this,
@@ -303,8 +265,8 @@ void AddressBookPage::on_exportButton_clicked()
 
     // name, column, role
     writer.setModel(proxyModel);
-    writer.addColumn("Label", AddressTableModel::Label, Qt::EditRole);
-    writer.addColumn("Address", AddressTableModel::Address, Qt::EditRole);
+    writer.addColumn("Label", MessengerBookModel::Label, Qt::EditRole);
+    writer.addColumn("Address", MessengerBookModel::Address, Qt::EditRole);
 
     if(!writer.write()) {
         QMessageBox::critical(this, tr("Exporting Failed"),
@@ -312,7 +274,7 @@ void AddressBookPage::on_exportButton_clicked()
     }
 }
 
-void AddressBookPage::contextualMenu(const QPoint &point)
+void MessengerAddressBook::contextualMenu(const QPoint &point)
 {
     QModelIndex index = ui->tableView->indexAt(point);
     if(index.isValid())
@@ -321,9 +283,9 @@ void AddressBookPage::contextualMenu(const QPoint &point)
     }
 }
 
-void AddressBookPage::selectNewAddress(const QModelIndex &parent, int begin, int /*end*/)
+void MessengerAddressBook::selectNewAddress(const QModelIndex &parent, int begin, int /*end*/)
 {
-    QModelIndex idx = proxyModel->mapFromSource(model->index(begin, AddressTableModel::Address, parent));
+    QModelIndex idx = proxyModel->mapFromSource(model->index(begin, MessengerBookModel::Address, parent));
     if(idx.isValid() && (idx.data(Qt::EditRole).toString() == newAddressToSelect))
     {
         // Select row of newly created address, once

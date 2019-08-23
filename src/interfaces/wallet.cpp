@@ -180,6 +180,40 @@ public:
         }
         return result;
     }
+
+    bool setMsgAddressBook(const std::string& address, const std::string& name) override
+    {
+        return m_wallet.SetMsgAddressBook(address, name);
+    }
+
+    bool delMsgAddressBook(const std::string& dest) override
+    {
+        return m_wallet.DelMsgAddressBook(dest);
+    }
+
+    bool getMsgAddress(const std::string& dest, std::string* name) override
+    {
+        LOCK(m_wallet.cs_wallet);
+        auto it = m_wallet.mapMessengerAddressBook.find(dest);
+        if (it == m_wallet.mapMessengerAddressBook.end()) {
+            return false;
+        }
+        if (name) {
+            *name = it->second.name;
+        }
+        return true;
+    }
+
+    std::vector<MsgWalletAddress> getMsgAddresses() override
+    {
+        LOCK(m_wallet.cs_wallet);
+        std::vector<MsgWalletAddress> result;
+        for (const auto& item : m_wallet.mapMessengerAddressBook) {
+            result.emplace_back(item.first, item.second.name);
+        }
+        return result;
+    }
+
     void learnRelatedScripts(const CPubKey& key, OutputType type) override { m_wallet.LearnRelatedScripts(key, type); }
     bool addDestData(const CTxDestination& dest, const std::string& key, const std::string& value) override
     {

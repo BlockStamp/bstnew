@@ -131,6 +131,7 @@ QT_MOC_CPP = \
   qt/moc_coincontroltreewidget.cpp \
   qt/moc_csvmodelwriter.cpp \
   qt/moc_editaddressdialog.cpp \
+  qt/moc_editmsgaddressdialog.cpp \
   qt/moc_guiutil.cpp \
   qt/moc_intro.cpp \
   qt/moc_macdockiconhandler.cpp \
@@ -151,6 +152,8 @@ QT_MOC_CPP = \
   qt/moc_datapage.cpp \
   qt/moc_gamepage.cpp \
   qt/moc_messengerpage.cpp \
+  qt/moc_messengeraddressbook.cpp \
+  qt/moc_messengerbookmodel.cpp \
   qt/moc_gametxdialog.cpp \
   qt/moc_rpcconsole.cpp \
   qt/moc_sendcoinsdialog.cpp \
@@ -205,6 +208,7 @@ BITCOIN_QT_H = \
   qt/coincontroltreewidget.h \
   qt/csvmodelwriter.h \
   qt/editaddressdialog.h \
+  qt/editmsgaddressdialog.h \
   qt/gemetxdialog.h \
   qt/guiconstants.h \
   qt/guiutil.h \
@@ -230,6 +234,8 @@ BITCOIN_QT_H = \
   qt/datapage.h \
   qt/gamepage.h \
   qt/messengerpage.h \
+  qt/messengeraddressbook.h \
+  qt/messengerbookmodel.h \
   qt/rpcconsole.h \
   qt/sendcoinsdialog.h \
   qt/sendcoinsentry.h \
@@ -348,8 +354,11 @@ BITCOIN_QT_WALLET_CPP = \
   qt/datapage.cpp \
   qt/gamepage.cpp \
   qt/messengerpage.cpp \
+  qt/messengeraddressbook.cpp \
+  qt/messengerbookmodel.cpp \
   qt/gametxdialog.cpp \
   qt/editaddressdialog.cpp \
+  qt/editmsgaddressdialog.cpp \
   qt/openuridialog.cpp \
   qt/overviewpage.cpp \
   qt/paymentrequestplus.cpp \

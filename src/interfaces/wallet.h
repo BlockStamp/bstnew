@@ -34,6 +34,7 @@ namespace interfaces {
 class Handler;
 class PendingWalletTx;
 struct WalletAddress;
+struct MsgWalletAddress;
 struct WalletBalances;
 struct WalletTx;
 struct WalletTxOut;
@@ -105,6 +106,17 @@ public:
 
     //! Get wallet address list.
     virtual std::vector<WalletAddress> getAddresses() = 0;
+
+    //! Add or update messanger address book.
+    virtual bool setMsgAddressBook(const std::string& address, const std::string& name) = 0;
+
+    //! Remove messenger address
+    virtual bool delMsgAddressBook(const std::string& dest) = 0;
+
+    //! Get messenger address
+    virtual bool getMsgAddress(const std::string& dest, std::string* name) = 0;
+
+    virtual std::vector<MsgWalletAddress> getMsgAddresses() = 0;
 
     //! Add scripts to key store so old so software versions opening the wallet
     //! database can detect payments to newer address types.
@@ -306,6 +318,17 @@ struct WalletAddress
 
     WalletAddress(CTxDestination dest, isminetype is_mine, std::string name, std::string purpose)
         : dest(std::move(dest)), is_mine(is_mine), name(std::move(name)), purpose(std::move(purpose))
+    {
+    }
+};
+
+struct MsgWalletAddress
+{
+    std::string dest;
+    std::string name;
+
+    MsgWalletAddress(std::string _dest, std::string _name)
+        : dest(std::move(_dest)), name(std::move(_name))
     {
     }
 };

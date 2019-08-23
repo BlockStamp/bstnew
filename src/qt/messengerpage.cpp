@@ -11,12 +11,14 @@
 #include <QVBoxLayout>
 
 #include <qt/addresstablemodel.h>
+#include <qt/messengerbookmodel.h>
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/coincontroldialog.h>
 #include <qt/messengerpage.h>
 #include <qt/forms/ui_messengerpage.h>
 #include <qt/guiutil.h>
+#include <qt/messengeraddressbook.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 #include <qt/walletmodel.h>
@@ -125,6 +127,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
+    connect(ui->addressBookButton, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
 }
 
 MessengerPage::~MessengerPage()
@@ -306,6 +309,8 @@ void MessengerPage::setModel(WalletModel *model)
     connect(walletModel->getOptionsModel(), &OptionsModel::coinControlFeaturesChanged, this, &MessengerPage::coinControlFeatureChanged);
     ui->frameCoinControl->setVisible(walletModel->getOptionsModel()->getCoinControlFeatures());
     coinControlUpdateLabels();
+
+    m_messengerBookModel = new MessengerBookModel(walletModel);
 
     fillUpTable();
 }
@@ -729,5 +734,17 @@ void MessengerPage::fillUpTable()
         ui->transactionTable->setItem(row, 1, new QTableWidgetItem(it.from.c_str()));
         ui->transactionTable->setItem(row, 2, new QTableWidgetItem(it.subject.c_str()));
         ++row;
+    }
+}
+
+void MessengerPage::on_addressBookPressed()
+{
+    std::cout << "addressBook open" << std::endl;
+    MessengerAddressBook book(platformStyle, this);
+    book.setModel(m_messengerBookModel);
+    if (book.exec())
+    {
+        std::cout << book.getReturnValue().toUtf8().constData() << std::endl;
+        ui->subjectEdit->setFocus();
     }
 }
