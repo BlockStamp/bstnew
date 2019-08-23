@@ -638,14 +638,18 @@
                      </property>
                     </widget>
                    </item>
-                   <item>
-                    <widget class="QCheckBox" name="markGpgCheckBox">
-                     <property name="text">
-                      <string>Mark GPG Message</string>
-                     </property>
-                    </widget>
-                   </item>
                   </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_23">
+                <item>
+                 <widget class="QCheckBox" name="markGpgCheckBox">
+                  <property name="text">
+                   <string>Add GPG Prefix</string>
+                  </property>
                  </widget>
                 </item>
                </layout>
