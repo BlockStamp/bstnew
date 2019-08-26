@@ -166,7 +166,7 @@ public:
     {
     }
 
-    void printTransaction();
+    void printTransaction(); //TODO: Only for debugging - remove later
 
     WalletBatch(const WalletBatch&) = delete;
     WalletBatch& operator=(const WalletBatch&) = delete;
@@ -219,6 +219,7 @@ public:
 
     DBErrors LoadWallet(CWallet* pwallet);
     DBErrors FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);
+    DBErrors FindEncrMsgTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx); //TODO: Only for debugging - remove later
     DBErrors ZapWalletTx(std::vector<CWalletTx>& vWtx);
     DBErrors ZapSelectTx(std::vector<uint256>& vHashIn, std::vector<uint256>& vHashOut);
     /* Try to (very carefully!) recover wallet database (with a possible key type filter) */

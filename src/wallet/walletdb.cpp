@@ -664,13 +664,78 @@ DBErrors WalletBatch::FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CW
     return result;
 }
 
+DBErrors WalletBatch::FindEncrMsgTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx)
+{
+    DBErrors result = DBErrors::LOAD_OK;
+
+    try {
+        int nMinVersion = 0;
+        if (m_batch.Read((std::string)"minversion", nMinVersion))
+        {
+            if (nMinVersion > FEATURE_LATEST)
+                return DBErrors::TOO_NEW;
+        }
+
+        // Get cursor
+        Dbc* pcursor = m_batch.GetCursor();
+        if (!pcursor)
+        {
+            LogPrintf("Error getting wallet database cursor\n");
+            return DBErrors::CORRUPT;
+        }
+
+        while (true)
+        {
+            // Read next record
+            CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+            CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+            int ret = m_batch.ReadAtCursor(pcursor, ssKey, ssValue);
+            if (ret == DB_NOTFOUND)
+                break;
+            else if (ret != 0)
+            {
+                LogPrintf("Error reading next record from wallet database\n");
+                return DBErrors::CORRUPT;
+            }
+
+            std::string strType;
+            ssKey >> strType;
+            if (strType == "msg_tx") {
+                uint256 hash;
+                ssKey >> hash;
+
+                std::string from;
+                ssValue >> from;
+
+                std::string subject;
+                ssValue >> subject;
+
+                CWalletTx wtx(nullptr /* pwallet */, MakeTransactionRef());
+                ssValue >> wtx;
+
+                vTxHash.push_back(hash);
+                vWtx.push_back(wtx);
+            }
+        }
+        pcursor->close();
+    }
+    catch (const boost::thread_interrupted&) {
+        throw;
+    }
+    catch (...) {
+        result = DBErrors::CORRUPT;
+    }
+
+    return result;
+}
+
 void WalletBatch::printTransaction() {
     std::cout << "Printing wallet transactions form " << m_database.getDbName() << std::endl;
 
     std::vector<uint256> vTxHash;
     std::vector<CWalletTx> vWtx;
 
-    DBErrors err = FindWalletTx(vTxHash, vWtx);
+    DBErrors err = FindEncrMsgTx(vTxHash, vWtx);
     if (err != DBErrors::LOAD_OK) {
         std::cout << "Error: " << (int)err << std::endl;
     }

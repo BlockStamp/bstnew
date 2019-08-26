@@ -1310,7 +1310,7 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
 
     m_last_block_processed = pindex;
 
-    std::cout << "BLOCK CONNECTED: " << pblock->ToString() << std::endl;
+    std::cout << "BLOCK CONNECTED: " << pblock->GetHash().ToString() << std::endl;
 
     std::cout << "Prining encrMsgMapWallet txs:\n";
     for (auto &it : encrMsgMapWallet) {

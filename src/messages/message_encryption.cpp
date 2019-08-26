@@ -45,7 +45,7 @@ std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
 {
     EVP_CIPHER_CTX_free_ptr ctx(EVP_CIPHER_CTX_new(), ::EVP_CIPHER_CTX_free);
 
-    if(1 != EVP_EncryptInit_ex(ctx.get(), EVP_aes_256_cbc(), NULL, key, iv)) {
+    if(1 != EVP_EncryptInit_ex(ctx.get(), EVP_aes_256_cbc(), nullptr, key, iv)) {
         throw std::runtime_error("Failed to encrypt data");
     }
 
@@ -147,11 +147,14 @@ int decryptKey(unsigned char* encryptedData, int dataLength, const char* rsaKey,
         throw std::runtime_error("Failed to decrypt message");
     }
 
-    const int result = RSA_private_decrypt(rsaSize, encryptedData, decryptedKey, rsa, padding);
+    std::unique_ptr<unsigned char[]> decryptedData(new unsigned char[rsaSize]);
+    const int result = RSA_private_decrypt(rsaSize, encryptedData, decryptedData.get(), rsa, padding);
+
     if (result == -1 || result != AES_256_KEY_LENGTH_BYTES) {
         throw std::runtime_error("Failed to decrypt message");
     }
 
+    memcpy(decryptedKey, decryptedData.get(), AES_256_KEY_LENGTH_BYTES);
     return rsaSize;
 }
 
@@ -238,6 +241,9 @@ std::vector<unsigned char> createDecryptedMessage(
     return decryptData(encryptedData, dataLength, aesKey, aesIv);
 }
 
+//TODO: Functions like BIO_read may fail - add check for return values
+//TODO: Consider changing raw pointers to std::unique_ptr, functions like BIO_free_all
+// may be used as deleters (look at EVP_CIPHER_CTX_free_ptr)
 bool generateKeysPair(std::string& publicRsaKey, std::string& privateRsaKey)
 {
     size_t privateKeyLength;
