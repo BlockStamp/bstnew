@@ -727,7 +727,7 @@ void MessengerPage::fillUpTable()
         time_t t = it.wltTx.nTimeReceived;
         std::tm *ptm = std::localtime(&t);
         char buffer[32];
-        //TODO: If two transactions are created witihin the same minute, they are displayed in random order in the messanger.
+        //TODO: If two transactions are created witihin the same minute, they are displayed in random order in the messenger.
         //Would be better to sort with granulity of 1s not 1m
         std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
 
@@ -741,7 +741,9 @@ void MessengerPage::fillUpTable()
     }
 
     ui->transactionTable->setSortingEnabled(true);
-    ui->transactionTable->horizontalHeader()->setSortIndicator(0, Qt::DescendingOrder);
+    if (ui->transactionTable->horizontalHeader()->sortIndicatorSection() >= ui->transactionTable->columnCount()) {
+        ui->transactionTable->horizontalHeader()->setSortIndicator(0, Qt::DescendingOrder);
+    }
 }
 
 void MessengerPage::on_addressBookPressed()
