@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QStyledItemDelegate>
 
 #include <qt/addresstablemodel.h>
 #include <qt/messengerbookmodel.h>
@@ -54,6 +55,18 @@ extern int getIndexForConfTarget(int target);
 
 //TODO: 8=tag length, fix it with define
 static constexpr int maxDataSize=MAX_OP_RETURN_RELAY-6-8;
+
+class DateDisplayDelegate : public QStyledItemDelegate
+{
+    QString displayText(const QVariant &value, const QLocale&) const override
+    {
+        std::time_t t = value.toULongLong();
+        std::tm *ptm = std::localtime(&t);
+        char buffer[32];
+        std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
+        return buffer;
+    }
+} dateDelegate;
 
 MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *parent) :
     QWidget(parent),
@@ -122,12 +135,14 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
 
     ui->transactionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->transactionTable->setItemDelegateForColumn(0, &dateDelegate);
     ui->messageViewEdit->setReadOnly(true);
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
     connect(ui->addressBookButton, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
+
 }
 
 MessengerPage::~MessengerPage()
@@ -723,15 +738,8 @@ void MessengerPage::fillUpTable()
     int row = 0;
     for (auto index  = transactions.begin(); index != transactions.end(); ++index)
     {
-        auto &it  = index->second;
-        time_t t = it.wltTx.nTimeReceived;
-        std::tm *ptm = std::localtime(&t);
-        char buffer[32];
-        //TODO: If two transactions are created witihin the same minute, they are displayed in random order in the messenger.
-        //Would be better to sort with granulity of 1s not 1m
-        std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
-
-        QTableWidgetItem *item = new QTableWidgetItem(buffer);
+        const TransactionValue &it  = index->second;
+        QTableWidgetItem *item = new QTableWidgetItem(QString::number(it.wltTx.nTimeReceived));
         item->setData(Qt::UserRole, index->first.ToString().c_str());
 
         ui->transactionTable->setItem(row, 0, item);
@@ -741,7 +749,8 @@ void MessengerPage::fillUpTable()
     }
 
     ui->transactionTable->setSortingEnabled(true);
-    if (ui->transactionTable->horizontalHeader()->sortIndicatorSection() >= ui->transactionTable->columnCount()) {
+    if (ui->transactionTable->horizontalHeader()->sortIndicatorSection() >= ui->transactionTable->columnCount())
+    {
         ui->transactionTable->horizontalHeader()->setSortIndicator(0, Qt::DescendingOrder);
     }
 }
