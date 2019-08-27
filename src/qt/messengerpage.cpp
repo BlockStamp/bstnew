@@ -708,15 +708,17 @@ std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress
 
 void MessengerPage::fillUpTable()
 {
-
     std::shared_ptr<CWallet> wallet = GetWallets()[0];
     if (wallet == nullptr) {
         return;
     }
-    ui->transactionTable->clearContents();
 
     TransactionsMap& transactions = wallet->encrMsgMapWallet;
+
+    ui->transactionTable->clearContents();
+    ui->transactionTable->setRowCount(0);
     ui->transactionTable->setRowCount(transactions.size());
+    ui->transactionTable->setSortingEnabled(false);
 
     int row = 0;
     for (auto index  = transactions.begin(); index != transactions.end(); ++index)
@@ -737,6 +739,9 @@ void MessengerPage::fillUpTable()
         ui->transactionTable->setItem(row, 2, new QTableWidgetItem(it.subject.c_str()));
         ++row;
     }
+
+    ui->transactionTable->setSortingEnabled(true);
+    ui->transactionTable->horizontalHeader()->setSortIndicator(0, Qt::DescendingOrder);
 }
 
 void MessengerPage::on_addressBookPressed()
