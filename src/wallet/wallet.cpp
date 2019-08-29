@@ -804,18 +804,6 @@ int64_t CWallet::IncOrderPosNext(WalletBatch *batch)
     return nRet;
 }
 
-//TODO: Check if this function is needed
-int64_t CWallet::IncEncrMsgOrderPosNext(WalletBatch *batch) {
-    AssertLockHeld(cs_wallet); // nEncrMsgOrderPosNext
-    int64_t nRet = nEncrMsgOrderPosNext++;
-    if (batch) {
-        batch->WriteEncrMsgOrderPosNext(nEncrMsgOrderPosNext);
-    } else {
-        WalletBatch(*msgDatabase).WriteEncrMsgOrderPosNext(nEncrMsgOrderPosNext);
-    }
-    return nRet;
-}
-
 void CWallet::MarkDirty()
 {
     {
@@ -1004,8 +992,6 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
 
     // Write to disk
     if (fInsertedNew || fUpdated) {
-        //TODO: Check if setting of wtx.nOrderPos is needed
-        wtx.nOrderPos = IncEncrMsgOrderPosNext(&batch);
         batch.WriteEncrMsgTx(from, subject, wtx);
     }
 
