@@ -10,6 +10,7 @@
 #include <interfaces/node.h>
 #include <key_io.h>
 #include <wallet/wallet.h>
+#include <messages/message_utils.h>
 
 #include <QFont>
 #include <QDebug>
@@ -91,7 +92,7 @@ public:
         qSort(cachedAddressTable.begin(), cachedAddressTable.end(), AddressTableEntryLessThan());
     }
 
-    void updateEntry(const QString &address, const QString &label, bool isMine, const QString &purpose, int status)
+    void updateEntry(const QString &address, const QString &label, int status)
     {
         // Find address / label in model
         QList<AddressTableEntry>::iterator lower = qLowerBound(
@@ -101,7 +102,9 @@ public:
         int lowerIndex = (lower - cachedAddressTable.begin());
         int upperIndex = (upper - cachedAddressTable.begin());
         bool inModel = (lower != upper);
-        AddressTableEntry::Type newEntryType = translateTransactionType(purpose, isMine);
+//        AddressTableEntry::Type newEntryType = translateTransactionType(purpose, isMine);
+        //TODO: Check if other types are not needed
+        AddressTableEntry::Type newEntryType = AddressTableEntry::Type::Sending;
 
         switch(status)
         {
@@ -111,6 +114,7 @@ public:
                 qWarning() << "AddressTablePriv::updateEntry: Warning: Got CT_NEW, but entry is already in model";
                 break;
             }
+
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
             cachedAddressTable.insert(lowerIndex, AddressTableEntry(newEntryType, label, address));
             parent->endInsertRows();
@@ -317,11 +321,10 @@ QModelIndex MessengerBookModel::index(int row, int column, const QModelIndex &pa
     }
 }
 
-void MessengerBookModel::updateEntry(const QString &address,
-        const QString &label, bool isMine, const QString &purpose, int status)
+void MessengerBookModel::updateEntry(const QString &address, const QString &label, int status)
 {
-    // Update address book model from Bitcoin core
-    priv->updateEntry(address, label, isMine, purpose, status);
+    // Update messenger address book model
+    priv->updateEntry(address, label, status);
 }
 
 QString MessengerBookModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type)
@@ -334,12 +337,11 @@ QString MessengerBookModel::addRow(const QString &type, const QString &label, co
 
     if(type == Send)
     {
-        ///TODO: add address validation
-//        if()
-//        {
-//            editStatus = INVALID_ADDRESS;
-//            return QString();
-//        }
+        if(!checkRSApublicKey(strAddress))
+        {
+            editStatus = INVALID_ADDRESS;
+            return QString();
+        }
         // Check for duplicate addresses
         {
             if (walletModel->wallet().getMsgAddress(strAddress, /* name= */ nullptr))

@@ -1092,6 +1092,14 @@ public:
             ChangeType status)> NotifyAddressBookChanged;
 
     /**
+     * Messanger address book entry changed.
+     * @note called with lock cs_wallet held.
+     */
+    boost::signals2::signal<void (CWallet *wallet, const std::string &key,
+            const std::string &label,
+            ChangeType status)> NotifyMessengerAddressBookChanged;
+
+    /**
      * Wallet transaction added, removed or updated.
      * @note called with lock cs_wallet held.
      */

@@ -277,6 +277,12 @@ public:
         ChangeType status)>;
     virtual std::unique_ptr<Handler> handleAddressBookChanged(AddressBookChangedFn fn) = 0;
 
+    //! Register handler for messenger address book changed messages.
+    using MessengerAddressBookChangedFn = std::function<void(const std::string& address,
+        const std::string& label,
+        ChangeType status)>;
+    virtual std::unique_ptr<Handler> handleMessengerAddressBookChanged(MessengerAddressBookChangedFn fn) = 0;
+
     //! Register handler for transaction changed messages.
     using TransactionChangedFn = std::function<void(const uint256& txid, ChangeType status)>;
     virtual std::unique_ptr<Handler> handleTransactionChanged(TransactionChangedFn fn) = 0;

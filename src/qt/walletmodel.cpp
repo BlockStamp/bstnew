@@ -5,6 +5,7 @@
 #include <qt/walletmodel.h>
 
 #include <qt/addresstablemodel.h>
+#include <qt/messengerbookmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/optionsmodel.h>
 #include <qt/paymentserver.h>
@@ -39,6 +40,7 @@ WalletModel::WalletModel(std::unique_ptr<interfaces::Wallet> wallet, interfaces:
     fForceCheckBalanceChanged = false;
 
     addressTableModel = new AddressTableModel(this);
+    messengerBookModel = new MessengerBookModel(this);
     transactionTableModel = new TransactionTableModel(platformStyle, this);
     recentRequestsTableModel = new RecentRequestsTableModel(this);
 
@@ -112,6 +114,12 @@ void WalletModel::updateAddressBook(const QString &address, const QString &label
 {
     if(addressTableModel)
         addressTableModel->updateEntry(address, label, isMine, purpose, status);
+}
+
+void WalletModel::updateMessengerAddressBook(const QString &address, const QString &label, int status)
+{
+    if (messengerBookModel)
+        messengerBookModel->updateEntry(address, label, status);
 }
 
 void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
@@ -397,6 +405,16 @@ static void NotifyAddressBookChanged(WalletModel *walletmodel,
                               Q_ARG(int, status));
 }
 
+static void NotifyMessengerAddressBookChanged(WalletModel *walletmodel,
+        const std::string &address, const std::string &label,
+        ChangeType status)
+{
+    QMetaObject::invokeMethod(walletmodel, "updateMessengerAddressBook", Qt::QueuedConnection,
+                              Q_ARG(QString, QString::fromStdString(address)),
+                              Q_ARG(QString, QString::fromStdString(label)),
+                              Q_ARG(int, status));
+}
+
 static void NotifyTransactionChanged(WalletModel *walletmodel, const uint256 &hash, ChangeType status)
 {
     Q_UNUSED(hash);
@@ -429,6 +447,7 @@ void WalletModel::subscribeToCoreSignals()
     m_handler_unload = m_wallet->handleUnload(boost::bind(&NotifyUnload, this));
     m_handler_status_changed = m_wallet->handleStatusChanged(boost::bind(&NotifyKeyStoreStatusChanged, this));
     m_handler_address_book_changed = m_wallet->handleAddressBookChanged(boost::bind(NotifyAddressBookChanged, this, _1, _2, _3, _4, _5));
+    m_handler_messenger_address_book_changed = m_wallet->handleMessengerAddressBookChanged(boost::bind(NotifyMessengerAddressBookChanged, this, _1, _2, _3));
     m_handler_transaction_changed = m_wallet->handleTransactionChanged(boost::bind(NotifyTransactionChanged, this, _1, _2));
     m_handler_encr_msg_transaction_changed = m_wallet->handleMsgTransactionChanged(boost::bind(NotifyEncrMsgTransactionChanged, this));
     m_handler_show_progress = m_wallet->handleShowProgress(boost::bind(ShowProgress, this, _1, _2));
@@ -441,6 +460,7 @@ void WalletModel::unsubscribeFromCoreSignals()
     m_handler_unload->disconnect();
     m_handler_status_changed->disconnect();
     m_handler_address_book_changed->disconnect();
+    m_handler_messenger_address_book_changed->disconnect();
     m_handler_transaction_changed->disconnect();
     m_handler_encr_msg_transaction_changed->disconnect();
     m_handler_show_progress->disconnect();

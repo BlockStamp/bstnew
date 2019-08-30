@@ -3324,7 +3324,10 @@ bool CWallet::SetMsgAddressBook(const std::string &address, const std::string &n
         fUpdated = mi != mapMessengerAddressBook.end();
         mapMessengerAddressBook[address].name = name;
     }
-    return WalletBatch(*database).WriteMsgAddress(address, name);
+
+    NotifyMessengerAddressBookChanged(this, address, name, (fUpdated ? CT_UPDATED : CT_NEW));
+
+    return WalletBatch(*msgDatabase).WriteMsgAddress(address, name);
 }
 
 bool CWallet::DelMsgAddressBook(const std::string &address)

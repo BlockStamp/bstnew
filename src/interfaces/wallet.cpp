@@ -480,6 +480,12 @@ public:
             [fn](CWallet*, const CTxDestination& address, const std::string& label, bool is_mine,
                 const std::string& purpose, ChangeType status) { fn(address, label, is_mine, purpose, status); }));
     }
+    std::unique_ptr<Handler> handleMessengerAddressBookChanged(MessengerAddressBookChangedFn fn) override
+    {
+        return MakeHandler(m_wallet.NotifyMessengerAddressBookChanged.connect(
+            [fn](CWallet*, const std::string& address, const std::string& label, ChangeType status)
+        { fn(address, label, status); }));
+    }
     std::unique_ptr<Handler> handleTransactionChanged(TransactionChangedFn fn) override
     {
         return MakeHandler(m_wallet.NotifyTransactionChanged.connect(

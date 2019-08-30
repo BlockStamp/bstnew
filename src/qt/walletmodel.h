@@ -24,6 +24,7 @@
 enum class OutputType;
 
 class AddressTableModel;
+class MessengerBookModel;
 class OptionsModel;
 class PlatformStyle;
 class RecentRequestsTableModel;
@@ -212,6 +213,7 @@ private:
     std::unique_ptr<interfaces::Handler> m_handler_unload;
     std::unique_ptr<interfaces::Handler> m_handler_status_changed;
     std::unique_ptr<interfaces::Handler> m_handler_address_book_changed;
+    std::unique_ptr<interfaces::Handler> m_handler_messenger_address_book_changed;
     std::unique_ptr<interfaces::Handler> m_handler_transaction_changed;
     std::unique_ptr<interfaces::Handler> m_handler_encr_msg_transaction_changed;
     std::unique_ptr<interfaces::Handler> m_handler_show_progress;
@@ -226,6 +228,7 @@ private:
     OptionsModel *optionsModel;
 
     AddressTableModel *addressTableModel;
+    MessengerBookModel *messengerBookModel;
     TransactionTableModel *transactionTableModel;
     RecentRequestsTableModel *recentRequestsTableModel;
 
@@ -277,6 +280,8 @@ public Q_SLOTS:
     void updateTransaction();
     /* New, updated or removed address book entry */
     void updateAddressBook(const QString &address, const QString &label, bool isMine, const QString &purpose, int status);
+    /* New, updated or removed messenger address book entry */
+    void updateMessengerAddressBook(const QString &address, const QString &label, int status);
     /* Watch-only added */
     void updateWatchOnlyFlag(bool fHaveWatchonly);
     /* Current, immature or unconfirmed balance might have changed - emit 'balanceChanged' if so */
