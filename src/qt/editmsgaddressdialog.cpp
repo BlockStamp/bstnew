@@ -3,26 +3,44 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <qt/editmsgaddressdialog.h>
-#include <qt/forms/ui_editaddressdialog.h>
+#include <qt/forms/ui_editmsgaddressdialog.h>
 
 #include <qt/addresstablemodel.h>
 #include <qt/guiutil.h>
 #include <qt/messengerbookmodel.h>
-
 #include <QDataWidgetMapper>
 #include <QMessageBox>
 
+#include <messages/message_utils.h>
+
+static void setupAddressWidget(QTextEdit *widget, QWidget *parent)
+{
+    parent->setFocusProxy(widget);
+    widget->setFont(GUIUtil::fixedPitchFont());
+
+    const QString dummyRsaPubKey =
+    "-----BEGIN PUBLIC KEY-----\n"
+    "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnvanuzAlf2ojpCDpeJgR\n"
+    "+bYAMCgkaDo2DQ4cpYn/EvIQI8AWiE29iA83B35zM9Qxd7NcRE1sxci1x52hE9Lz\n"
+    "kZ3Nl3nrEe2DqD6KQWqctTu6YNtcPZBmOah3eFNdGULYvy7UvXQe/yIGbGvyjuRI\n"
+    "OLKODYL30yH6AQZI6eM98NXbP6bw76y21/zzZDDMoEEcjYd++pq18BUzBH1Sy1fv\n"
+    "Cqvd1DDy5HpM73zt10ppZm/vPUjRezhMCb3+4NdGCB0/9jZRCbt+klqaXSwHxy+8\n"
+    "Bvf9L1QF6cR5Tzy/+mDfRnXzHBo7Hv/abT1EvqPZH/6D95FcK9TJTdij/bx4Hof1\n"
+    "IQIDAQAB\n"
+    "-----END PUBLIC KEY-----";
+
+    widget->setPlaceholderText("Enter a public RSA key, e.g.\n" + dummyRsaPubKey);
+}
 
 EditMsgAddressDialog::EditMsgAddressDialog(Mode _mode, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::EditAddressDialog),
+    ui(new Ui::EditMsgAddressDialog),
     mapper(0),
     mode(_mode),
     model(0)
 {
     ui->setupUi(this);
-
-    GUIUtil::setupAddressWidget(ui->addressEdit, this);
+    setupAddressWidget(ui->addressEdit, this);
 
     switch(mode)
     {
@@ -44,6 +62,8 @@ EditMsgAddressDialog::EditMsgAddressDialog(Mode _mode, QWidget *parent) :
     GUIUtil::ItemDelegate* delegate = new GUIUtil::ItemDelegate(mapper);
     connect(delegate, &GUIUtil::ItemDelegate::keyEscapePressed, this, &EditMsgAddressDialog::reject);
     mapper->setItemDelegate(delegate);
+
+    connect(ui->addressEdit, &QTextEdit::textChanged, this, &EditMsgAddressDialog::validateRsaKey);
 }
 
 EditMsgAddressDialog::~EditMsgAddressDialog()
@@ -78,18 +98,32 @@ bool EditMsgAddressDialog::saveCurrentRow()
         address = model->addRow(
                 AddressTableModel::Send,
                 ui->labelEdit->text(),
-                ui->addressEdit->text(),
+                ui->addressEdit->toPlainText(),
                 model->GetDefaultAddressType());
         break;
     case EditReceivingAddress:
     case EditSendingAddress:
         if(mapper->submit())
         {
-            address = ui->addressEdit->text();
+            address = ui->addressEdit->toPlainText();
         }
         break;
     }
     return !address.isEmpty();
+}
+
+void EditMsgAddressDialog::validateRsaKey()
+{
+    if (checkRSApublicKey(ui->addressEdit->toPlainText().toUtf8().constData())) {
+        ui->warningLabel->setVisible(false);
+    }
+    else {
+        QPalette p;
+        p.setColor(ui->warningLabel->foregroundRole(), Qt::red);
+        ui->warningLabel->setPalette(p);
+        ui->warningLabel->setText("Invalid RSA public key");
+        ui->warningLabel->setVisible(true);
+    }
 }
 
 void EditMsgAddressDialog::accept()
@@ -109,7 +143,7 @@ void EditMsgAddressDialog::accept()
             break;
         case AddressTableModel::INVALID_ADDRESS:
             QMessageBox::warning(this, windowTitle(),
-                tr("The entered address \"%1\" is not a valid BST address.").arg(ui->addressEdit->text()),
+                tr("The entered address \"%1\" is not a valid BST address.").arg(ui->addressEdit->toPlainText()),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
         case AddressTableModel::DUPLICATE_ADDRESS:
@@ -136,7 +170,7 @@ void EditMsgAddressDialog::accept()
 
 QString EditMsgAddressDialog::getDuplicateAddressWarning() const
 {
-    QString dup_address = ui->addressEdit->text();
+    QString dup_address = ui->addressEdit->toPlainText();
     QString existing_label = model->labelForAddress(dup_address);
     QString existing_purpose = model->purposeForAddress(dup_address);
 

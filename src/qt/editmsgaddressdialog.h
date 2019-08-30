@@ -10,7 +10,7 @@
 class MessengerBookModel;
 
 namespace Ui {
-    class EditAddressDialog;
+    class EditMsgAddressDialog;
 }
 
 QT_BEGIN_NAMESPACE
@@ -42,13 +42,16 @@ public:
 public Q_SLOTS:
     void accept();
 
+private Q_SLOTS:
+    void validateRsaKey();
+
 private:
     bool saveCurrentRow();
 
     /** Return a descriptive string when adding an already-existing address fails. */
     QString getDuplicateAddressWarning() const;
 
-    Ui::EditAddressDialog *ui;
+    Ui::EditMsgAddressDialog *ui;
     QDataWidgetMapper *mapper;
     Mode mode;
     MessengerBookModel *model;

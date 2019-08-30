@@ -20,45 +20,13 @@
 #include <wallet/fees.h>
 #include <univalue.h>
 #include <memory>
-#include "messages/message_encryption.h"
+#include <messages/message_encryption.h>
+#include <messages/message_utils.h>
 #include <data/retrievedatatxs.h>
 
 #include <boost/algorithm/string.hpp>
 
 static constexpr size_t maxDataSize=MAX_OP_RETURN_RELAY-6;
-
-bool checkRSApublicKey(const std::string& rsaPublicKey) {
-    const std::string keyBeg = "-----BEGIN PUBLIC KEY-----\n";
-    const std::string keyEnd = "-----END PUBLIC KEY-----";
-
-    auto posbeg = rsaPublicKey.find(keyBeg);
-    if (posbeg != 0) {
-        return false;
-    }
-
-    auto posend = rsaPublicKey.find(keyEnd);
-    if (posend == std::string::npos) {
-        return false;
-    }
-    std::size_t encodingLength = posend - keyBeg.length();
-
-    // RSA 1024
-    if (encodingLength == 220) {
-        return true;
-    }
-
-    // RSA 2048
-    if (encodingLength == 399) {
-        return true;
-    }
-
-    // RSA 4096
-    if (encodingLength == 748) {
-        return true;
-    }
-
-    return false;
-}
 
 UniValue sendmessage(const JSONRPCRequest& request)
 {

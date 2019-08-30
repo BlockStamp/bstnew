@@ -144,6 +144,7 @@ BITCOIN_CORE_H = \
   memusage.h \
   merkleblock.h \
   messages/message_encryption.h \
+  messages/message_utils.h \
   miner.h \
   names/common.h \
   names/encoding.h \
@@ -259,6 +260,7 @@ libbitcoin_server_a_SOURCES = \
   dbwrapper.cpp \
   merkleblock.cpp \
   messages/message_encryption.cpp \
+  messages/message_utils.cpp \
   miner.cpp \
   names/main.cpp \
   net.cpp \
