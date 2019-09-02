@@ -59,7 +59,6 @@ private:
     CFeeRate feeRate;
     QButtonGroup *groupFee;
     const PlatformStyle *platformStyle;
-    MessengerBookModel *m_messengerBookModel;
 
     void unlockWallet();
     void minimizeFeeSection(bool fMinimize);

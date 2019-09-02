@@ -44,14 +44,14 @@ protected:
         auto label = model->index(row, MessengerBookModel::Label, parent);
 
         if (model->data(label, MessengerBookModel::TypeRole).toString() != m_type) {
-//            return false;
+            return false;
         }
 
         auto address = model->index(row, MessengerBookModel::Address, parent);
 
         if (filterRegExp().indexIn(model->data(address).toString()) < 0 &&
             filterRegExp().indexIn(model->data(label).toString()) < 0) {
-//            return false;
+            return false;
         }
 
         return true;
@@ -125,7 +125,7 @@ void MessengerAddressBook::setModel(MessengerBookModel *_model)
     if(!_model)
         return;
 
-    proxyModel = new AddressBookSortFilterProxyModel("send", this);
+    proxyModel = new AddressBookSortFilterProxyModel(AddressTableModel::Send, this);
     proxyModel->setSourceModel(_model);
 
     connect(ui->searchLineEdit, &QLineEdit::textChanged, proxyModel, &QSortFilterProxyModel::setFilterWildcard);
@@ -231,8 +231,9 @@ void MessengerAddressBook::done(int retval)
 {
     printf("%d\n", __LINE__);
     QTableView *table = ui->tableView;
-    if(!table->selectionModel() || !table->model())
+    if(!table->selectionModel() || !table->model()) {
         return;
+    }
 
     // Figure out which address was selected, and return it
     QModelIndexList indexes = table->selectionModel()->selectedRows(MessengerBookModel::Address);

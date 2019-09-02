@@ -138,6 +138,7 @@ public:
 
     OptionsModel *getOptionsModel();
     AddressTableModel *getAddressTableModel();
+    MessengerBookModel *getMsgAddressTableModel();
     TransactionTableModel *getTransactionTableModel();
     RecentRequestsTableModel *getRecentRequestsTableModel();
 

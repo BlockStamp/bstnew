@@ -324,9 +324,6 @@ void MessengerPage::setModel(WalletModel *model)
     connect(walletModel->getOptionsModel(), &OptionsModel::coinControlFeaturesChanged, this, &MessengerPage::coinControlFeatureChanged);
     ui->frameCoinControl->setVisible(walletModel->getOptionsModel()->getCoinControlFeatures());
     coinControlUpdateLabels();
-
-    m_messengerBookModel = new MessengerBookModel(walletModel);
-
     fillUpTable();
 }
 
@@ -757,12 +754,11 @@ void MessengerPage::fillUpTable()
 
 void MessengerPage::on_addressBookPressed()
 {
-    std::cout << "addressBook open" << std::endl;
     MessengerAddressBook book(platformStyle, this);
-    book.setModel(m_messengerBookModel);
+    book.setModel(walletModel->getMsgAddressTableModel());
     if (book.exec())
     {
-        std::cout << book.getReturnValue().toUtf8().constData() << std::endl;
+        ui->addressEdit->setPlainText(book.getReturnValue());
         ui->subjectEdit->setFocus();
     }
 }

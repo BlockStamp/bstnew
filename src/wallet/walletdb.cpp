@@ -228,6 +228,11 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             ssKey >> strAddress;
             ssValue >> pwallet->mapAddressBook[DecodeDestination(strAddress)].name;
         }
+        else if (strType == "msg_address") {
+            std::string strAddress;
+            ssKey >> strAddress;
+            ssValue >> pwallet->mapMessengerAddressBook[strAddress].name;
+        }
         else if (strType == "purpose")
         {
             std::string strAddress;

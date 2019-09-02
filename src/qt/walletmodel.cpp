@@ -315,6 +315,11 @@ AddressTableModel *WalletModel::getAddressTableModel()
     return addressTableModel;
 }
 
+MessengerBookModel *WalletModel::getMsgAddressTableModel()
+{
+    return messengerBookModel;
+}
+
 TransactionTableModel *WalletModel::getTransactionTableModel()
 {
     return transactionTableModel;
