@@ -3334,10 +3334,11 @@ bool CWallet::DelMsgAddressBook(const std::string &address)
 {
     {
         LOCK(cs_wallet);
-
         mapMessengerAddressBook.erase(address);
     }
-    return WalletBatch(*database).EraseMsgAddress(address);
+
+    NotifyMessengerAddressBookChanged(this, address, "", CT_DELETED);
+    return WalletBatch(*msgDatabase).EraseMsgAddress(address);
 }
 
 bool CWallet::SetAddressBook(const CTxDestination& address, const std::string& strName, const std::string& strPurpose)
