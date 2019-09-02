@@ -29,7 +29,15 @@
 static constexpr size_t maxDataSize=MAX_OP_RETURN_RELAY-6;
 
 UniValue sendmessage(const JSONRPCRequest& request)
-{
+{   
+    std::shared_ptr<CWallet> const wallet = GetWallets()[0];
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+    {
+        return NullUniValue;
+    }
+
     if (request.fHelp || request.params.size() < 3 || request.params.size() > 6 || !checkRSApublicKey(request.params[2].get_str()))
     throw std::runtime_error(
         "sendmessage \"subject\" \"string\" \"public_key\" \n"
@@ -74,6 +82,8 @@ UniValue sendmessage(const JSONRPCRequest& request)
                          "LQIDAQAB\n"
                          "-----END PUBLIC KEY-----\"")
     );
+
+    EnsureWalletIsUnlocked(pwallet);
 
     WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
     WalletBatch batch(dbh);
@@ -127,6 +137,15 @@ UniValue readmessage(const JSONRPCRequest& request)
 {
     RPCTypeCheck(request.params, {UniValue::VSTR});
 
+    std::shared_ptr<CWallet> const wallet = GetWallets()[0];
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+    {
+        return NullUniValue;
+    }
+
+
     if (request.fHelp || request.params.size() != 1)
     throw std::runtime_error(
         "readmessage \"txid\" \n"
@@ -143,6 +162,8 @@ UniValue readmessage(const JSONRPCRequest& request)
         + HelpExampleCli("readmessage", "\"txid\"")
         + HelpExampleRpc("readmessage", "\"txid\"")
     );
+
+    EnsureWalletIsUnlocked(pwallet);
 
     std::string txid=request.params[0].get_str();
     std::vector<char> OPreturnData=getOPreturnData(txid, request);

@@ -541,6 +541,12 @@ void MessengerPage::read(const std::string& txnId)
             wallet->BlockUntilSyncedToCurrentChain();
             LOCK2(cs_main, wallet->cs_wallet);
 
+            unlockWallet();
+            if (walletModel->getEncryptionStatus() == WalletModel::Locked)
+            {
+                throw std::runtime_error("ReadTransaction failed, wallet encrypted");
+            }
+
             std::string privateRsaKey;
             WalletDatabase& dbh = wallet->GetMsgDBHandle();
             WalletBatch batch(dbh);
