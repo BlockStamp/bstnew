@@ -338,35 +338,22 @@ void MessengerBookModel::updateEntry(const QString &address, const QString &labe
     priv->updateEntry(address, label, status);
 }
 
-QString MessengerBookModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type)
+QString MessengerBookModel::addRow(const QString &label, const QString &address)
 {
     std::string strLabel = label.toStdString();
     std::string strAddress = address.toStdString();
 
     editStatus = OK;
+    if(!checkRSApublicKey(strAddress))
+    {
+        editStatus = INVALID_ADDRESS;
+        return QString();
+    }
 
-    if(type == Send)
+    // Check for duplicate addresses
+    if (walletModel->wallet().getMsgAddress(strAddress, /* name= */ nullptr))
     {
-        if(!checkRSApublicKey(strAddress))
-        {
-            editStatus = INVALID_ADDRESS;
-            return QString();
-        }
-        // Check for duplicate addresses
-        {
-            if (walletModel->wallet().getMsgAddress(strAddress, /* name= */ nullptr))
-            {
-                editStatus = DUPLICATE_ADDRESS;
-                return QString();
-            }
-        }
-    }
-    else if(type == Receive)
-    {
-        ///TODO: remove or add here your own address
-    }
-    else
-    {
+        editStatus = DUPLICATE_ADDRESS;
         return QString();
     }
 
@@ -425,8 +412,6 @@ int MessengerBookModel::lookupAddress(const QString &address) const
         return lst.at(0).row();
     }
 }
-
-OutputType MessengerBookModel::GetDefaultAddressType() const { return walletModel->wallet().getDefaultAddressType(); };
 
 void MessengerBookModel::emitDataChanged(int idx)
 {

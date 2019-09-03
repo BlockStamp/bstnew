@@ -96,10 +96,8 @@ bool EditMsgAddressDialog::saveCurrentRow()
     {
     case NewSendingAddress:
         address = model->addRow(
-                AddressTableModel::Send,
-                ui->labelEdit->text(),
-                ui->addressEdit->toPlainText(),
-                model->GetDefaultAddressType());
+            ui->labelEdit->text(),
+            ui->addressEdit->toPlainText());
         break;
     case EditReceivingAddress:
     case EditSendingAddress:
