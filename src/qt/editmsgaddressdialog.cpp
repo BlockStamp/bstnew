@@ -114,7 +114,7 @@ bool EditMsgAddressDialog::saveCurrentRow()
 
 void EditMsgAddressDialog::validateRsaKey()
 {
-    if (checkRSApublicKey(ui->addressEdit->toPlainText().toUtf8().constData())) {
+    if (checkRSApublicKey(ui->addressEdit->toPlainText().toStdString())) {
         ui->warningLabel->setVisible(false);
     }
     else {

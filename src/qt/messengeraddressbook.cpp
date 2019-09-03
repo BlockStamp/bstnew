@@ -166,15 +166,16 @@ void MessengerAddressBook::onEditAction()
 
     if(!ui->tableView->selectionModel())
         return;
+
     QModelIndexList indexes = ui->tableView->selectionModel()->selectedRows();
     if(indexes.isEmpty())
         return;
 
-//    EditAddressDialog dlg(EditAddressDialog::EditSendingAddress, this);
-//    dlg.setModel(model);
-//    QModelIndex origIndex = proxyModel->mapToSource(indexes.at(0));
-//    dlg.loadRow(origIndex.row());
-//    dlg.exec();
+    EditMsgAddressDialog dlg(EditMsgAddressDialog::EditSendingAddress, this);
+    dlg.setModel(model);
+    QModelIndex origIndex = proxyModel->mapToSource(indexes.at(0));
+    dlg.loadRow(origIndex.row());
+    dlg.exec();
 }
 
 void MessengerAddressBook::on_newAddress_clicked()
