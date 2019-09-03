@@ -133,6 +133,8 @@ void MessengerAddressBook::setModel(MessengerBookModel *_model)
     ui->tableView->setModel(proxyModel);
     ui->tableView->sortByColumn(0, Qt::AscendingOrder);
 
+    ui->tableView->setColumnHidden(1, true);
+
     // Set column widths
     ui->tableView->horizontalHeader()->setSectionResizeMode(MessengerBookModel::Label, QHeaderView::Stretch);
     ui->tableView->horizontalHeader()->setSectionResizeMode(MessengerBookModel::Address, QHeaderView::ResizeToContents);
