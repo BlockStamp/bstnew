@@ -3315,19 +3315,19 @@ DBErrors CWallet::ZapWalletTx(std::vector<CWalletTx>& vWtx)
     return DBErrors::LOAD_OK;
 }
 
-bool CWallet::SetMsgAddressBook(const std::string &address, const std::string &name)
+bool CWallet::SetMsgAddressBook(const std::string &address, const std::string &label)
 {
     bool fUpdated = false;
     {
         LOCK(cs_wallet);
-        std::map<std::string, CAddressBookData>::iterator mi = mapMessengerAddressBook.find(address);
+        std::map<std::string, std::string>::iterator mi = mapMessengerAddressBook.find(address);
         fUpdated = mi != mapMessengerAddressBook.end();
-        mapMessengerAddressBook[address].name = name;
+        mapMessengerAddressBook[address] = label;
     }
 
-    NotifyMessengerAddressBookChanged(this, address, name, (fUpdated ? CT_UPDATED : CT_NEW));
+    NotifyMessengerAddressBookChanged(this, address, label, (fUpdated ? CT_UPDATED : CT_NEW));
 
-    return WalletBatch(*msgDatabase).WriteMsgAddress(address, name);
+    return WalletBatch(*msgDatabase).WriteMsgAddress(address, label);
 }
 
 bool CWallet::DelMsgAddressBook(const std::string &address)
