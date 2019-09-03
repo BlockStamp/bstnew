@@ -37,8 +37,6 @@ public:
     void loadRow(int row);
 
     QString getAddress() const;
-    void setAddress(const QString &address);
-
 public Q_SLOTS:
     void accept();
 

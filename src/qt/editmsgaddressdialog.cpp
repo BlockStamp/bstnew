@@ -79,7 +79,7 @@ void EditMsgAddressDialog::setModel(MessengerBookModel *_model)
 
     mapper->setModel(_model);
     mapper->addMapping(ui->labelEdit, MessengerBookModel::Label);
-    mapper->addMapping(ui->addressEdit, MessengerBookModel::Address);
+    mapper->addMapping(ui->addressEdit, MessengerBookModel::Address, "plainText");
 }
 
 void EditMsgAddressDialog::loadRow(int row)
@@ -190,10 +190,4 @@ QString EditMsgAddressDialog::getDuplicateAddressWarning() const
 QString EditMsgAddressDialog::getAddress() const
 {
     return address;
-}
-
-void EditMsgAddressDialog::setAddress(const QString &_address)
-{
-    this->address = _address;
-    ui->addressEdit->setText(_address);
 }

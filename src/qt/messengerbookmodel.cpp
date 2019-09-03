@@ -237,12 +237,13 @@ bool MessengerBookModel::setData(const QModelIndex &index, const QVariant &value
     if(!index.isValid())
         return false;
     AddressTableEntry *rec = static_cast<AddressTableEntry*>(index.internalPointer());
-    std::string strPurpose = (rec->type == AddressTableEntry::Sending ? "send" : "receive");
     editStatus = OK;
 
     if(role == Qt::EditRole)
     {
         const std::string& curAddress = rec->address.toStdString();
+        const std::string& curLabel = rec->label.toStdString();
+
         if(index.column() == Label)
         {
             // Do nothing, if old label == new label
@@ -254,12 +255,14 @@ bool MessengerBookModel::setData(const QModelIndex &index, const QVariant &value
             walletModel->wallet().setMsgAddressBook(curAddress, value.toString().toStdString());
         } else if(index.column() == Address) {
             const std::string& newAddress = value.toString().toStdString();
+
             // Refuse to set invalid address, set error status and return false
-            ///TODO: validate address
-//                editStatus = INVALID_ADDRESS;
-//                return false;
-            // Do nothing, if old address == new address
-//            else
+            if (!checkRSApublicKey(newAddress))
+            {
+                editStatus = INVALID_ADDRESS;
+                return false;
+            }
+
             if(newAddress == curAddress)
             {
                 editStatus = NO_CHANGES;
@@ -272,6 +275,14 @@ bool MessengerBookModel::setData(const QModelIndex &index, const QVariant &value
                 editStatus = DUPLICATE_ADDRESS;
                 return false;
             }
+            else if(rec->type == AddressTableEntry::Sending)
+            {
+                // Remove old entry
+                walletModel->wallet().delMsgAddressBook(curAddress);
+                // Add new entry with new address
+                walletModel->wallet().setMsgAddressBook(newAddress, curLabel);
+            }
+
         }
         return true;
     }
@@ -329,7 +340,6 @@ void MessengerBookModel::updateEntry(const QString &address, const QString &labe
 
 QString MessengerBookModel::addRow(const QString &type, const QString &label, const QString &address, const OutputType address_type)
 {
-    std::cerr << "Adding row" << std::endl;
     std::string strLabel = label.toStdString();
     std::string strAddress = address.toStdString();
 
