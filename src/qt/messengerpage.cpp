@@ -570,7 +570,7 @@ void MessengerPage::read(const std::string& txnId)
             std::size_t newlinepos, previous = 0;
             if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
                 throw std::runtime_error("Incorrect message format");
-            const auto from = message.substr(previous, newlinepos);
+            const auto from = message.substr(previous, newlinepos-1);
             previous = newlinepos+1;
 
             if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
@@ -582,7 +582,13 @@ void MessengerPage::read(const std::string& txnId)
             if (from.empty() || subject.empty() || message.empty())
                 throw std::runtime_error("Incorrect message format");
 
-            ui->fromLabel->setText(from.c_str());
+            std::string label;
+            if (!walletModel->wallet().getMsgAddress(from, &label))
+            {
+                label = from;
+            }
+
+            ui->fromLabel->setText(label.c_str());
             ui->subjectReadLabel->setText(subject.c_str());
             ui->messageViewEdit->setPlainText(message.c_str());
         }
@@ -745,11 +751,18 @@ void MessengerPage::fillUpTable()
         QTableWidgetItem *item = new QTableWidgetItem(QString::number(it.wltTx.nTimeReceived));
         item->setData(Qt::UserRole, index->first.ToString().c_str());
 
+        std::string label;
+        if (!walletModel->wallet().getMsgAddress(it.from, &label))
+        {
+            label = ""; // empty sender
+        }
+
         ui->transactionTable->setItem(row, 0, item);
-        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(it.from.c_str()));
+        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(label.c_str()));
         ui->transactionTable->setItem(row, 2, new QTableWidgetItem(it.subject.c_str()));
         ++row;
     }
+
 
     ui->transactionTable->setSortingEnabled(true);
     if (ui->transactionTable->horizontalHeader()->sortIndicatorSection() >= ui->transactionTable->columnCount())

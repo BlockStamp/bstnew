@@ -148,19 +148,16 @@ void MessengerAddressBook::setModel(MessengerBookModel *_model)
 
 void MessengerAddressBook::on_copyAddress_clicked()
 {
-    printf("%d\n", __LINE__);
     GUIUtil::copyEntryData(ui->tableView, MessengerBookModel::Address);
 }
 
 void MessengerAddressBook::onCopyLabelAction()
 {
-    printf("%d\n", __LINE__);
     GUIUtil::copyEntryData(ui->tableView, MessengerBookModel::Label);
 }
 
 void MessengerAddressBook::onEditAction()
 {
-    printf("%d\n", __LINE__);
     if(!model)
         return;
 
@@ -180,7 +177,6 @@ void MessengerAddressBook::onEditAction()
 
 void MessengerAddressBook::on_newAddress_clicked()
 {
-    printf("%d\n", __LINE__);
     if(!model)
         return;
 
@@ -194,7 +190,6 @@ void MessengerAddressBook::on_newAddress_clicked()
 
 void MessengerAddressBook::on_deleteAddress_clicked()
 {
-    printf("%d\n", __LINE__);
     QTableView *table = ui->tableView;
     if(!table->selectionModel())
         return;
@@ -230,7 +225,6 @@ void MessengerAddressBook::selectionChanged()
 
 void MessengerAddressBook::done(int retval)
 {
-    printf("%d\n", __LINE__);
     QTableView *table = ui->tableView;
     if(!table->selectionModel() || !table->model()) {
         return;
