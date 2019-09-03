@@ -51,20 +51,6 @@ struct AddressTableEntryLessThan
     }
 };
 
-/* Determine address type from address purpose */
-static AddressTableEntry::Type translateTransactionType(const QString &strPurpose, bool isMine)
-{
-    AddressTableEntry::Type addressType = AddressTableEntry::Hidden;
-    // "refund" addresses aren't shown, and change addresses aren't in mapAddressBook at all.
-    if (strPurpose == "send")
-        addressType = AddressTableEntry::Sending;
-    else if (strPurpose == "receive")
-        addressType = AddressTableEntry::Receiving;
-    else if (strPurpose == "unknown" || strPurpose == "") // if purpose not set, guess
-        addressType = (isMine ? AddressTableEntry::Receiving : AddressTableEntry::Sending);
-    return addressType;
-}
-
 // Private implementation
 class AddressTablePriv
 {
