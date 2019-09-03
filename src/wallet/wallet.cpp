@@ -1022,7 +1022,7 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
             std::size_t newlinepos, previous = 0;
             if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
                 throw std::runtime_error("Incorrect message format");
-            const auto from = message.substr(previous, newlinepos);
+            const auto from = message.substr(previous, newlinepos-1);
             previous = newlinepos+1;
 
             if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
