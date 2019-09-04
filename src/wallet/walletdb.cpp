@@ -508,8 +508,6 @@ bool WalletBatch::IsKeyType(const std::string& strType)
 
 DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
 {
-    std::cout << "WalletBatch::LoadWallet name: " << pwallet->GetName() << std::endl;
-
     CWalletScanState wss;
     bool fNoncriticalErrors = false;
     DBErrors result = DBErrors::LOAD_OK;

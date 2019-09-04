@@ -6,6 +6,7 @@
 
 #include <qt/addressbookpage.h>
 #include <qt/askpassphrasedialog.h>
+#include <qt/askmessengerpassphrasedialog.h>
 #include <qt/bitcoingui.h>
 #include <qt/clientmodel.h>
 #include <qt/guiutil.h>
@@ -317,6 +318,17 @@ void WalletView::unlockWallet()
         dlg.setModel(walletModel);
         dlg.exec();
     }
+}
+
+void WalletView::encryptMessenger(bool status)
+{
+    if(!walletModel)
+        return;
+    AskMessengerPassphraseDialog dlg(status ? AskMessengerPassphraseDialog::Encrypt : AskMessengerPassphraseDialog::Decrypt, this);
+    dlg.setModel(walletModel);
+    dlg.exec();
+
+    updateEncryptionStatus();
 }
 
 void WalletView::usedSendingAddresses()

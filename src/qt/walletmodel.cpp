@@ -393,6 +393,52 @@ static void NotifyKeyStoreStatusChanged(WalletModel *walletmodel)
     QMetaObject::invokeMethod(walletmodel, "updateStatus", Qt::QueuedConnection);
 }
 
+bool WalletModel::setMessengerEncrypted(bool encrypted, const SecureString &passphrase)
+{
+    ///TODO: Implement
+//    if(encrypted)
+//    {
+//        // Encrypt
+//        return m_wallet->encryptWallet(passphrase);
+//    }
+//    else
+//    {
+//        // Decrypt -- TODO; not supported yet
+//        return false;
+//    }
+
+
+    return true;
+}
+
+bool WalletModel::setMessengerLocked(bool locked, const SecureString &passPhrase)
+{
+    ///TODO: Implement
+//    if(locked)
+//    {
+//        // Lock
+//        return m_wallet->lock();
+//    }
+//    else
+//    {
+//        // Unlock
+//        return m_wallet->unlock(passPhrase);
+//    }
+
+
+    return true;
+}
+
+bool WalletModel::changeMessengerPassphrase(const SecureString &oldPass, const SecureString &newPass)
+{
+    ///TODO: Implement
+//    m_wallet->lock(); // Make sure wallet is locked before attempting pass change
+//    return m_wallet->changeWalletPassphrase(oldPass, newPass);
+
+
+    return true;
+}
+
 static void NotifyAddressBookChanged(WalletModel *walletmodel,
         const CTxDestination &address, const std::string &label, bool isMine,
         const std::string &purpose, ChangeType status)

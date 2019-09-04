@@ -171,6 +171,12 @@ public:
     bool setWalletLocked(bool locked, const SecureString &passPhrase=SecureString());
     bool changePassphrase(const SecureString &oldPass, const SecureString &newPass);
 
+    // Messenger encryption
+    bool setMessengerEncrypted(bool encrypted, const SecureString &passphrase);
+    // Passphrase only needed when unlocking
+    bool setMessengerLocked(bool locked, const SecureString &passPhrase=SecureString());
+    bool changeMessengerPassphrase(const SecureString &oldPass, const SecureString &newPass);
+
     // RAI object for unlocking wallet, returned by requestUnlock()
     class UnlockContext
     {
