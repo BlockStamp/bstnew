@@ -7,7 +7,7 @@
 
 #include <QDialog>
 
-class AddressBookSortFilterProxyModel;
+class MsgAddressBookSortFilterProxyModel;
 class MessengerBookModel;
 class PlatformStyle;
 
@@ -16,7 +16,6 @@ namespace Ui {
 }
 
 QT_BEGIN_NAMESPACE
-class QItemSelection;
 class QMenu;
 class QModelIndex;
 QT_END_NAMESPACE
@@ -42,7 +41,7 @@ private:
     Ui::AddressBookPage *ui;
     MessengerBookModel *model;
     QString returnValue;
-    AddressBookSortFilterProxyModel *proxyModel;
+    MsgAddressBookSortFilterProxyModel *proxyModel;
     QMenu *contextMenu;
     QAction *deleteAction; // to be able to explicitly disable it
     QString newAddressToSelect;
@@ -58,8 +57,6 @@ private Q_SLOTS:
     void onCopyLabelAction();
     /** Edit currently selected address entry (no button) */
     void onEditAction();
-    /** Export button clicked */
-    void on_exportButton_clicked();
 
     /** Set button states based on selected tab and selection */
     void selectionChanged();
@@ -67,9 +64,6 @@ private Q_SLOTS:
     void contextualMenu(const QPoint &point);
     /** New entry/entries were added to address table */
     void selectNewAddress(const QModelIndex &parent, int begin, int /*end*/);
-
-Q_SIGNALS:
-    void sendCoins(QString addr);
 };
 
 #endif // BITCOIN_QT_MESSENGERADDRESSBOOK_H

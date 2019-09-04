@@ -8,12 +8,9 @@
 
 #include <qt/messengeraddressbook.h>
 #include <qt/forms/ui_addressbookpage.h>
-
-#include <qt/addresstablemodel.h> // TODO: remove
 #include <qt/messengerbookmodel.h>
 
 #include <qt/bitcoingui.h>
-#include <qt/csvmodelwriter.h>
 #include <qt/editmsgaddressdialog.h>
 #include <qt/guiutil.h>
 #include <qt/platformstyle.h>
@@ -23,14 +20,13 @@
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
 
-class AddressBookSortFilterProxyModel final : public QSortFilterProxyModel
+
+class MsgAddressBookSortFilterProxyModel final : public QSortFilterProxyModel
 {
-    const QString m_type;
 
 public:
-    AddressBookSortFilterProxyModel(const QString& type, QObject* parent)
+    MsgAddressBookSortFilterProxyModel(QObject* parent)
         : QSortFilterProxyModel(parent)
-        , m_type(type)
     {
         setDynamicSortFilter(true);
         setFilterCaseSensitivity(Qt::CaseInsensitive);
@@ -42,11 +38,6 @@ protected:
     {
         auto model = sourceModel();
         auto label = model->index(row, MessengerBookModel::Label, parent);
-
-        if (model->data(label, MessengerBookModel::TypeRole).toString() != m_type) {
-            return false;
-        }
-
         auto address = model->index(row, MessengerBookModel::Address, parent);
 
         if (filterRegExp().indexIn(model->data(address).toString()) < 0 &&
@@ -125,7 +116,7 @@ void MessengerAddressBook::setModel(MessengerBookModel *_model)
     if(!_model)
         return;
 
-    proxyModel = new AddressBookSortFilterProxyModel(AddressTableModel::Send, this);
+    proxyModel = new MsgAddressBookSortFilterProxyModel(this);
     proxyModel->setSourceModel(_model);
 
     connect(ui->searchLineEdit, &QLineEdit::textChanged, proxyModel, &QSortFilterProxyModel::setFilterWildcard);
@@ -247,29 +238,6 @@ void MessengerAddressBook::done(int retval)
     }
 
     QDialog::done(retval);
-}
-
-void MessengerAddressBook::on_exportButton_clicked()
-{
-    // CSV is currently the only supported format
-    QString filename = GUIUtil::getSaveFileName(this,
-        tr("Export Address List"), QString(),
-        tr("Comma separated file (*.csv)"), nullptr);
-
-    if (filename.isNull())
-        return;
-
-    CSVModelWriter writer(filename);
-
-    // name, column, role
-    writer.setModel(proxyModel);
-    writer.addColumn("Label", MessengerBookModel::Label, Qt::EditRole);
-    writer.addColumn("Address", MessengerBookModel::Address, Qt::EditRole);
-
-    if(!writer.write()) {
-        QMessageBox::critical(this, tr("Exporting Failed"),
-            tr("There was an error trying to save the address list to %1. Please try again.").arg(filename));
-    }
 }
 
 void MessengerAddressBook::contextualMenu(const QPoint &point)

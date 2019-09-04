@@ -47,10 +47,6 @@ EditMsgAddressDialog::EditMsgAddressDialog(Mode _mode, QWidget *parent) :
     case NewSendingAddress:
         setWindowTitle(tr("New sending address"));
         break;
-    case EditReceivingAddress:
-        setWindowTitle(tr("Edit receiving address"));
-        ui->addressEdit->setEnabled(false);
-        break;
     case EditSendingAddress:
         setWindowTitle(tr("Edit sending address"));
         break;
@@ -99,7 +95,6 @@ bool EditMsgAddressDialog::saveCurrentRow()
             ui->labelEdit->text(),
             ui->addressEdit->toPlainText());
         break;
-    case EditReceivingAddress:
     case EditSendingAddress:
         if(mapper->submit())
         {
@@ -133,33 +128,22 @@ void EditMsgAddressDialog::accept()
     {
         switch(model->getEditStatus())
         {
-        case AddressTableModel::OK:
+        case MessengerBookModel::OK:
             // Failed with unknown reason. Just reject.
             break;
-        case AddressTableModel::NO_CHANGES:
+        case MessengerBookModel::NO_CHANGES:
             // No changes were made during edit operation. Just reject.
             break;
-        case AddressTableModel::INVALID_ADDRESS:
+        case MessengerBookModel::INVALID_ADDRESS:
             QMessageBox::warning(this, windowTitle(),
-                tr("The entered address \"%1\" is not a valid BST address.").arg(ui->addressEdit->toPlainText()),
+                tr("The entered key is not a valid RSA public key.").arg(ui->addressEdit->toPlainText()),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
-        case AddressTableModel::DUPLICATE_ADDRESS:
+        case MessengerBookModel::DUPLICATE_ADDRESS:
             QMessageBox::warning(this, windowTitle(),
                 getDuplicateAddressWarning(),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
-        case AddressTableModel::WALLET_UNLOCK_FAILURE:
-            QMessageBox::critical(this, windowTitle(),
-                tr("Could not unlock wallet."),
-                QMessageBox::Ok, QMessageBox::Ok);
-            break;
-        case AddressTableModel::KEY_GENERATION_FAILURE:
-            QMessageBox::critical(this, windowTitle(),
-                tr("New key generation failed."),
-                QMessageBox::Ok, QMessageBox::Ok);
-            break;
-
         }
         return;
     }
@@ -170,15 +154,7 @@ QString EditMsgAddressDialog::getDuplicateAddressWarning() const
 {
     QString dup_address = ui->addressEdit->toPlainText();
     QString existing_label = model->labelForAddress(dup_address);
-    QString existing_purpose = model->purposeForAddress(dup_address);
 
-    if (existing_purpose == "receive" &&
-            (mode == NewSendingAddress || mode == EditSendingAddress)) {
-        return tr(
-            "Address \"%1\" already exists as a receiving address with label "
-            "\"%2\" and so cannot be added as a sending address."
-            ).arg(dup_address).arg(existing_label);
-    }
     return tr(
         "The entered address \"%1\" is already in the address book with "
         "label \"%2\"."
