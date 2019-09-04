@@ -47,10 +47,6 @@ EditMsgAddressDialog::EditMsgAddressDialog(Mode _mode, QWidget *parent) :
     case NewSendingAddress:
         setWindowTitle(tr("New sending address"));
         break;
-    case EditReceivingAddress:
-        setWindowTitle(tr("Edit receiving address"));
-        ui->addressEdit->setEnabled(false);
-        break;
     case EditSendingAddress:
         setWindowTitle(tr("Edit sending address"));
         break;
@@ -99,7 +95,6 @@ bool EditMsgAddressDialog::saveCurrentRow()
             ui->labelEdit->text(),
             ui->addressEdit->toPlainText());
         break;
-    case EditReceivingAddress:
     case EditSendingAddress:
         if(mapper->submit())
         {
@@ -133,18 +128,18 @@ void EditMsgAddressDialog::accept()
     {
         switch(model->getEditStatus())
         {
-        case AddressTableModel::OK:
+        case MessengerBookModel::OK:
             // Failed with unknown reason. Just reject.
             break;
-        case AddressTableModel::NO_CHANGES:
+        case MessengerBookModel::NO_CHANGES:
             // No changes were made during edit operation. Just reject.
             break;
-        case AddressTableModel::INVALID_ADDRESS:
+        case MessengerBookModel::INVALID_ADDRESS:
             QMessageBox::warning(this, windowTitle(),
                 tr("The entered address \"%1\" is not a valid BST address.").arg(ui->addressEdit->toPlainText()),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
-        case AddressTableModel::DUPLICATE_ADDRESS:
+        case MessengerBookModel::DUPLICATE_ADDRESS:
             QMessageBox::warning(this, windowTitle(),
                 getDuplicateAddressWarning(),
                 QMessageBox::Ok, QMessageBox::Ok);
