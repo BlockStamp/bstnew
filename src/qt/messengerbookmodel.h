@@ -59,9 +59,6 @@ public:
     /** Look up label for address in address book, if not found return empty string. */
     QString labelForAddress(const QString &address) const;
 
-    /** Look up purpose for address in address book, if not found return empty string. */
-    QString purposeForAddress(const QString &address) const;
-
     EditStatus getEditStatus() const { return editStatus; }
 
 private:

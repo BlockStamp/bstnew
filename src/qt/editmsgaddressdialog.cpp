@@ -136,7 +136,7 @@ void EditMsgAddressDialog::accept()
             break;
         case MessengerBookModel::INVALID_ADDRESS:
             QMessageBox::warning(this, windowTitle(),
-                tr("The entered address \"%1\" is not a valid BST address.").arg(ui->addressEdit->toPlainText()),
+                tr("The entered key is not a valid RSA public key.").arg(ui->addressEdit->toPlainText()),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
         case MessengerBookModel::DUPLICATE_ADDRESS:
@@ -154,15 +154,7 @@ QString EditMsgAddressDialog::getDuplicateAddressWarning() const
 {
     QString dup_address = ui->addressEdit->toPlainText();
     QString existing_label = model->labelForAddress(dup_address);
-    QString existing_purpose = model->purposeForAddress(dup_address);
 
-    if (existing_purpose == "receive" &&
-            (mode == NewSendingAddress || mode == EditSendingAddress)) {
-        return tr(
-            "Address \"%1\" already exists as a receiving address with label "
-            "\"%2\" and so cannot be added as a sending address."
-            ).arg(dup_address).arg(existing_label);
-    }
     return tr(
         "The entered address \"%1\" is already in the address book with "
         "label \"%2\"."

@@ -358,15 +358,6 @@ QString MessengerBookModel::labelForAddress(const QString &address) const
     return QString();
 }
 
-QString MessengerBookModel::purposeForAddress(const QString &address) const
-{
-    std::string purpose;
-    if (getAddressData(address, /* name= */ nullptr)) {
-        return QString::fromStdString(purpose);
-    }
-    return QString();
-}
-
 bool MessengerBookModel::getAddressData(const QString &address,
         std::string* name) const {
     return walletModel->wallet().getMsgAddress(address.toStdString(), name);
