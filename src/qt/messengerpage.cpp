@@ -137,6 +137,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->transactionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->transactionTable->setItemDelegateForColumn(0, &dateDelegate);
     ui->messageViewEdit->setReadOnly(true);
+    ui->fromLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
