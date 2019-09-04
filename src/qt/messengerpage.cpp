@@ -781,4 +781,8 @@ void MessengerPage::on_addressBookPressed()
         ui->addressEdit->setPlainText(book.getReturnValue());
         ui->subjectEdit->setFocus();
     }
+    fillUpTable();
+    ui->fromLabel->setText("");
+    ui->subjectReadLabel->setText("");
+    ui->messageViewEdit->setPlainText("");
 }
