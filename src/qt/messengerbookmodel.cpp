@@ -15,9 +15,6 @@
 #include <QFont>
 #include <QDebug>
 
-const QString MessengerBookModel::Send = "S";
-const QString MessengerBookModel::Receive = "R";
-
 struct AddressTableEntry
 {
     enum Type {
@@ -88,9 +85,6 @@ public:
         int lowerIndex = (lower - cachedAddressTable.begin());
         int upperIndex = (upper - cachedAddressTable.begin());
         bool inModel = (lower != upper);
-//        AddressTableEntry::Type newEntryType = translateTransactionType(purpose, isMine);
-        //TODO: Check if other types are not needed
-        AddressTableEntry::Type newEntryType = AddressTableEntry::Type::Sending;
 
         switch(status)
         {
@@ -102,7 +96,7 @@ public:
             }
 
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedAddressTable.insert(lowerIndex, AddressTableEntry(newEntryType, label, address));
+            cachedAddressTable.insert(lowerIndex, AddressTableEntry(AddressTableEntry::Type::Sending, label, address));
             parent->endInsertRows();
             break;
         case CT_UPDATED:
@@ -111,7 +105,7 @@ public:
                 qWarning() << "AddressTablePriv::updateEntry: Warning: Got CT_UPDATED, but entry is not in model";
                 break;
             }
-            lower->type = newEntryType;
+            lower->type = AddressTableEntry::Type::Sending;
             lower->label = label;
             parent->emitDataChanged(lowerIndex);
             break;
@@ -203,17 +197,6 @@ QVariant MessengerBookModel::data(const QModelIndex &index, int role) const
             font = GUIUtil::fixedPitchFont();
         }
         return font;
-    }
-    else if (role == TypeRole)
-    {
-        switch(rec->type)
-        {
-        case AddressTableEntry::Sending:
-            return Send;
-        case AddressTableEntry::Receiving:
-            return Receive;
-        default: break;
-        }
     }
     else if (role == Qt::TextAlignmentRole)
     {
@@ -387,20 +370,6 @@ QString MessengerBookModel::purposeForAddress(const QString &address) const
 bool MessengerBookModel::getAddressData(const QString &address,
         std::string* name) const {
     return walletModel->wallet().getMsgAddress(address.toStdString(), name);
-}
-
-int MessengerBookModel::lookupAddress(const QString &address) const
-{
-    QModelIndexList lst = match(index(0, Address, QModelIndex()),
-                                Qt::EditRole, address, 1, Qt::MatchExactly);
-    if(lst.isEmpty())
-    {
-        return -1;
-    }
-    else
-    {
-        return lst.at(0).row();
-    }
 }
 
 void MessengerBookModel::emitDataChanged(int idx)

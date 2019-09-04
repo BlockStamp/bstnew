@@ -7,7 +7,7 @@
 
 #include <QDialog>
 
-class AddressBookSortFilterProxyModel;
+class MsgAddressBookSortFilterProxyModel;
 class MessengerBookModel;
 class PlatformStyle;
 
@@ -42,7 +42,7 @@ private:
     Ui::AddressBookPage *ui;
     MessengerBookModel *model;
     QString returnValue;
-    AddressBookSortFilterProxyModel *proxyModel;
+    MsgAddressBookSortFilterProxyModel *proxyModel;
     QMenu *contextMenu;
     QAction *deleteAction; // to be able to explicitly disable it
     QString newAddressToSelect;

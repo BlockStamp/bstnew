@@ -45,9 +45,6 @@ public:
         KEY_GENERATION_FAILURE  /**< Generating a new public key for a receiving address failed */
     };
 
-    static const QString Send;      /**< Specifies send address */
-    static const QString Receive;   /**< Specifies receive address */
-
     /** @name Methods overridden from QAbstractTableModel
         @{*/
     int rowCount(const QModelIndex &parent) const;
@@ -70,11 +67,6 @@ public:
 
     /** Look up purpose for address in address book, if not found return empty string. */
     QString purposeForAddress(const QString &address) const;
-
-    /* Look up row index of an address in the model.
-       Return -1 if not found.
-     */
-    int lookupAddress(const QString &address) const;
 
     EditStatus getEditStatus() const { return editStatus; }
 

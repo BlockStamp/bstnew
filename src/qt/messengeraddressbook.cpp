@@ -8,8 +8,6 @@
 
 #include <qt/messengeraddressbook.h>
 #include <qt/forms/ui_addressbookpage.h>
-
-#include <qt/addresstablemodel.h> // TODO: remove
 #include <qt/messengerbookmodel.h>
 
 #include <qt/bitcoingui.h>
@@ -23,14 +21,13 @@
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
 
-class AddressBookSortFilterProxyModel final : public QSortFilterProxyModel
+
+class MsgAddressBookSortFilterProxyModel final : public QSortFilterProxyModel
 {
-    const QString m_type;
 
 public:
-    AddressBookSortFilterProxyModel(const QString& type, QObject* parent)
+    MsgAddressBookSortFilterProxyModel(QObject* parent)
         : QSortFilterProxyModel(parent)
-        , m_type(type)
     {
         setDynamicSortFilter(true);
         setFilterCaseSensitivity(Qt::CaseInsensitive);
@@ -42,11 +39,6 @@ protected:
     {
         auto model = sourceModel();
         auto label = model->index(row, MessengerBookModel::Label, parent);
-
-        if (model->data(label, MessengerBookModel::TypeRole).toString() != m_type) {
-            return false;
-        }
-
         auto address = model->index(row, MessengerBookModel::Address, parent);
 
         if (filterRegExp().indexIn(model->data(address).toString()) < 0 &&
@@ -125,7 +117,7 @@ void MessengerAddressBook::setModel(MessengerBookModel *_model)
     if(!_model)
         return;
 
-    proxyModel = new AddressBookSortFilterProxyModel(AddressTableModel::Send, this);
+    proxyModel = new MsgAddressBookSortFilterProxyModel(this);
     proxyModel->setSourceModel(_model);
 
     connect(ui->searchLineEdit, &QLineEdit::textChanged, proxyModel, &QSortFilterProxyModel::setFilterWildcard);
