@@ -33,6 +33,13 @@ namespace
         TAB_SEND = 0,
         TAB_READ = 1
     };
+
+    enum TransactionsTableColumn
+    {
+        DATE = 0,
+        FROM = 1,
+        SUBJECT = 2
+    };
 }
 
 QT_BEGIN_NAMESPACE
@@ -102,6 +109,10 @@ private Q_SLOTS:
     void on_transactionsTableCellSelected(int row, int col);
     void on_transactionsTableCellPressed(int row, int col);
     void on_addressBookPressed();
+
+    void on_transactionTableContextMenuRequest(QPoint pos);
+    void setMessageReply();
+    void copySenderAddresssToClipboard();
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H

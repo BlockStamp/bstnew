@@ -116,6 +116,9 @@ public:
     //! Get messenger address
     virtual bool getMsgAddress(const std::string& dest, std::string* name) = 0;
 
+    //! Get messenger address for certain name
+    virtual bool getMsgAddressFromName(std::string* address, const std::string& name) = 0;
+
     virtual std::vector<MsgWalletAddress> getMsgAddresses() = 0;
 
     //! Add scripts to key store so old so software versions opening the wallet
