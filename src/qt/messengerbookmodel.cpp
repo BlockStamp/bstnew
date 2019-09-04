@@ -15,47 +15,40 @@
 #include <QFont>
 #include <QDebug>
 
-struct AddressTableEntry
+struct MsgAddressTableEntry
 {
-    enum Type {
-        Sending,
-        Receiving,
-        Hidden /* QSortFilterProxyModel will filter these out */
-    };
-
-    Type type;
     QString label;
     QString address;
 
-    AddressTableEntry() {}
-    AddressTableEntry(Type _type, const QString &_label, const QString &_address):
-        type(_type), label(_label), address(_address) {}
+    MsgAddressTableEntry() {}
+    MsgAddressTableEntry(const QString &_label, const QString &_address):
+        label(_label), address(_address) {}
 };
 
-struct AddressTableEntryLessThan
+struct MsgAddressTableEntryLessThan
 {
-    bool operator()(const AddressTableEntry &a, const AddressTableEntry &b) const
+    bool operator()(const MsgAddressTableEntry &a, const MsgAddressTableEntry &b) const
     {
         return a.address < b.address;
     }
-    bool operator()(const AddressTableEntry &a, const QString &b) const
+    bool operator()(const MsgAddressTableEntry &a, const QString &b) const
     {
         return a.address < b;
     }
-    bool operator()(const QString &a, const AddressTableEntry &b) const
+    bool operator()(const QString &a, const MsgAddressTableEntry &b) const
     {
         return a < b.address;
     }
 };
 
 // Private implementation
-class AddressTablePriv
+class MsgAddressTablePriv
 {
 public:
-    QList<AddressTableEntry> cachedAddressTable;
+    QList<MsgAddressTableEntry> cachedAddressTable;
     MessengerBookModel *parent;
 
-    explicit AddressTablePriv(MessengerBookModel *_parent):
+    explicit MsgAddressTablePriv(MessengerBookModel *_parent):
         parent(_parent) {}
 
     void refreshAddressTable(interfaces::Wallet& wallet)
@@ -64,7 +57,7 @@ public:
         {
             for (const auto& address : wallet.getMsgAddresses())
             {
-                cachedAddressTable.append(AddressTableEntry(AddressTableEntry::Type::Sending,
+                cachedAddressTable.append(MsgAddressTableEntry(
                                   QString::fromStdString(address.name),
                                   QString::fromStdString(address.dest)));
             }
@@ -72,16 +65,16 @@ public:
         // qLowerBound() and qUpperBound() require our cachedAddressTable list to be sorted in asc order
         // Even though the map is already sorted this re-sorting step is needed because the originating map
         // is sorted by binary address, not by base58() address.
-        qSort(cachedAddressTable.begin(), cachedAddressTable.end(), AddressTableEntryLessThan());
+        qSort(cachedAddressTable.begin(), cachedAddressTable.end(), MsgAddressTableEntryLessThan());
     }
 
     void updateEntry(const QString &address, const QString &label, int status)
     {
         // Find address / label in model
-        QList<AddressTableEntry>::iterator lower = qLowerBound(
-            cachedAddressTable.begin(), cachedAddressTable.end(), address, AddressTableEntryLessThan());
-        QList<AddressTableEntry>::iterator upper = qUpperBound(
-            cachedAddressTable.begin(), cachedAddressTable.end(), address, AddressTableEntryLessThan());
+        QList<MsgAddressTableEntry>::iterator lower = qLowerBound(
+            cachedAddressTable.begin(), cachedAddressTable.end(), address, MsgAddressTableEntryLessThan());
+        QList<MsgAddressTableEntry>::iterator upper = qUpperBound(
+            cachedAddressTable.begin(), cachedAddressTable.end(), address, MsgAddressTableEntryLessThan());
         int lowerIndex = (lower - cachedAddressTable.begin());
         int upperIndex = (upper - cachedAddressTable.begin());
         bool inModel = (lower != upper);
@@ -91,28 +84,27 @@ public:
         case CT_NEW:
             if(inModel)
             {
-                qWarning() << "AddressTablePriv::updateEntry: Warning: Got CT_NEW, but entry is already in model";
+                qWarning() << "MsgAddressTablePriv::updateEntry: Warning: Got CT_NEW, but entry is already in model";
                 break;
             }
 
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedAddressTable.insert(lowerIndex, AddressTableEntry(AddressTableEntry::Type::Sending, label, address));
+            cachedAddressTable.insert(lowerIndex, MsgAddressTableEntry(label, address));
             parent->endInsertRows();
             break;
         case CT_UPDATED:
             if(!inModel)
             {
-                qWarning() << "AddressTablePriv::updateEntry: Warning: Got CT_UPDATED, but entry is not in model";
+                qWarning() << "MsgAddressTablePriv::updateEntry: Warning: Got CT_UPDATED, but entry is not in model";
                 break;
             }
-            lower->type = AddressTableEntry::Type::Sending;
             lower->label = label;
             parent->emitDataChanged(lowerIndex);
             break;
         case CT_DELETED:
             if(!inModel)
             {
-                qWarning() << "AddressTablePriv::updateEntry: Warning: Got CT_DELETED, but entry is not in model";
+                qWarning() << "MsgAddressTablePriv::updateEntry: Warning: Got CT_DELETED, but entry is not in model";
                 break;
             }
             parent->beginRemoveRows(QModelIndex(), lowerIndex, upperIndex-1);
@@ -127,7 +119,7 @@ public:
         return cachedAddressTable.size();
     }
 
-    AddressTableEntry *index(int idx)
+    MsgAddressTableEntry *index(int idx)
     {
         if(idx >= 0 && idx < cachedAddressTable.size())
         {
@@ -144,7 +136,7 @@ MessengerBookModel::MessengerBookModel(WalletModel *parent) :
     QAbstractTableModel(parent), walletModel(parent)
 {
     columns << tr("Label") << tr("Address");
-    priv = new AddressTablePriv(this);
+    priv = new MsgAddressTablePriv(this);
     priv->refreshAddressTable(parent->wallet());
 }
 
@@ -170,7 +162,7 @@ QVariant MessengerBookModel::data(const QModelIndex &index, int role) const
     if(!index.isValid())
         return QVariant();
 
-    AddressTableEntry *rec = static_cast<AddressTableEntry*>(index.internalPointer());
+    MsgAddressTableEntry *rec = static_cast<MsgAddressTableEntry*>(index.internalPointer());
 
     if(role == Qt::DisplayRole || role == Qt::EditRole)
     {
@@ -209,7 +201,7 @@ bool MessengerBookModel::setData(const QModelIndex &index, const QVariant &value
 {
     if(!index.isValid())
         return false;
-    AddressTableEntry *rec = static_cast<AddressTableEntry*>(index.internalPointer());
+    MsgAddressTableEntry *rec = static_cast<MsgAddressTableEntry*>(index.internalPointer());
     editStatus = OK;
 
     if(role == Qt::EditRole)
@@ -248,7 +240,7 @@ bool MessengerBookModel::setData(const QModelIndex &index, const QVariant &value
                 editStatus = DUPLICATE_ADDRESS;
                 return false;
             }
-            else if(rec->type == AddressTableEntry::Sending)
+            else
             {
                 // Remove old entry
                 walletModel->wallet().delMsgAddressBook(curAddress);
@@ -278,23 +270,14 @@ Qt::ItemFlags MessengerBookModel::flags(const QModelIndex &index) const
 {
     if(!index.isValid())
         return 0;
-    AddressTableEntry *rec = static_cast<AddressTableEntry*>(index.internalPointer());
-
-    Qt::ItemFlags retval = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
-    // Can edit address and label for sending addresses,
-    // and only label for receiving addresses.
-    if(rec->type == AddressTableEntry::Sending ||
-      (rec->type == AddressTableEntry::Receiving && index.column()==Label))
-    {
-        retval |= Qt::ItemIsEditable;
-    }
+    Qt::ItemFlags retval = Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
     return retval;
 }
 
 QModelIndex MessengerBookModel::index(int row, int column, const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    AddressTableEntry *data = priv->index(row);
+    MsgAddressTableEntry *data = priv->index(row);
     if(data)
     {
         return createIndex(row, column, priv->index(row));
@@ -338,8 +321,8 @@ QString MessengerBookModel::addRow(const QString &label, const QString &address)
 bool MessengerBookModel::removeRows(int row, int count, const QModelIndex &parent)
 {
     Q_UNUSED(parent);
-    AddressTableEntry *rec = priv->index(row);
-    if(count != 1 || !rec || rec->type == AddressTableEntry::Receiving)
+    MsgAddressTableEntry *rec = priv->index(row);
+    if(count != 1 || !rec)
     {
         // Can only remove one row at a time, and cannot remove rows not in model.
         // Also refuse to remove receiving addresses.

@@ -8,7 +8,7 @@
 #include <QAbstractTableModel>
 #include <QStringList>
 
-class AddressTablePriv;
+class MsgAddressTablePriv;
 class WalletModel;
 
 namespace interfaces {
@@ -63,7 +63,7 @@ public:
 
 private:
     WalletModel* const walletModel;
-    AddressTablePriv *priv = nullptr;
+    MsgAddressTablePriv *priv = nullptr;
     QStringList columns;
     EditStatus editStatus = OK;
 
@@ -78,7 +78,7 @@ public Q_SLOTS:
      */
     void updateEntry(const QString &address, const QString &label, int status);
 
-    friend class AddressTablePriv;
+    friend class MsgAddressTablePriv;
 };
 
 #endif // BITCOIN_QT_MESSENGERBOOKMODEL_H
