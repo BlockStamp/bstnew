@@ -204,6 +204,20 @@ public:
         return true;
     }
 
+    bool getMsgAddressFromName(std::string* address, const std::string& name) override
+    {
+        LOCK(m_wallet.cs_wallet);
+        for (auto it : m_wallet.mapMessengerAddressBook)
+        {
+            if (it.second.compare(name) ==  0)
+            {
+                *address = it.first;
+                return true;
+            }
+        }
+        return false;
+    }
+
     std::vector<MsgWalletAddress> getMsgAddresses() override
     {
         LOCK(m_wallet.cs_wallet);

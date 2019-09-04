@@ -10,6 +10,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QStyledItemDelegate>
+#include <QClipboard>
 
 #include <qt/addresstablemodel.h>
 #include <qt/messengerbookmodel.h>
@@ -42,6 +43,7 @@
 #include <data/retrievedatatxs.h>
 
 #include <messages/message_encryption.h>
+#include <messages/message_utils.h>
 #include <rpc/util.h>
 
 #include <QSettings>
@@ -136,6 +138,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
 
     ui->transactionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->transactionTable->setItemDelegateForColumn(0, &dateDelegate);
+    ui->transactionTable->setContextMenuPolicy(Qt::CustomContextMenu);
     ui->messageViewEdit->setReadOnly(true);
     ui->fromLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
@@ -143,6 +146,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
     connect(ui->addressBookButton, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
+    connect(ui->transactionTable, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(on_transactionTableContextMenuRequest(QPoint)));
 
 }
 
@@ -512,7 +516,7 @@ void MessengerPage::unlockWallet()
 void MessengerPage::on_transactionsTableCellSelected(int row, int col)
 {
     ui->transactionTable->selectRow(row);
-    QTableWidgetItem* item = ui->transactionTable->item(row, 0);
+    QTableWidgetItem* item = ui->transactionTable->item(row, TransactionsTableColumn::DATE);
     QString txnId = item->data(Qt::UserRole).toString();
     read(txnId.toUtf8().constData());
 }
@@ -758,9 +762,9 @@ void MessengerPage::fillUpTable()
             label = ""; // empty sender
         }
 
-        ui->transactionTable->setItem(row, 0, item);
-        ui->transactionTable->setItem(row, 1, new QTableWidgetItem(label.c_str()));
-        ui->transactionTable->setItem(row, 2, new QTableWidgetItem(it.subject.c_str()));
+        ui->transactionTable->setItem(row, TransactionsTableColumn::DATE, item);
+        ui->transactionTable->setItem(row, TransactionsTableColumn::FROM, new QTableWidgetItem(label.c_str()));
+        ui->transactionTable->setItem(row, TransactionsTableColumn::SUBJECT, new QTableWidgetItem(it.subject.c_str()));
         ++row;
     }
 
@@ -785,4 +789,55 @@ void MessengerPage::on_addressBookPressed()
     ui->fromLabel->setText("");
     ui->subjectReadLabel->setText("");
     ui->messageViewEdit->setPlainText("");
+}
+
+void MessengerPage::on_transactionTableContextMenuRequest(QPoint pos)
+{
+
+    int row = ui->transactionTable->selectionModel()->currentIndex().row();
+    if (!ui->transactionTable->item(row, TransactionsTableColumn::FROM)->text().isEmpty())
+    {
+        QMenu *menu = new QMenu(this);
+
+        QAction *replyItem = new QAction(tr("Reply"), this);
+        connect(replyItem, SIGNAL(triggered()), this, SLOT(setMessageReply()));
+        menu->addAction(replyItem);
+
+        QAction *copyAddressItem = new QAction(tr("Copy address"), this);
+        connect(copyAddressItem, SIGNAL(triggered()), this, SLOT(copySenderAddresssToClipboard()));
+        menu->addAction(copyAddressItem);
+
+        menu->popup(ui->transactionTable->mapToGlobal(pos));
+    }
+}
+
+void MessengerPage::setMessageReply()
+{
+    int row = ui->transactionTable->selectionModel()->currentIndex().row();
+    const std::string from = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->text().toStdString();
+    const std::string subject = std::string("RE: ") + ui->transactionTable->item(row, TransactionsTableColumn::SUBJECT)->text().toStdString();
+
+    std::string address;
+    if (!walletModel->wallet().getMsgAddressFromName(&address, from))
+    {
+        throw std::runtime_error("Incorrect sender address, can't reply for this message");
+    }
+
+    ui->addressEdit->setText(QString(address.c_str()));
+    ui->subjectEdit->setText(QString(subject.c_str()));
+    ui->tabWidget->setCurrentIndex(TabName::TAB_SEND);
+    ui->messageStoreEdit->setFocus();
+}
+
+void MessengerPage::copySenderAddresssToClipboard()
+{
+    int row = ui->transactionTable->selectionModel()->currentIndex().row();
+    const std::string from = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->text().toStdString();
+
+    std::string address;
+    if (walletModel->wallet().getMsgAddressFromName(&address, from))
+    {
+        QClipboard *clipboard = QApplication::clipboard();
+        clipboard->setText(QString(address.c_str()));
+    }
 }
