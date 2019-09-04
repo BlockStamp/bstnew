@@ -149,17 +149,6 @@ void EditMsgAddressDialog::accept()
                 getDuplicateAddressWarning(),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
-        case AddressTableModel::WALLET_UNLOCK_FAILURE:
-            QMessageBox::critical(this, windowTitle(),
-                tr("Could not unlock wallet."),
-                QMessageBox::Ok, QMessageBox::Ok);
-            break;
-        case AddressTableModel::KEY_GENERATION_FAILURE:
-            QMessageBox::critical(this, windowTitle(),
-                tr("New key generation failed."),
-                QMessageBox::Ok, QMessageBox::Ok);
-            break;
-
         }
         return;
     }
