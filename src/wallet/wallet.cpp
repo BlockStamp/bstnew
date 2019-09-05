@@ -3252,6 +3252,9 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
         fFirstRunRet = mapKeys.empty() && mapCryptedKeys.empty() && mapWatchKeys.empty() && setWatchOnly.empty() && mapScripts.empty() && !IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS);
     }
 
+    if (nLoadWalletRet != DBErrors::LOAD_OK)
+        return nLoadWalletRet;
+
     nLoadWalletRet = WalletBatch(*msgDatabase,"cr+").LoadWallet(this);
 
     if (nLoadWalletRet != DBErrors::LOAD_OK)
