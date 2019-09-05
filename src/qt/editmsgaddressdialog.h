@@ -36,6 +36,7 @@ public:
     void loadRow(int row);
 
     QString getAddress() const;
+    void initData(const std::string& label, const std::string& address);
 public Q_SLOTS:
     void accept();
 

@@ -33,6 +33,7 @@ public:
 
     void setModel(MessengerBookModel *model);
     const QString &getReturnValue() const { return returnValue; }
+    void initAddAddress(const std::string addressToAdd);
 
 public Q_SLOTS:
     void done(int retval);

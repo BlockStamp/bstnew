@@ -139,6 +139,20 @@ void MessengerAddressBook::setModel(MessengerBookModel *_model)
     selectionChanged();
 }
 
+void MessengerAddressBook::initAddAddress(const std::string addressToAdd)
+{
+    if(!model)
+        return;
+
+    EditMsgAddressDialog dlg(EditMsgAddressDialog::NewSendingAddress, this);
+    dlg.setModel(model);
+    dlg.initData("", addressToAdd);
+    if(dlg.exec())
+    {
+        newAddressToSelect = dlg.getAddress();
+    }
+}
+
 void MessengerAddressBook::on_copyAddress_clicked()
 {
     GUIUtil::copyEntryData(ui->tableView, MessengerBookModel::Address);

@@ -113,6 +113,7 @@ private Q_SLOTS:
     void on_transactionTableContextMenuRequest(QPoint pos);
     void setMessageReply();
     void copySenderAddresssToClipboard();
+    void addToAddressBook();
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H

@@ -51,6 +51,8 @@
 #include <array>
 #include <vector>
 
+const char* UNKNOWN_SENDER = "";
+
 static const std::array<int, 9> confTargets = { {2, 4, 6, 12, 24, 48, 144, 504, 1008} };
 extern int getConfTargetForIndex(int index);
 extern int getIndexForConfTarget(int target);
@@ -146,6 +148,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
     connect(ui->addressBookButton, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
+    connect(ui->addressBookButton_read, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
     connect(ui->transactionTable, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(on_transactionTableContextMenuRequest(QPoint)));
 
 }
@@ -590,7 +593,7 @@ void MessengerPage::read(const std::string& txnId)
             std::string label;
             if (!walletModel->wallet().getMsgAddress(from, &label))
             {
-                label = from;
+                label = UNKNOWN_SENDER;
             }
 
             ui->fromLabel->setText(label.c_str());
@@ -759,12 +762,15 @@ void MessengerPage::fillUpTable()
         std::string label;
         if (!walletModel->wallet().getMsgAddress(it.from, &label))
         {
-            label = ""; // empty sender
+            label = UNKNOWN_SENDER;
         }
+        QTableWidgetItem *from_item = new QTableWidgetItem(QString(label.c_str()));
+        from_item->setData(Qt::UserRole, it.from.c_str());
+        ui->transactionTable->setItem(row, TransactionsTableColumn::FROM, from_item);
 
         ui->transactionTable->setItem(row, TransactionsTableColumn::DATE, item);
-        ui->transactionTable->setItem(row, TransactionsTableColumn::FROM, new QTableWidgetItem(label.c_str()));
         ui->transactionTable->setItem(row, TransactionsTableColumn::SUBJECT, new QTableWidgetItem(it.subject.c_str()));
+
         ++row;
     }
 
@@ -783,6 +789,7 @@ void MessengerPage::on_addressBookPressed()
     if (book.exec())
     {
         ui->addressEdit->setPlainText(book.getReturnValue());
+        ui->tabWidget->setCurrentIndex(TabName::TAB_SEND);
         ui->subjectEdit->setFocus();
     }
     fillUpTable();
@@ -793,38 +800,36 @@ void MessengerPage::on_addressBookPressed()
 
 void MessengerPage::on_transactionTableContextMenuRequest(QPoint pos)
 {
-
     int row = ui->transactionTable->selectionModel()->currentIndex().row();
-    if (!ui->transactionTable->item(row, TransactionsTableColumn::FROM)->text().isEmpty())
+
+    QMenu *menu = new QMenu(this);
+
+    QAction *replyItem = new QAction(tr("Reply"), this);
+    connect(replyItem, SIGNAL(triggered()), this, SLOT(setMessageReply()));
+    menu->addAction(replyItem);
+
+    QAction *copyAddressItem = new QAction(tr("Copy address"), this);
+    connect(copyAddressItem, SIGNAL(triggered()), this, SLOT(copySenderAddresssToClipboard()));
+    menu->addAction(copyAddressItem);
+
+    if (ui->transactionTable->item(row, TransactionsTableColumn::FROM)->text() == UNKNOWN_SENDER)
     {
-        QMenu *menu = new QMenu(this);
-
-        QAction *replyItem = new QAction(tr("Reply"), this);
-        connect(replyItem, SIGNAL(triggered()), this, SLOT(setMessageReply()));
-        menu->addAction(replyItem);
-
-        QAction *copyAddressItem = new QAction(tr("Copy address"), this);
-        connect(copyAddressItem, SIGNAL(triggered()), this, SLOT(copySenderAddresssToClipboard()));
-        menu->addAction(copyAddressItem);
-
-        menu->popup(ui->transactionTable->mapToGlobal(pos));
+        QAction *addToBookItem = new QAction(tr("Add to address book"), this);
+        connect(addToBookItem, SIGNAL(triggered()), this, SLOT(addToAddressBook()));
+        menu->addAction(addToBookItem);
     }
+
+    menu->popup(ui->transactionTable->mapToGlobal(pos));
 }
 
 void MessengerPage::setMessageReply()
 {
     int row = ui->transactionTable->selectionModel()->currentIndex().row();
-    const std::string from = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->text().toStdString();
-    const std::string subject = std::string("RE: ") + ui->transactionTable->item(row, TransactionsTableColumn::SUBJECT)->text().toStdString();
+    QString address = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->data(Qt::UserRole).toString();
+    QString subject = ui->transactionTable->item(row, TransactionsTableColumn::SUBJECT)->text();
 
-    std::string address;
-    if (!walletModel->wallet().getMsgAddressFromName(&address, from))
-    {
-        throw std::runtime_error("Incorrect sender address, can't reply for this message");
-    }
-
-    ui->addressEdit->setText(QString(address.c_str()));
-    ui->subjectEdit->setText(QString(subject.c_str()));
+    ui->addressEdit->setText(address);
+    ui->subjectEdit->setText(subject);
     ui->tabWidget->setCurrentIndex(TabName::TAB_SEND);
     ui->messageStoreEdit->setFocus();
 }
@@ -832,12 +837,27 @@ void MessengerPage::setMessageReply()
 void MessengerPage::copySenderAddresssToClipboard()
 {
     int row = ui->transactionTable->selectionModel()->currentIndex().row();
-    const std::string from = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->text().toStdString();
+    QString address = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->data(Qt::UserRole).toString();
 
-    std::string address;
-    if (walletModel->wallet().getMsgAddressFromName(&address, from))
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(address);
+}
+
+void MessengerPage::addToAddressBook()
+{
+    int row = ui->transactionTable->selectionModel()->currentIndex().row();
+    QString address = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->data(Qt::UserRole).toString();
+
+    MessengerAddressBook book(platformStyle, this);
+    book.setModel(walletModel->getMsgAddressTableModel());
+    book.initAddAddress(address.toStdString());
+    if (book.exec())
     {
-        QClipboard *clipboard = QApplication::clipboard();
-        clipboard->setText(QString(address.c_str()));
+        ui->addressEdit->setPlainText(book.getReturnValue());
+        ui->subjectEdit->setFocus();
     }
+    fillUpTable();
+    ui->fromLabel->setText("");
+    ui->subjectReadLabel->setText("");
+    ui->messageViewEdit->setPlainText("");
 }

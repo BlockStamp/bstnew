@@ -165,3 +165,9 @@ QString EditMsgAddressDialog::getAddress() const
 {
     return address;
 }
+
+void EditMsgAddressDialog::initData(const std::string& label, const std::string& address)
+{
+    ui->labelEdit->setText(QString(label.c_str()));
+    ui->addressEdit->setPlainText(QString(address.c_str()));
+}
