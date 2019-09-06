@@ -319,6 +319,24 @@ bool CWallet::AddCryptedKey(const CPubKey &vchPubKey,
     }
 }
 
+bool CWallet::AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &plainTextPrivKey)
+{
+    ///TODO: Review this implementation
+    if (!CCryptoKeyStore::AddMessengerCryptedKey(cryptedPrivKey, plainTextPrivKey))
+        return false;
+    {
+        LOCK(cs_wallet);
+        if (messenger_encrypted_batch)
+            return messenger_encrypted_batch->WriteMessengerCryptedKey(
+                        std::string(cryptedPrivKey.begin(), cryptedPrivKey.end()),
+                        std::string(plainTextPrivKey.begin(), plainTextPrivKey.end()));
+        else
+            return WalletBatch(*msgDatabase).WriteMessengerCryptedKey(
+                        std::string(cryptedPrivKey.begin(), cryptedPrivKey.end()),
+                        std::string(plainTextPrivKey.begin(), plainTextPrivKey.end()));
+    }
+}
+
 void CWallet::LoadKeyMetadata(const CKeyID& keyID, const CKeyMetadata &meta)
 {
     AssertLockHeld(cs_wallet); // mapKeyMetadata
@@ -428,6 +446,13 @@ bool CWallet::Unlock(const SecureString& strWalletPassphrase)
         }
     }
     return false;
+}
+
+bool CWallet::MsgUnlock(const SecureString& strWalletPassphrase)
+{
+    ///TODO: Implement like CWallet::Unlock
+
+    return true;
 }
 
 bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase)
@@ -732,6 +757,107 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
     }
     NotifyStatusChanged(this);
 
+    return true;
+}
+
+bool CWallet::EncryptMessenger(const SecureString& strMessengerPassphrase)
+{
+    ///TODO: Finish and review this implementation
+
+    if (IsMsgCrypted())
+        return false;
+
+    CKeyingMaterial _vMasterKey;
+
+    _vMasterKey.resize(WALLET_CRYPTO_KEY_SIZE);
+    GetStrongRandBytes(&_vMasterKey[0], WALLET_CRYPTO_KEY_SIZE);
+
+    CMasterKey kMasterKey;
+
+    kMasterKey.vchSalt.resize(WALLET_CRYPTO_SALT_SIZE);
+    GetStrongRandBytes(&kMasterKey.vchSalt[0], WALLET_CRYPTO_SALT_SIZE);
+
+    CCrypter crypter;
+    int64_t nStartTime = GetTimeMillis();
+    crypter.SetKeyFromPassphrase(strMessengerPassphrase, kMasterKey.vchSalt, 25000, kMasterKey.nDerivationMethod);
+    kMasterKey.nDeriveIterations = static_cast<unsigned int>(2500000 / ((double)(GetTimeMillis() - nStartTime)));
+
+    nStartTime = GetTimeMillis();
+    crypter.SetKeyFromPassphrase(strMessengerPassphrase, kMasterKey.vchSalt, kMasterKey.nDeriveIterations, kMasterKey.nDerivationMethod);
+    kMasterKey.nDeriveIterations = (kMasterKey.nDeriveIterations + static_cast<unsigned int>(kMasterKey.nDeriveIterations * 100 / ((double)(GetTimeMillis() - nStartTime)))) / 2;
+
+    if (kMasterKey.nDeriveIterations < 25000)
+        kMasterKey.nDeriveIterations = 25000;
+
+    WalletLogPrintf("Encrypting Messenger Wallet with an nDeriveIterations of %i\n", kMasterKey.nDeriveIterations);
+
+    if (!crypter.SetKeyFromPassphrase(strMessengerPassphrase, kMasterKey.vchSalt, kMasterKey.nDeriveIterations, kMasterKey.nDerivationMethod))
+        return false;
+    if (!crypter.Encrypt(_vMasterKey, kMasterKey.vchCryptedKey))
+        return false;
+
+    {
+        LOCK(cs_wallet);
+        mapMessengerMasterKeys[++nMessengerMasterKeyMaxID] = kMasterKey;
+        assert(!messenger_encrypted_batch);
+        messenger_encrypted_batch = new WalletBatch(*msgDatabase);
+        if (!messenger_encrypted_batch->TxnBegin()) {
+            delete messenger_encrypted_batch;
+            messenger_encrypted_batch = nullptr;
+            return false;
+        }
+
+        messenger_encrypted_batch->WriteMessengerMasterKey(nMessengerMasterKeyMaxID, kMasterKey);
+
+        if (!EncryptMessengerKeys(_vMasterKey))
+        {
+            messenger_encrypted_batch->TxnAbort();
+            delete messenger_encrypted_batch;
+            messenger_encrypted_batch = nullptr;
+            // We now probably have half of our keys encrypted in memory, and half not...
+            // die and let the user reload the unencrypted wallet.
+            assert(false);
+        }
+
+        // Encryption was introduced in version 0.4.0
+        /// TODO: check if this must stay
+//        SetMinVersion(FEATURE_WALLETCRYPT, messenger_encrypted_batch, true);
+
+        if (!messenger_encrypted_batch->TxnCommit()) {
+            delete messenger_encrypted_batch;
+            messenger_encrypted_batch = nullptr;
+            // We now have keys encrypted in memory, but not on disk...
+            // die to avoid confusion and let the user reload the unencrypted wallet.
+            assert(false);
+        }
+
+        delete messenger_encrypted_batch;
+        messenger_encrypted_batch = nullptr;
+
+        MsgLock();
+        MsgUnlock(strMessengerPassphrase);
+
+        /// TODO: Replace with some implementation or remove
+//        // if we are using HD, replace the HD seed with a new one
+//        if (IsHDEnabled()) {
+//            SetHDSeed(GenerateNewSeed());
+//        }
+
+        /// TODO: Replace with some implementation or remove
+//        NewMsgKeyPool();
+        MsgLock();
+
+        // Need to completely rewrite the wallet file; if we don't, bdb might keep
+        // bits of the unencrypted private key in slack space in the database file.
+        msgDatabase->Rewrite();
+
+        // BDB seems to have a bad habit of writing old data into
+        // slack space in .dat files; that is bad if the old data is
+        // unencrypted private keys. So:
+        msgDatabase->ReloadDbEnv();
+    }
+
+    NotifyMessengerStatusChanged(this);
     return true;
 }
 
@@ -3227,6 +3353,38 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
     return true;
 }
 
+void CWallet::generateMessengerKeys()
+{
+    //TODO: Consider moving messenger key generation to the place where ordinary bst keys are generated
+    //TODO: Consider using SecureString instead of ordinary std::string
+
+    WalletBatch walletBatch(*msgDatabase);
+    std::string publicRsaKey, privateRsaKey, cryptedPrivateRsaKey;
+
+    walletBatch.ReadPublicKey(publicRsaKey);
+    walletBatch.ReadPrivateKey(privateRsaKey);
+    walletBatch.ReadMessengerCryptedKey(cryptedPrivateRsaKey);
+
+    std::cout << "publicRsaKey.size(): " << publicRsaKey.size()
+              << "privateRsaKey.size(): " << privateRsaKey.size()
+              << "cryptedPrivateRsaKey.size(): " << cryptedPrivateRsaKey.size()
+              << std::endl;
+
+    if (cryptedPrivateRsaKey.empty() && (publicRsaKey.empty() || privateRsaKey.empty())) {
+        std::cout << "Generating new keys\n";
+        // generate key
+        generateKeysPair(publicRsaKey, privateRsaKey);
+        // store key in database
+        walletBatch.WritePublicKey(publicRsaKey);
+        walletBatch.WritePrivateKey(privateRsaKey);
+    }
+
+    MessengerPrivateKey privKey(privateRsaKey.begin(), privateRsaKey.end());
+    MessengerPublicKey pubKey(publicRsaKey.begin(), publicRsaKey.end());
+
+    SetMessengerKeys(privKey, pubKey);
+}
+
 DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
 {
     LOCK2(cs_main, cs_wallet);
@@ -3255,10 +3413,14 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
     if (nLoadWalletRet != DBErrors::LOAD_OK)
         return nLoadWalletRet;
 
-    nLoadWalletRet = WalletBatch(*msgDatabase,"cr+").LoadWallet(this);
+    {
+        nLoadWalletRet = WalletBatch(*msgDatabase,"cr+").LoadWallet(this);
 
-    if (nLoadWalletRet != DBErrors::LOAD_OK)
-        return nLoadWalletRet;
+        if (nLoadWalletRet != DBErrors::LOAD_OK)
+            return nLoadWalletRet;
+    }
+
+    generateMessengerKeys();
 
     return DBErrors::LOAD_OK;
 }
@@ -3432,6 +3594,16 @@ bool CWallet::NewKeyPool()
         }
         WalletLogPrintf("CWallet::NewKeyPool rewrote keypool\n");
     }
+    return true;
+}
+
+/**
+ * Mark old keypool keys as used,
+ * and generate all new keys
+ */
+bool CWallet::NewMsgKeyPool()
+{
+    ///TODO: Implement or remove
     return true;
 }
 

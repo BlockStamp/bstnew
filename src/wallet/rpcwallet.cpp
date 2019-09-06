@@ -1887,6 +1887,7 @@ static UniValue abandontransaction(const JSONRPCRequest& request)
 
 static UniValue backupwallet(const JSONRPCRequest& request)
 {
+    ///TODO: Check how backuping wallet affects the messenger feature
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 

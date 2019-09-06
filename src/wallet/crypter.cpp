@@ -118,6 +118,17 @@ static bool EncryptSecret(const CKeyingMaterial& vMasterKey, const CKeyingMateri
     return cKeyCrypter.Encrypt(*((const CKeyingMaterial*)&vchPlaintext), vchCiphertext);
 }
 
+static bool EncryptMessengerSecret(const CKeyingMaterial& vMasterKey, const CKeyingMaterial &vchPlaintext, const uint256& nIV, std::vector<unsigned char> &vchCiphertext)
+{
+    ///TODO: Implement
+    CCrypter cKeyCrypter;
+    std::vector<unsigned char> chIV(WALLET_CRYPTO_IV_SIZE);
+    memcpy(chIV.data(), &nIV, WALLET_CRYPTO_IV_SIZE);
+    if(!cKeyCrypter.SetKey(vMasterKey, chIV))
+        return false;
+    return cKeyCrypter.Encrypt(*((const CKeyingMaterial*)&vchPlaintext), vchCiphertext);
+}
+
 static bool DecryptSecret(const CKeyingMaterial& vMasterKey, const std::vector<unsigned char>& vchCiphertext, const uint256& nIV, CKeyingMaterial& vchPlaintext)
 {
     CCrypter cKeyCrypter;
@@ -152,6 +163,19 @@ bool CCryptoKeyStore::SetCrypted()
     return true;
 }
 
+bool CCryptoKeyStore::SetMsgCrypted()
+{
+    ///TODO: Review
+    LOCK(cs_KeyStore);
+    if (fMsgUseCrypto)
+        return true;
+
+    if (!messengerPrivateKey.empty())
+        return false;
+    fMsgUseCrypto = true;
+    return true;
+}
+
 bool CCryptoKeyStore::IsLocked() const
 {
     if (!IsCrypted()) {
@@ -172,6 +196,30 @@ bool CCryptoKeyStore::Lock()
     }
 
     NotifyStatusChanged(this);
+    return true;
+}
+
+bool CCryptoKeyStore::IsMsgLocked() const
+{
+    ///TODO: Review implementation
+    if (!IsMsgCrypted()) {
+        return false;
+    }
+    LOCK(cs_KeyStore);
+    return vMessengerMasterKey.empty();
+}
+
+bool CCryptoKeyStore::MsgLock()
+{
+    if (!SetMsgCrypted())
+        return false;
+
+    {
+        LOCK(cs_KeyStore);
+        vMessengerMasterKey.clear();
+    }
+
+    NotifyMessengerStatusChanged(this);
     return true;
 }
 
@@ -213,6 +261,12 @@ bool CCryptoKeyStore::Unlock(const CKeyingMaterial& vMasterKeyIn)
     return true;
 }
 
+bool CCryptoKeyStore::MsgUnlock(const CKeyingMaterial& /*vMasterKeyIn*/)
+{
+    ///TODO: Implement like CCryptoKeyStore::Unlock
+    return true;
+}
+
 bool CCryptoKeyStore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 {
     LOCK(cs_KeyStore);
@@ -246,6 +300,32 @@ bool CCryptoKeyStore::AddCryptedKey(const CPubKey &vchPubKey, const std::vector<
 
     mapCryptedKeys[vchPubKey.GetID()] = make_pair(vchPubKey, vchCryptedSecret);
     ImplicitlyLearnRelatedKeyScripts(vchPubKey);
+    return true;
+}
+
+bool CCryptoKeyStore::SetMessengerKeys(const MessengerPrivateKey& privKey, const MessengerPublicKey& pubKey)
+{
+    LOCK(cs_KeyStore);
+    if (!IsMsgCrypted()) {
+        return CBasicKeyStore::SetMessengerKeys(privKey, pubKey);
+    }
+
+    if (IsMsgLocked()) {
+        return false;
+    }
+
+    ///TODO: Implement the rest of this function like  CCryptoKeyStore::AddKeyPubKey
+    return true;
+}
+
+bool CCryptoKeyStore::AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &/*plainTextPrivKey*/)
+{
+    LOCK(cs_KeyStore);
+    if (!SetMsgCrypted()) {
+        return false;
+    }
+
+    cryptedMessengerPrivateKey = cryptedPrivKey;
     return true;
 }
 
@@ -323,5 +403,29 @@ bool CCryptoKeyStore::EncryptKeys(CKeyingMaterial& vMasterKeyIn)
             return false;
     }
     mapKeys.clear();
+    return true;
+}
+
+bool CCryptoKeyStore::EncryptMessengerKeys(CKeyingMaterial& vMasterKeyIn)
+{
+    ///TODO: Implement
+    LOCK(cs_KeyStore);
+    if (!cryptedMessengerPrivateKey.empty() || IsMsgCrypted() || messengerPublicKey.empty())
+        return false;
+
+    fMsgUseCrypto = true;
+
+    std::vector<unsigned char> cryptedMessengerSecret;
+
+    ///TODO: check if this is the proper use of IV
+    const uint256 IV = Hash(messengerPublicKey.begin(), messengerPublicKey.end());
+    std::cout << "Using IV: " << IV.ToString() << std::endl;
+
+    if (!EncryptMessengerSecret(vMasterKeyIn, messengerPrivateKey, IV, cryptedMessengerSecret))
+        return false;
+    if (!AddMessengerCryptedKey(cryptedMessengerSecret, std::vector<unsigned char>(messengerPrivateKey.begin(), messengerPrivateKey.end())))
+        return false;
+
+    messengerPrivateKey.clear();
     return true;
 }

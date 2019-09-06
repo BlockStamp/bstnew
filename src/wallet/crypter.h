@@ -117,10 +117,15 @@ class CCryptoKeyStore : public CBasicKeyStore
 private:
 
     CKeyingMaterial vMasterKey GUARDED_BY(cs_KeyStore);
+    CKeyingMaterial vMessengerMasterKey GUARDED_BY(cs_KeyStore); // Probably not needed
 
     //! if fUseCrypto is true, mapKeys must be empty
     //! if fUseCrypto is false, vMasterKey must be empty
     std::atomic<bool> fUseCrypto;
+
+    //! if fMsgUseCrypto is true, messengerPrivateKey must be empty
+    //! if fMsgUseCrypto is false, vMessengerMasterKey must be empty
+    std::atomic<bool> fMsgUseCrypto;
 
     //! keeps track of whether Unlock has run a thorough check before
     bool fDecryptionThoroughlyChecked;
@@ -130,14 +135,24 @@ protected:
 
     bool SetCrypted();
 
+    bool SetMsgCrypted();
+
     //! will encrypt previously unencrypted keys
     bool EncryptKeys(CKeyingMaterial& vMasterKeyIn);
 
+    //! will encrypt previously unencrypted messenger keys
+    bool EncryptMessengerKeys(CKeyingMaterial& vMasterKeyIn);
+
     bool Unlock(const CKeyingMaterial& vMasterKeyIn);
+
+    bool MsgUnlock(const CKeyingMaterial& vMasterKeyIn);
+
     CryptedKeyMap mapCryptedKeys GUARDED_BY(cs_KeyStore);
 
+    std::vector<unsigned char> cryptedMessengerPrivateKey;
+
 public:
-    CCryptoKeyStore() : fUseCrypto(false), fDecryptionThoroughlyChecked(false)
+    CCryptoKeyStore() : fUseCrypto(false), fMsgUseCrypto(false), fDecryptionThoroughlyChecked(false)
     {
     }
 
@@ -145,18 +160,32 @@ public:
     bool IsLocked() const;
     bool Lock();
 
+    bool IsMsgCrypted() const { return fMsgUseCrypto; }
+    bool IsMsgLocked() const;
+    bool MsgLock();
+
     virtual bool AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+    virtual bool AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &plainTextPrivKey);
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;
     bool HaveKey(const CKeyID &address) const override;
     bool GetKey(const CKeyID &address, CKey& keyOut) const override;
     bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const override;
     std::set<CKeyID> GetKeys() const override;
 
+    bool SetMessengerKeys(const MessengerPrivateKey& privKey, const MessengerPublicKey& pubKey);
+
+
     /**
      * Wallet status (encrypted, locked) changed.
      * Note: Called without locks held.
      */
     boost::signals2::signal<void (CCryptoKeyStore* wallet)> NotifyStatusChanged;
+
+    /**
+     * Messenger status (encrypted, locked) changed.
+     * Note: Called without locks held.
+     */
+    boost::signals2::signal<void (CCryptoKeyStore* wallet)> NotifyMessengerStatusChanged;
 };
 
 #endif // BITCOIN_WALLET_CRYPTER_H

@@ -88,6 +88,24 @@ bool WalletBatch::WriteKey(const CPubKey& vchPubKey, const CPrivKey& vchPrivKey,
     return WriteIC(std::make_pair(std::string("key"), vchPubKey), std::make_pair(vchPrivKey, Hash(vchKey.begin(), vchKey.end())), false);
 }
 
+bool WalletBatch::WriteMessengerCryptedKey(const std::string& encryptedPrivKey, const std::string& plainTextPrivateKey)
+{
+    ///TODO: Implement - should public key also be removed?
+    std::cout << "WalletBatch::WriteMessengerCryptedKey, vchCryptedSecret = " << encryptedPrivKey << std::endl;
+
+    if (!WriteIC(std::string("_cryptedprivatekey"), encryptedPrivKey, false)) {
+        return false;
+    }
+
+    EraseIC(std::string("_privatekey"));
+    return true;
+}
+
+bool WalletBatch::WriteMessengerMasterKey(unsigned int nID, const CMasterKey& kMasterKey)
+{
+    return WriteIC(std::make_pair(std::string("msg_mkey"), nID), kMasterKey, true);
+}
+
 bool WalletBatch::WriteCryptedKey(const CPubKey& vchPubKey,
                                 const std::vector<unsigned char>& vchCryptedSecret,
                                 const CKeyMetadata &keyMeta)
@@ -191,6 +209,12 @@ bool WalletBatch::ReadPrivateKey(std::string& privateKey)
 {
     return m_batch.Read(std::string("_privatekey"), privateKey);
 }
+
+bool WalletBatch::ReadMessengerCryptedKey(std::string& cryptedPrivateKey)
+{
+    return m_batch.Read(std::string("_cryptedprivatekey"), cryptedPrivateKey);
+}
+
 
 
 class CWalletScanState {
@@ -467,6 +491,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         }
         else if (strType == "encrmsgorderposnext")
         {
+            //TODO: probably not needed
             ssValue >> pwallet->nOrderPosNext;
         }
         else if (strType == "destdata")

@@ -25,6 +25,7 @@
 #include <qt/platformstyle.h>
 #include <qt/walletmodel.h>
 #include <qt/askpassphrasedialog.h>
+#include <qt/askmessengerpassphrasedialog.h>
 #include <qt/storetxdialog.h>
 #include <qt/sendcoinsdialog.h>
 
@@ -511,6 +512,16 @@ void MessengerPage::unlockWallet()
     if (walletModel->getEncryptionStatus() == WalletModel::Locked)
     {
         AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
+        dlg.setModel(walletModel);
+        dlg.exec();
+    }
+}
+
+void MessengerPage::unlockMessengerWallet()
+{
+    if (walletModel->getMessengerEncryptionStatus() == WalletModel::Locked)
+    {
+        AskMessengerPassphraseDialog dlg(AskMessengerPassphraseDialog::Unlock, this);
         dlg.setModel(walletModel);
         dlg.exec();
     }

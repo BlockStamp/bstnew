@@ -143,6 +143,7 @@ public:
     RecentRequestsTableModel *getRecentRequestsTableModel();
 
     EncryptionStatus getEncryptionStatus() const;
+    EncryptionStatus getMessengerEncryptionStatus() const;
 
     // Check address for validity
     bool validateAddress(const QString &address);
@@ -219,6 +220,7 @@ private:
     std::unique_ptr<interfaces::Wallet> m_wallet;
     std::unique_ptr<interfaces::Handler> m_handler_unload;
     std::unique_ptr<interfaces::Handler> m_handler_status_changed;
+    std::unique_ptr<interfaces::Handler> m_handler_messenger_status_changed;
     std::unique_ptr<interfaces::Handler> m_handler_address_book_changed;
     std::unique_ptr<interfaces::Handler> m_handler_messenger_address_book_changed;
     std::unique_ptr<interfaces::Handler> m_handler_transaction_changed;
@@ -242,6 +244,7 @@ private:
     // Cache some values to be able to detect changes
     interfaces::WalletBalances m_cached_balances;
     EncryptionStatus cachedEncryptionStatus;
+    EncryptionStatus cachedMessengerEncryptionStatus;
     int cachedNumBlocks;
 
     QTimer *pollTimer;
@@ -256,6 +259,9 @@ Q_SIGNALS:
 
     // Encryption status of wallet changed
     void encryptionStatusChanged();
+
+    // Messenger encryption status of wallet changed
+    void messengerEncryptionStatusChanged();
 
     // Signal emitted when wallet needs to be unlocked
     // It is valid behaviour for listeners to keep the wallet locked after this signal;
@@ -283,6 +289,8 @@ Q_SIGNALS:
 public Q_SLOTS:
     /* Wallet status might have changed */
     void updateStatus();
+    /* Messenger status might have changed */
+    void updateMessengerStatus();
     /* New transaction, or transaction changed status */
     void updateTransaction();
     /* New, updated or removed address book entry */

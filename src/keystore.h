@@ -22,6 +22,9 @@ public:
     //! Add a key to the store.
     virtual bool AddKeyPubKey(const CKey &key, const CPubKey &pubkey) =0;
 
+    //! Store messenger keys.
+    virtual bool SetMessengerKeys(const MessengerPrivateKey& privKey, const MessengerPublicKey& pubKey) =0;
+
     //! Check whether a key corresponding to a given address is present in the store.
     virtual bool HaveKey(const CKeyID &address) const =0;
     virtual std::set<CKeyID> GetKeys() const =0;
@@ -54,10 +57,15 @@ protected:
     ScriptMap mapScripts GUARDED_BY(cs_KeyStore);
     WatchOnlySet setWatchOnly GUARDED_BY(cs_KeyStore);
 
+    MessengerPrivateKey messengerPrivateKey GUARDED_BY(cs_KeyStore);
+    MessengerPublicKey messengerPublicKey GUARDED_BY(cs_KeyStore);
+
     void ImplicitlyLearnRelatedKeyScripts(const CPubKey& pubkey) EXCLUSIVE_LOCKS_REQUIRED(cs_KeyStore);
 
 public:
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;
+    bool SetMessengerKeys(const MessengerPrivateKey& privKey, const MessengerPublicKey& pubKey);
+
     bool AddKey(const CKey &key) { return AddKeyPubKey(key, key.GetPubKey()); }
     bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const override;
     bool HaveKey(const CKeyID &address) const override;

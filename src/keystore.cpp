@@ -56,6 +56,16 @@ bool CBasicKeyStore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
     return true;
 }
 
+bool CBasicKeyStore::SetMessengerKeys(const MessengerPrivateKey& privKey, const MessengerPublicKey& pubKey)
+{
+    ///TODO: Implement like CBasicKeyStore::AddKeyPubKey
+    LOCK(cs_KeyStore);
+    messengerPrivateKey = privKey;
+    messengerPublicKey = pubKey;
+
+    return true;
+}
+
 bool CBasicKeyStore::HaveKey(const CKeyID &address) const
 {
     LOCK(cs_KeyStore);

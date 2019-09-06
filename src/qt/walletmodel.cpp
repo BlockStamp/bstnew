@@ -66,6 +66,15 @@ void WalletModel::updateStatus()
     }
 }
 
+void WalletModel::updateMessengerStatus()
+{
+    EncryptionStatus newMessengerEncryptionStatus = getMessengerEncryptionStatus();
+
+    if(cachedMessengerEncryptionStatus != newMessengerEncryptionStatus) {
+        Q_EMIT messengerEncryptionStatusChanged();
+    }
+}
+
 void WalletModel::pollBalanceChanged()
 {
     // Try to get balances and return early if locks can't be acquired. This
@@ -346,6 +355,22 @@ WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
     }
 }
 
+WalletModel::EncryptionStatus WalletModel::getMessengerEncryptionStatus() const
+{
+    if(!m_wallet->isMsgCrypted())
+    {
+        return Unencrypted;
+    }
+    else if(m_wallet->isMsgLocked())
+    {
+        return Locked;
+    }
+    else
+    {
+        return Unlocked;
+    }
+}
+
 bool WalletModel::setWalletEncrypted(bool encrypted, const SecureString &passphrase)
 {
     if(encrypted)
@@ -393,37 +418,40 @@ static void NotifyKeyStoreStatusChanged(WalletModel *walletmodel)
     QMetaObject::invokeMethod(walletmodel, "updateStatus", Qt::QueuedConnection);
 }
 
+static void NotifyMessengerKeyStoreStatusChanged(WalletModel *walletmodel)
+{
+    qDebug() << "NotifyMessengerKeyStoreStatusChanged";
+    QMetaObject::invokeMethod(walletmodel, "updateMessengerStatus", Qt::QueuedConnection);
+}
+
 bool WalletModel::setMessengerEncrypted(bool encrypted, const SecureString &passphrase)
 {
-    ///TODO: Implement
-//    if(encrypted)
-//    {
-//        // Encrypt
-//        return m_wallet->encryptWallet(passphrase);
-//    }
-//    else
-//    {
-//        // Decrypt -- TODO; not supported yet
-//        return false;
-//    }
-
+    if(encrypted)
+    {
+        // Encrypt
+        return m_wallet->encryptMessenger(passphrase);
+    }
+    else
+    {
+        // Decrypt -- TODO; not supported yet
+        return false;
+    }
 
     return true;
 }
 
 bool WalletModel::setMessengerLocked(bool locked, const SecureString &passPhrase)
 {
-    ///TODO: Implement
-//    if(locked)
-//    {
-//        // Lock
-//        return m_wallet->lock();
-//    }
-//    else
-//    {
-//        // Unlock
-//        return m_wallet->unlock(passPhrase);
-//    }
+    if(locked)
+    {
+        // Lock
+        return m_wallet->msgLock();
+    }
+    else
+    {
+        // Unlock
+        return m_wallet->msgUnlock(passPhrase);
+    }
 
 
     return true;
@@ -497,6 +525,7 @@ void WalletModel::subscribeToCoreSignals()
     // Connect signals to wallet
     m_handler_unload = m_wallet->handleUnload(boost::bind(&NotifyUnload, this));
     m_handler_status_changed = m_wallet->handleStatusChanged(boost::bind(&NotifyKeyStoreStatusChanged, this));
+    m_handler_messenger_status_changed = m_wallet->handleMessengerStatusChanged(boost::bind(&NotifyMessengerKeyStoreStatusChanged, this));
     m_handler_address_book_changed = m_wallet->handleAddressBookChanged(boost::bind(NotifyAddressBookChanged, this, _1, _2, _3, _4, _5));
     m_handler_messenger_address_book_changed = m_wallet->handleMessengerAddressBookChanged(boost::bind(NotifyMessengerAddressBookChanged, this, _1, _2, _3));
     m_handler_transaction_changed = m_wallet->handleTransactionChanged(boost::bind(NotifyTransactionChanged, this, _1, _2));
@@ -510,6 +539,7 @@ void WalletModel::unsubscribeFromCoreSignals()
     // Disconnect signals from wallet
     m_handler_unload->disconnect();
     m_handler_status_changed->disconnect();
+    m_handler_messenger_status_changed->disconnect();
     m_handler_address_book_changed->disconnect();
     m_handler_messenger_address_book_changed->disconnect();
     m_handler_transaction_changed->disconnect();

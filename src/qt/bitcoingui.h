@@ -213,12 +213,22 @@ public Q_SLOTS:
     */
     void updateWalletStatus();
 
+    /** Set the UI status indicators based on the messenger wallet.
+    */
+    void updateMessengerWalletStatus();
+
 private:
     /** Set the encryption status as shown in the UI.
        @param[in] status            current encryption status
        @see WalletModel::EncryptionStatus
     */
     void setEncryptionStatus(int status);
+
+    /** Set the messenger encryption status as shown in the UI.
+       @param[in] status            current encryption status
+       @see WalletModel::MessengerEncryptionStatus
+    */
+    void setMessengerEncryptionStatus(int status);
 
     /** Set the hd-enabled status as shown in the UI.
      @param[in] hdEnabled         current hd enabled status

@@ -68,6 +68,21 @@ public:
     virtual bool changeWalletPassphrase(const SecureString& old_wallet_passphrase,
         const SecureString& new_wallet_passphrase) = 0;
 
+    //! Encrypt messenger.
+    virtual bool encryptMessenger(const SecureString& messenger_passphrase) = 0;
+
+    //! Return whether messenger is encrypted.
+    virtual bool isMsgCrypted() = 0;
+
+    //! Lock messenger.
+    virtual bool msgLock() = 0;
+
+    //! Unlock messenger.
+    virtual bool msgUnlock(const SecureString& wallet_passphrase) = 0;
+
+    //! Return whether messenger is locked.
+    virtual bool isMsgLocked() = 0;
+
     //! Abort a rescan.
     virtual void abortRescan() = 0;
 
@@ -271,6 +286,9 @@ public:
     //! Register handler for status changed messages.
     using StatusChangedFn = std::function<void()>;
     virtual std::unique_ptr<Handler> handleStatusChanged(StatusChangedFn fn) = 0;
+
+    //! Register handler for messenger status changed messages.
+    virtual std::unique_ptr<Handler> handleMessengerStatusChanged(StatusChangedFn fn) = 0;
 
     //! Register handler for address book changed messages.
     using AddressBookChangedFn = std::function<void(const CTxDestination& address,

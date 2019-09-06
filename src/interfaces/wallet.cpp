@@ -131,6 +131,16 @@ public:
     {
         return m_wallet.ChangeWalletPassphrase(old_wallet_passphrase, new_wallet_passphrase);
     }
+
+    bool encryptMessenger(const SecureString& messenger_passphrase) override
+    {
+        return m_wallet.EncryptMessenger(messenger_passphrase);
+    }
+    bool isMsgCrypted() override { return m_wallet.IsMsgCrypted(); }
+    bool msgLock() override { return m_wallet.MsgLock(); }
+    bool msgUnlock(const SecureString& wallet_passphrase) override { return m_wallet.MsgUnlock(wallet_passphrase); }
+    bool isMsgLocked() override { return m_wallet.IsMsgLocked(); }
+
     void abortRescan() override { m_wallet.AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet.BackupWallet(filename); }
     std::string getWalletName() override { return m_wallet.GetName(); }
@@ -487,6 +497,10 @@ public:
     std::unique_ptr<Handler> handleStatusChanged(StatusChangedFn fn) override
     {
         return MakeHandler(m_wallet.NotifyStatusChanged.connect([fn](CCryptoKeyStore*) { fn(); }));
+    }
+    std::unique_ptr<Handler> handleMessengerStatusChanged(StatusChangedFn fn) override
+    {
+        return MakeHandler(m_wallet.NotifyMessengerStatusChanged.connect([fn](CCryptoKeyStore*) { fn(); }));
     }
     std::unique_ptr<Handler> handleAddressBookChanged(AddressBookChangedFn fn) override
     {

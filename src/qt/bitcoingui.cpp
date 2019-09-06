@@ -1196,6 +1196,11 @@ void BitcoinGUI::setEncryptionStatus(int status)
     }
 }
 
+void BitcoinGUI::setMessengerEncryptionStatus(int status)
+{
+    ///TODO: Implement like BitcoinGUI::setEncryptionStatus
+}
+
 void BitcoinGUI::updateWalletStatus()
 {
     if (!walletFrame) {
@@ -1209,6 +1214,23 @@ void BitcoinGUI::updateWalletStatus()
     setEncryptionStatus(walletModel->getEncryptionStatus());
     setHDStatus(walletModel->wallet().hdEnabled());
 }
+
+void BitcoinGUI::updateMessengerWalletStatus()
+{
+    if (!walletFrame) {
+        return;
+    }
+    WalletView * const walletView = walletFrame->currentWalletView();
+    if (!walletView) {
+        return;
+    }
+    WalletModel * const walletModel = walletView->getWalletModel();
+    setMessengerEncryptionStatus(walletModel->getEncryptionStatus());
+
+    ///TODO: What to do with the following:
+    //setHDStatus(walletModel->wallet().hdEnabled());
+}
+
 #endif // ENABLE_WALLET
 
 void BitcoinGUI::updateProxyIcon()

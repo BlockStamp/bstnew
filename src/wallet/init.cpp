@@ -248,19 +248,6 @@ void WalletInit::Start(CScheduler& scheduler) const
         pwallet->postInitProcess();
     }
 
-    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
-    WalletBatch walletBatch(dbh);
-    std::string publicRsaKey, privateRsaKey;
-    walletBatch.ReadPublicKey(publicRsaKey);
-    walletBatch.ReadPrivateKey(privateRsaKey);
-    if (publicRsaKey.empty() || privateRsaKey.empty()) {
-        // generate key
-        generateKeysPair(publicRsaKey, privateRsaKey);
-        // store key in database
-        walletBatch.WritePublicKey(publicRsaKey);
-        walletBatch.WritePrivateKey(privateRsaKey);
-    }
-
     // Run a thread to flush wallet periodically
     scheduler.scheduleEvery(MaybeCompactWalletDB, 500);
 }

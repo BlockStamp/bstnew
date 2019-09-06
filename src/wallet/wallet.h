@@ -626,6 +626,7 @@ private:
     friend class WalletRescanReserver;
 
     WalletBatch *encrypted_batch = nullptr;
+    WalletBatch *messenger_encrypted_batch = nullptr;
 
     //! the current wallet version: clients below this version are not able to load the wallet
     int nWalletVersion = FEATURE_BASE;
@@ -774,6 +775,10 @@ public:
     MasterKeyMap mapMasterKeys;
     unsigned int nMasterKeyMaxID = 0;
 
+    ///TODO: Probably needs to be replaced with just one CMasterKey
+    MasterKeyMap mapMessengerMasterKeys;
+    unsigned int nMessengerMasterKeyMaxID = 0;
+
     /** Construct wallet with specified name and database implementation. */
     CWallet(std::string name, std::unique_ptr<WalletDatabase> database) : m_name(std::move(name)), database(std::move(database))
     {
@@ -872,6 +877,9 @@ public:
     bool AddCScript(const CScript& redeemScript) override;
     bool LoadCScript(const CScript& redeemScript);
 
+    //! Adds an encrypted messenger key to the store, and saves it to disk.
+    bool AddMessengerCryptedKey(const std::vector<unsigned char> &vchCryptedSecret, const std::vector<unsigned char> &plainTextPrivKey);
+
     //! Adds a destination data tuple to the store, and saves it to disk
     bool AddDestData(const CTxDestination &dest, const std::string &key, const std::string &value);
     //! Erases a destination data tuple in the store and on disk
@@ -893,8 +901,11 @@ public:
     int64_t nRelockTime = 0;
 
     bool Unlock(const SecureString& strWalletPassphrase);
+    bool MsgUnlock(const SecureString& strWalletPassphrase);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
+
+    bool EncryptMessenger(const SecureString& strMessengerPassphrase);
 
     void GetKeyBirthTimes(std::map<CTxDestination, int64_t> &mapKeyBirth) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     unsigned int ComputeTimeSmart(const CWalletTx& wtx) const;
@@ -984,6 +995,8 @@ public:
     OutputType m_default_change_type{DEFAULT_CHANGE_TYPE};
 
     bool NewKeyPool();
+    bool NewMsgKeyPool();
+
     size_t KeypoolCountExternalKeys() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     bool TopUpKeyPool(unsigned int kpSize = 0);
 
@@ -1037,6 +1050,8 @@ public:
     CAmount GetCredit(const CTransaction& tx, const isminefilter& filter) const;
     CAmount GetChange(const CTransaction& tx) const;
     void ChainStateFlushed(const CBlockLocator& loc) override;
+
+    void generateMessengerKeys();
 
     DBErrors LoadWallet(bool& fFirstRunRet);
     DBErrors ZapWalletTx(std::vector<CWalletTx>& vWtx);

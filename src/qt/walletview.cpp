@@ -115,6 +115,9 @@ void WalletView::setBitcoinGUI(BitcoinGUI *gui)
         // Pass through encryption status changed signals
         connect(this, &WalletView::encryptionStatusChanged, gui, &BitcoinGUI::updateWalletStatus);
 
+        // Pass through messenger encryption status changed signals
+        connect(this, &WalletView::messengerEncryptionStatusChanged, gui, &BitcoinGUI::updateMessengerWalletStatus);
+
         // Pass through transaction notifications
         connect(this, &WalletView::incomingTransaction, gui, &BitcoinGUI::incomingTransaction);
 
@@ -157,6 +160,10 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
         // Handle changes in encryption status
         connect(_walletModel, &WalletModel::encryptionStatusChanged, this, &WalletView::encryptionStatusChanged);
         updateEncryptionStatus();
+
+        // Handle changes in messenger encryption status
+        connect(_walletModel, &WalletModel::messengerEncryptionStatusChanged, this, &WalletView::messengerEncryptionStatusChanged);
+        updateMessengerEncryptionStatus();
 
         // update HD status
         Q_EMIT hdEnabledStatusChanged();
@@ -270,6 +277,11 @@ void WalletView::updateEncryptionStatus()
     Q_EMIT encryptionStatusChanged();
 }
 
+void WalletView::updateMessengerEncryptionStatus()
+{
+    Q_EMIT messengerEncryptionStatusChanged();
+}
+
 void WalletView::encryptWallet(bool status)
 {
     if(!walletModel)
@@ -328,7 +340,7 @@ void WalletView::encryptMessenger(bool status)
     dlg.setModel(walletModel);
     dlg.exec();
 
-    updateEncryptionStatus();
+    updateMessengerEncryptionStatus();
 }
 
 void WalletView::usedSendingAddresses()
