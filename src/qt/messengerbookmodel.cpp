@@ -135,6 +135,8 @@ public:
 MessengerBookModel::MessengerBookModel(WalletModel *parent) :
     QAbstractTableModel(parent), walletModel(parent)
 {
+    addOwnAddressToBook();
+
     columns << tr("Label") << tr("Address");
     priv = new MsgAddressTablePriv(this);
     priv->refreshAddressTable(parent->wallet());
@@ -328,6 +330,12 @@ bool MessengerBookModel::removeRows(int row, int count, const QModelIndex &paren
         // Also refuse to remove receiving addresses.
         return false;
     }
+
+    if (rec->address == MY_ADDRESS_LABEL)
+    {
+        return false;
+    }
+
     walletModel->wallet().delMsgAddressBook(rec->address.toStdString());
     return true;
 }
@@ -349,4 +357,13 @@ bool MessengerBookModel::getAddressData(const QString &address,
 void MessengerBookModel::emitDataChanged(int idx)
 {
     Q_EMIT dataChanged(index(idx, 0, QModelIndex()), index(idx, columns.length()-1, QModelIndex()));
+}
+
+void MessengerBookModel::addOwnAddressToBook()
+{
+    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
+    WalletBatch walletBatch(dbh);
+    std::string publicRsaKey;
+    walletBatch.ReadPublicKey(publicRsaKey);
+    this->addRow(QString(MY_ADDRESS_LABEL), QString(publicRsaKey.c_str()));
 }

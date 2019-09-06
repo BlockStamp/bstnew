@@ -84,7 +84,7 @@ MessengerAddressBook::MessengerAddressBook(const PlatformStyle *platformStyle, Q
     // Context menu actions
     QAction *copyAddressAction = new QAction(tr("&Copy Address"), this);
     QAction *copyLabelAction = new QAction(tr("Copy &Label"), this);
-    QAction *editAction = new QAction(tr("&Edit"), this);
+    editAction = new QAction(tr("&Edit"), this);
     deleteAction = new QAction(ui->deleteAddress->text(), this);
 
     // Build context menu
@@ -92,6 +92,7 @@ MessengerAddressBook::MessengerAddressBook(const PlatformStyle *platformStyle, Q
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(copyLabelAction);
     contextMenu->addAction(editAction);
+    contextMenu->addAction(deleteAction);
     contextMenu->addSeparator();
 
     // Connect signals for context menu actions
@@ -101,7 +102,6 @@ MessengerAddressBook::MessengerAddressBook(const PlatformStyle *platformStyle, Q
     connect(deleteAction, &QAction::triggered, this, &MessengerAddressBook::on_deleteAddress_clicked);
 
     connect(ui->tableView, &QWidget::customContextMenuRequested, this, &MessengerAddressBook::contextualMenu);
-
     connect(ui->closeButton, &QPushButton::clicked, this, &QDialog::accept);
 }
 
@@ -202,9 +202,13 @@ void MessengerAddressBook::on_deleteAddress_clicked()
         return;
 
     QModelIndexList indexes = table->selectionModel()->selectedRows();
+
     if(!indexes.isEmpty())
     {
-        table->model()->removeRow(indexes.at(0).row());
+        if (table->model()->index(indexes.at(0).row(),0).data().toString() != MY_ADDRESS_LABEL)
+        {
+            table->model()->removeRow(indexes.at(0).row());
+        }
     }
 }
 
@@ -217,10 +221,21 @@ void MessengerAddressBook::selectionChanged()
 
     if(table->selectionModel()->hasSelection())
     {
+        int row = ui->tableView->selectionModel()->currentIndex().row();
+        if (ui->tableView->model()->index(row, 0).data().toString() == MY_ADDRESS_LABEL)
+        {
+            ui->deleteAddress->setEnabled(false);
+            deleteAction->setEnabled(false);
+            editAction->setEnabled(false);
+        } else
+        {
+            ui->deleteAddress->setEnabled(true);
+            deleteAction->setEnabled(true);
+            editAction->setEnabled(true);
+        }
+
         // In sending tab, allow deletion of selection
-        ui->deleteAddress->setEnabled(true);
         ui->deleteAddress->setVisible(true);
-        deleteAction->setEnabled(true);
         ui->copyAddress->setEnabled(true);
     }
     else
@@ -228,6 +243,7 @@ void MessengerAddressBook::selectionChanged()
         ui->deleteAddress->setEnabled(false);
         ui->copyAddress->setEnabled(false);
     }
+
 }
 
 void MessengerAddressBook::done(int retval)

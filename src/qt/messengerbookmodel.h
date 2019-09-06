@@ -15,6 +15,8 @@ namespace interfaces {
 class Wallet;
 }
 
+const char* const MY_ADDRESS_LABEL = ".::my address::.";
+
 /**
    Qt model of the messenger address book in the core. This allows views to access and modify the address book.
  */
@@ -72,6 +74,8 @@ private:
 
     /** Notify listeners that data changed. */
     void emitDataChanged(int index);
+
+    void addOwnAddressToBook();
 
 public Q_SLOTS:
     /* Update address list from core.
