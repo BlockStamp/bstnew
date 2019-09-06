@@ -309,3 +309,36 @@ bool generateKeysPair(std::string& publicRsaKey, std::string& privateRsaKey)
     return (rv == 1);
 
 }
+
+bool matchRSAKeys(const std::string& publicKey, const std::string& privateKey)
+{
+    RSA *public_key, *private_key;
+    bool rv = false;
+
+    //private key
+    BIO *bo = BIO_new(BIO_s_mem());
+    EVP_PKEY* evp_pkey = 0;
+    BIO_write(bo, privateKey.c_str(), privateKey.length());
+    PEM_read_bio_PrivateKey(bo, &evp_pkey, 0, 0);
+    private_key = EVP_PKEY_get1_RSA(evp_pkey);
+    BIO_free(bo);
+
+    //public key
+    BIO* _bo = BIO_new(BIO_s_mem());
+    EVP_PKEY* evppkkey = 0;
+    BIO_write(_bo, publicKey.c_str(), publicKey.length());
+    PEM_read_bio_PUBKEY(_bo, &evppkkey, 0, 0);
+    public_key = EVP_PKEY_get1_RSA(evppkkey);
+    BIO_free(_bo);
+
+
+    if (!BN_cmp(public_key->n, private_key->n))
+    {
+        rv = true;
+    }
+
+    RSA_free(public_key);
+    RSA_free(private_key);
+
+    return rv;
+}

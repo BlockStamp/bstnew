@@ -43,3 +43,34 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
 
     return false;
 }
+
+bool checkRSAprivateKey(const std::string& rsaPrivateKey)
+{
+    const std::string keyBeg = "-----BEGIN RSA PRIVATE KEY-----";
+    const std::string keyEnd = "-----END RSA PRIVATE KEY-----";
+
+    auto posbeg = rsaPrivateKey.find(keyBeg);
+    if (posbeg != 0) {
+        return false;
+    }
+
+    auto posend = rsaPrivateKey.find(keyEnd);
+    if (posend == std::string::npos) {
+        return false;
+    }
+
+    std::size_t encodingLength = 0;
+    for(size_t i = keyBeg.length(); i < posend; ++i)
+    {
+        if (rsaPrivateKey[i] != '\n' && rsaPrivateKey[i] != ' ')
+        {
+            ++encodingLength;
+        }
+    }
+
+    if (encodingLength == 1588) {
+        return true;
+    }
+
+    return false;
+}

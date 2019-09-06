@@ -219,12 +219,84 @@ UniValue getmsgkey(const JSONRPCRequest& request)
     return UniValue(UniValue::VSTR, publicRsaKey);
 }
 
+UniValue exportmsgkey(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+    throw std::runtime_error(
+        "exportmsgkey \n"
+        "\nExport pair of keys used in messenger to destination path.\n"
+
+        "\nArguments:\n"
+        "1. \"destination_path\"                        (string, required) The destination file path.\n"
+
+        "\nExamples:\n"
+        + HelpExampleCli("exportmsgkey", "\"destination_path\"")
+        + HelpExampleRpc("exportmsgkey", "\"destination_path\"")
+    );
+
+    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
+    WalletBatch batch(dbh);
+    std::string publicRsaKey, privateRsaKey;
+    batch.ReadPublicKey(publicRsaKey);
+    batch.ReadPrivateKey(privateRsaKey);
+
+    std::ofstream file(request.params[0].get_str().c_str(), std::ofstream::trunc);
+    file << publicRsaKey << MSG_DELIMITER << privateRsaKey;
+
+    return UniValue(UniValue::VSTR, std::string("Keys exported successful."));
+}
+
+UniValue importmsgkey(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+    throw std::runtime_error(
+        "importmsgkey \n"
+        "\nImport pair of keys to use in messenger from source path.\n"
+
+        "\nArguments:\n"
+        "1. \"source_path\"                        (string, required) The source file path.\n"
+
+        "\nExamples:\n"
+        + HelpExampleCli("importmsgkey", "\"source_path\"")
+        + HelpExampleRpc("importmsgkey", "\"source_path\"")
+    );
+
+    std::ifstream file(request.params[0].get_str().c_str(), std::ifstream::in);
+    if (file.is_open())
+    {
+        std::string publicRsaKey, privateRsaKey;
+        std::getline(file, publicRsaKey, MSG_DELIMITER);
+        std::getline(file, privateRsaKey, MSG_DELIMITER);
+
+        if (checkRSApublicKey(publicRsaKey)
+                && checkRSAprivateKey(privateRsaKey)
+                && matchRSAKeys(publicRsaKey, privateRsaKey))
+        {
+            WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
+            WalletBatch walletBatch(dbh);
+            // store key in database
+            walletBatch.WritePublicKey(publicRsaKey);
+            walletBatch.WritePrivateKey(privateRsaKey);
+        } else
+        {
+            return UniValue(UniValue::VSTR, std::string("Import failed. Incorrect key format"));
+        }
+    } else
+    {
+        return UniValue(UniValue::VSTR, std::string("Import failed. File open error."));
+    }
+
+    return UniValue(UniValue::VSTR, std::string("Keys imported successful."));
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
     { "blockstamp",         "sendmessage",                  &sendmessage,               {"subject", "message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
     { "blockstamp",         "readmessage",                  &readmessage,               {"txid"} },
     { "blockstamp",         "getmsgkey",                    &getmsgkey,                 {} },
+    { "blockstamp",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
+    { "blockstamp",         "importmsgkey",                 &importmsgkey,              {"source_path"} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)

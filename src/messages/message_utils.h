@@ -5,4 +5,6 @@
 
 bool checkRSApublicKey(const std::string& rsaPublicKey);
 
+bool checkRSAprivateKey(const std::string& rsaPrivateKey);
+
 #endif

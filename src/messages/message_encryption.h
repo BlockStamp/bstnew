@@ -14,5 +14,6 @@ std::vector<unsigned char> createEncryptedMessage(const unsigned char *data, std
 std::vector<unsigned char> createDecryptedMessage(unsigned char* encryptedData, int dataLength, const char* privateRsaKey);
 
 bool generateKeysPair(std::string &publicRsaKey, std::string &privateRsaKey);
+bool matchRSAKeys(const std::string& publicKey, const std::string& privateKey);
 
 #endif
