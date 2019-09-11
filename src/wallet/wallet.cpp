@@ -4638,7 +4638,18 @@ void CWallet::postInitProcess()
 
 bool CWallet::BackupWallet(const std::string& strDest)
 {
-    return database->Backup(strDest);
+    boost::filesystem::path full_path = boost::filesystem::path(strDest);
+    if (!boost::filesystem::is_directory(full_path))
+    {
+        full_path = full_path.parent_path() / boost::filesystem::path("msg_" + full_path.filename().string());
+    }
+
+    bool rv = database->Backup(strDest);
+    if (rv)
+    {
+        msgDatabase->Backup(full_path.string());
+    }
+    return rv;
 }
 
 CKeyPool::CKeyPool()
