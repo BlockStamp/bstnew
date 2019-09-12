@@ -149,8 +149,8 @@ protected:
 
     CryptedKeyMap mapCryptedKeys GUARDED_BY(cs_KeyStore);
 
-    std::vector<unsigned char> cryptedMessengerKeys;
-    std::vector<unsigned char> messengerKeyIV;
+    std::vector<unsigned char> cryptedMessengerKeys GUARDED_BY(cs_KeyStore);
+    std::vector<unsigned char> messengerKeyIV GUARDED_BY(cs_KeyStore);
 
 
 public:
@@ -165,17 +165,16 @@ public:
     bool IsMsgCrypted() const { return fMsgUseCrypto; }
     bool IsMsgLocked() const;
     bool MsgLock();
+    virtual bool AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &iv);
+    bool SetMessengerKeys(const MessengerKey& privKey, const MessengerKey& pubKey);
+    bool GetMessengerKeys(std::string& privMsgKeyStr, std::string& pubMsgKeyStr) const;
 
     virtual bool AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
-    virtual bool AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &iv);
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;
     bool HaveKey(const CKeyID &address) const override;
     bool GetKey(const CKeyID &address, CKey& keyOut) const override;
     bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const override;
     std::set<CKeyID> GetKeys() const override;
-
-    bool SetMessengerKeys(const MessengerKey& privKey, const MessengerKey& pubKey);
-
 
     /**
      * Wallet status (encrypted, locked) changed.

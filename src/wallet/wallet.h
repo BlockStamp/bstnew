@@ -919,7 +919,7 @@ public:
 
     void MarkDirty();
     void AddEncrMsgToWalletIfNeeded(const CTransactionRef &ptx);
-    void AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn, WalletBatch& batch);
+    void AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn);
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn);
     void LoadEncrMsgToWallet(const std::string& from, const std::string& subject, const CWalletTx& wtxIn);

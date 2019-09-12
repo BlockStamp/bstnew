@@ -86,13 +86,13 @@ UniValue sendmessage(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked(pwallet);
 
-    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
-    WalletBatch batch(dbh);
-    std::string fromAddress;
-    batch.ReadPublicKey(fromAddress);
+    std::string rsaPrivateKey, rsaPublicKey;
+    if (!GetWallets()[0]->GetMessengerKeys(rsaPrivateKey, rsaPublicKey)) {
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
+    }
 
     std::string msg=MSG_RECOGNIZE_TAG
-            + fromAddress
+            + rsaPublicKey
             + MSG_DELIMITER
             + request.params[0].get_str()
             + MSG_DELIMITER
@@ -171,10 +171,12 @@ UniValue readmessage(const JSONRPCRequest& request)
 
     if(!OPreturnData.empty())
     {
-        std::string privateRsaKey;
-        WalletDatabase& dbh = GetWalletForJSONRPCRequest(request)->GetMsgDBHandle();
-        WalletBatch batch(dbh);
-        batch.ReadPrivateKey(privateRsaKey);
+        std::string privateRsaKey, publicRsaKey;
+        auto wallet = GetWalletForJSONRPCRequest(request);
+        if (!wallet || !wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
+        {
+            throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
+        }
 
         std::vector<unsigned char> decryptedData = createDecryptedMessage(
             reinterpret_cast<unsigned char*>(OPreturnData.data()),
@@ -212,10 +214,11 @@ UniValue getmsgkey(const JSONRPCRequest& request)
     );
 
     //TODO: Locking wallet may be needed - to be checked
-    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
-    WalletBatch batch(dbh);
-    std::string publicRsaKey;
-    batch.ReadPublicKey(publicRsaKey);
+    std::string privateRsaKeys, publicRsaKey;
+    if (!GetWallets()[0]->GetMessengerKeys(privateRsaKeys, publicRsaKey))
+    {
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
+    }
 
     return UniValue(UniValue::VSTR, publicRsaKey);
 }
@@ -235,11 +238,11 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
         + HelpExampleRpc("exportmsgkey", "\"destination_path\"")
     );
 
-    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
-    WalletBatch batch(dbh);
     std::string publicRsaKey, privateRsaKey;
-    batch.ReadPublicKey(publicRsaKey);
-    batch.ReadPrivateKey(privateRsaKey);
+    if (!GetWallets()[0]->GetMessengerKeys(privateRsaKey, publicRsaKey))
+    {
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
+    }
 
     std::ofstream file(request.params[0].get_str().c_str(), std::ofstream::trunc);
     file << publicRsaKey << MSG_DELIMITER << privateRsaKey;
@@ -278,6 +281,8 @@ UniValue importmsgkey(const JSONRPCRequest& request)
             // store key in database
             walletBatch.WritePublicKey(publicRsaKey);
             walletBatch.WritePrivateKey(privateRsaKey);
+
+            ///TODO: Update keys stored in memory
         } else
         {
             return UniValue(UniValue::VSTR, std::string("Import failed. Incorrect key format"));

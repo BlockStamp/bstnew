@@ -433,6 +433,27 @@ bool CCryptoKeyStore::GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) co
     return CBasicKeyStore::GetPubKey(address, vchPubKeyOut);
 }
 
+bool CCryptoKeyStore::GetMessengerKeys(std::string& privMsgKeyStr, std::string& pubMsgKeyStr) const
+{
+    LOCK(cs_KeyStore);
+    if (!IsMsgCrypted()) {
+        std::cout << "Messenger not encrypted - getting keys from memory\n";
+        return CBasicKeyStore::GetMessengerKeys(privMsgKeyStr, pubMsgKeyStr);
+    }
+
+    MessengerKey privMsgKey, pubMsgKey;
+    if (!DecryptMessengerKeys(vMasterKey, cryptedMessengerKeys, messengerKeyIV, privMsgKey, pubMsgKey)) {
+        std::cout << "Messenger encrypted, but not unlocked - no keys\n";
+        return false;
+    }
+
+    privMsgKeyStr.assign(privMsgKey.begin(), privMsgKey.end());
+    pubMsgKeyStr.assign(pubMsgKey.begin(), pubMsgKey.end());
+
+    std::cout << "Messenger encrypted - decrypted keys correctly\n";
+    return true;
+}
+
 std::set<CKeyID> CCryptoKeyStore::GetKeys() const
 {
     LOCK(cs_KeyStore);
@@ -472,7 +493,7 @@ bool CCryptoKeyStore::EncryptMessengerKeys(CKeyingMaterial& vMasterKeyIn)
 {
     ///TODO: Implement
     LOCK(cs_KeyStore);
-    if (!cryptedMessengerKeys.empty() || IsMsgCrypted()) {
+    if (!cryptedMessengerKeys.empty() || !messengerKeyIV.empty() || IsMsgCrypted()) {
         return false;
     }
 

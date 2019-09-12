@@ -563,10 +563,10 @@ void MessengerPage::read(const std::string& txnId)
                 return;
             }
 
-            std::string privateRsaKey;
-            WalletDatabase& dbh = wallet->GetMsgDBHandle();
-            WalletBatch batch(dbh);
-            batch.ReadPrivateKey(privateRsaKey);
+            std::string privateRsaKey, publicRsaKey;
+            if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey)) {
+                return;
+            }
 
             const uint256 hash = uint256S(txnId);
             auto it = wallet->encrMsgMapWallet.find(hash);
@@ -646,12 +646,20 @@ void MessengerPage::send()
 
                 CAmount curBalance = pwallet->GetBalance();
 
-                std::string from;
-                WalletDatabase& dbh = wallet->GetMsgDBHandle();
-                WalletBatch batch(dbh);
-                batch.ReadPublicKey(from);
+                WalletModel::MessengerUnlockContext ctx(walletModel->requestMessengerUnlock());
+                if (!ctx.isValid())
+                {
+                    return;
+                }
 
-                std::vector<unsigned char> data = getData(from);
+                std::string privateRsaKey, publicRsaKey;
+                if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
+                {
+                    std::cout << "Failed to read messenger keys - messenger still encrypted?\n";
+                    return;
+                }
+
+                std::vector<unsigned char> data = getData(publicRsaKey);
 
                 CRecipient recipient;
                 recipient.scriptPubKey << OP_RETURN << data;

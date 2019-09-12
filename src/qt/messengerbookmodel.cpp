@@ -391,9 +391,10 @@ void MessengerBookModel::emitDataChanged(int idx)
 
 void MessengerBookModel::addOwnAddressToBook()
 {
-    WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
-    WalletBatch walletBatch(dbh);
-    std::string publicRsaKey;
-    walletBatch.ReadPublicKey(publicRsaKey);
+    std::string privateRsaKey, publicRsaKey;
+    if (!GetWallets()[0]->GetMessengerKeys(privateRsaKey, publicRsaKey)) {
+        std::cout << "Failed to add my own public key to the messenger book\n";
+        return;
+    }
     this->editRow(QString(MY_ADDRESS_LABEL), QString(publicRsaKey.c_str()));
 }

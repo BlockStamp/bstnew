@@ -1082,7 +1082,7 @@ void CWallet::LoadEncrMsgToWallet(const std::string& from, const std::string& su
     encrMsgMapWallet.emplace(hash, TransactionValue{from, subject, wtxIn});
 }
 
-void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn, WalletBatch& batch) {
+void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn) {
     uint256 hash = wtxIn.GetHash();
     std::pair<TransactionsMap::iterator, bool> ret = encrMsgMapWallet.emplace(hash, TransactionValue{from, subject, wtxIn});
 
@@ -1121,11 +1121,12 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
 
     // Write to disk
     if (fInsertedNew || fUpdated) {
+        WalletBatch batch(*msgDatabase);
         batch.WriteEncrMsgTx(from, subject, wtx);
     }
 
     // Notify UI of new or updated transaction
-    NotifyEncrMsgTransactionChanged(this/*, hash, fInsertedNew ? CT_NEW : CT_UPDATED*/);
+    NotifyEncrMsgTransactionChanged(this);
 }
 
 void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
@@ -1135,9 +1136,13 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
     tx.loadOpReturn(opReturn);
 
     if (IsEnrcyptedMsg(opReturn)) {
-        std::string privateRsaKey;
-        WalletBatch batch(*msgDatabase);
-        batch.ReadPrivateKey(privateRsaKey);
+        std::string privateRsaKey, publicRsaKey;
+        if(!GetMessengerKeys(privateRsaKey, publicRsaKey))
+        {
+            std::cout << "\nWARNING: Could not get messenger keys"
+                      << "\npossibly skipped messenger transactions"
+                      << "\nmessenger encrypted???\n";
+        }
 
         try {
             //TODO: Consider returning std::string from createDecryptedMessage
@@ -1159,7 +1164,7 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
             const auto subject = message.substr(previous, newlinepos - previous);
 
             CWalletTx wtx(this, ptx);
-            AddEncrMsgToWallet(from, subject, wtx, batch);
+            AddEncrMsgToWallet(from, subject, wtx);
         }
         catch(...) {
             std::cout << "Is encrypted message, but failed to decrypt\n";

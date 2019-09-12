@@ -259,7 +259,6 @@ libbitcoin_server_a_SOURCES = \
   games/modulo/moduloutils.cpp \
   dbwrapper.cpp \
   merkleblock.cpp \
-  messages/message_encryption.cpp \
   messages/message_utils.cpp \
   miner.cpp \
   names/main.cpp \
@@ -428,6 +427,7 @@ libbitcoin_common_a_SOURCES = \
   key.cpp \
   key_io.cpp \
   keystore.cpp \
+  messages/message_encryption.cpp \
   names/common.cpp \
   names/encoding.cpp \
   netaddress.cpp \

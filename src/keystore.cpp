@@ -6,6 +6,7 @@
 #include <keystore.h>
 
 #include <util.h>
+#include <messages/message_encryption.h>
 
 void CBasicKeyStore::ImplicitlyLearnRelatedKeyScripts(const CPubKey& pubkey)
 {
@@ -182,6 +183,21 @@ bool CBasicKeyStore::HaveWatchOnly() const
 {
     LOCK(cs_KeyStore);
     return (!setWatchOnly.empty());
+}
+
+bool CBasicKeyStore::GetMessengerKeys(std::string& privMsgKey, std::string& pubMsgKey) const
+{
+    LOCK(cs_KeyStore);
+    if (messengerPrivateKey.size() != PRIVATE_RSA_KEY_LEN
+        && messengerPublicKey.size() != PUBLIC_RSA_KEY_LEN)
+    {
+        std::cout << "CBasicKeyStore::GetMessengerKeys!!!\n";
+        return false;
+    }
+
+    privMsgKey.assign(messengerPrivateKey.begin(), messengerPrivateKey.end());
+    pubMsgKey.assign(messengerPublicKey.begin(), messengerPublicKey.end());
+    return true;
 }
 
 CKeyID GetKeyForDestination(const CKeyStore& store, const CTxDestination& dest)
