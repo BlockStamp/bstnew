@@ -189,7 +189,7 @@ public:
     bool WriteCryptedKey(const CPubKey& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, const CKeyMetadata &keyMeta);
     bool WriteMasterKey(unsigned int nID, const CMasterKey& kMasterKey);
 
-    bool WriteMessengerCryptedKey(const std::string &encryptedPrivKey, const std::string &plainTextPrivateKey);
+    bool WriteMessengerCryptedKeys(const std::vector<unsigned char> &encryptedKeys, const std::vector<unsigned char> &msgIv);
     bool WriteMessengerMasterKey(unsigned int nID, const CMasterKey& kMasterKey);
 
     bool WriteCScript(const uint160& hash, const CScript& redeemScript);
@@ -220,7 +220,7 @@ public:
     /// Erase destination data tuple from wallet database
     bool EraseDestData(const std::string &address, const std::string &key);
 
-    bool ReadMessengerCryptedKey(std::string& cryptedPrivateKey);
+    bool ReadMessengerCryptedKeys(std::string& cryptedKeys);
 
     DBErrors LoadWallet(CWallet* pwallet);
     DBErrors FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);

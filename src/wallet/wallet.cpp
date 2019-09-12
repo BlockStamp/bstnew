@@ -319,21 +319,18 @@ bool CWallet::AddCryptedKey(const CPubKey &vchPubKey,
     }
 }
 
-bool CWallet::AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &plainTextPrivKey)
+bool CWallet::AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &iv)
 {
     ///TODO: Review this implementation
-    if (!CCryptoKeyStore::AddMessengerCryptedKey(cryptedPrivKey, plainTextPrivKey))
+    if (!CCryptoKeyStore::AddMessengerCryptedKey(cryptedPrivKey, iv)) {
         return false;
+    }
     {
         LOCK(cs_wallet);
         if (messenger_encrypted_batch)
-            return messenger_encrypted_batch->WriteMessengerCryptedKey(
-                        std::string(cryptedPrivKey.begin(), cryptedPrivKey.end()),
-                        std::string(plainTextPrivKey.begin(), plainTextPrivKey.end()));
+            return messenger_encrypted_batch->WriteMessengerCryptedKeys(cryptedPrivKey, iv);
         else
-            return WalletBatch(*msgDatabase).WriteMessengerCryptedKey(
-                        std::string(cryptedPrivKey.begin(), cryptedPrivKey.end()),
-                        std::string(plainTextPrivKey.begin(), plainTextPrivKey.end()));
+            return WalletBatch(*msgDatabase).WriteMessengerCryptedKeys(cryptedPrivKey, iv);
     }
 }
 
@@ -451,8 +448,23 @@ bool CWallet::Unlock(const SecureString& strWalletPassphrase)
 bool CWallet::MsgUnlock(const SecureString& strWalletPassphrase)
 {
     ///TODO: Implement like CWallet::Unlock
+    CCrypter crypter;
+    CKeyingMaterial _vMasterKey;
 
-    return true;
+    {
+        LOCK(cs_wallet);
+        for (const MasterKeyMap::value_type& pMasterKey : mapMessengerMasterKeys)
+        {
+            if(!crypter.SetKeyFromPassphrase(strWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+                return false;
+            if (!crypter.Decrypt(pMasterKey.second.vchCryptedKey, _vMasterKey))
+                continue; // try another master key
+            if (CCryptoKeyStore::MsgUnlock(_vMasterKey))
+                return true;
+        }
+    }
+
+    return false;
 }
 
 bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase)
@@ -836,15 +848,6 @@ bool CWallet::EncryptMessenger(const SecureString& strMessengerPassphrase)
 
         MsgLock();
         MsgUnlock(strMessengerPassphrase);
-
-        /// TODO: Replace with some implementation or remove
-//        // if we are using HD, replace the HD seed with a new one
-//        if (IsHDEnabled()) {
-//            SetHDSeed(GenerateNewSeed());
-//        }
-
-        /// TODO: Replace with some implementation or remove
-//        NewMsgKeyPool();
         MsgLock();
 
         // Need to completely rewrite the wallet file; if we don't, bdb might keep
@@ -3363,7 +3366,7 @@ void CWallet::generateMessengerKeys()
 
     walletBatch.ReadPublicKey(publicRsaKey);
     walletBatch.ReadPrivateKey(privateRsaKey);
-    walletBatch.ReadMessengerCryptedKey(cryptedPrivateRsaKey);
+    walletBatch.ReadMessengerCryptedKeys(cryptedPrivateRsaKey);
 
     std::cout << "publicRsaKey.size(): " << publicRsaKey.size()
               << "privateRsaKey.size(): " << privateRsaKey.size()
@@ -3379,8 +3382,8 @@ void CWallet::generateMessengerKeys()
         walletBatch.WritePrivateKey(privateRsaKey);
     }
 
-    MessengerPrivateKey privKey(privateRsaKey.begin(), privateRsaKey.end());
-    MessengerPublicKey pubKey(publicRsaKey.begin(), publicRsaKey.end());
+    MessengerKey privKey(privateRsaKey.begin(), privateRsaKey.end());
+    MessengerKey pubKey(publicRsaKey.begin(), publicRsaKey.end());
 
     SetMessengerKeys(privKey, pubKey);
 }

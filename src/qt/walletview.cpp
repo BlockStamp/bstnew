@@ -174,6 +174,9 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
         // Ask for passphrase if needed
         connect(_walletModel, &WalletModel::requireUnlock, this, &WalletView::unlockWallet);
 
+        // Ask for messenger passphrase if needed
+        connect(_walletModel, &WalletModel::requireMessengerUnlock, this, &WalletView::unlockMessenger);
+
         // Show progress dialog
         connect(_walletModel, &WalletModel::showProgress, this, &WalletView::showProgress);
     }
@@ -341,6 +344,19 @@ void WalletView::encryptMessenger(bool status)
     dlg.exec();
 
     updateMessengerEncryptionStatus();
+}
+
+void WalletView::unlockMessenger()
+{
+    if(!walletModel)
+        return;
+    // Unlock wallet when requested by wallet model
+    if (walletModel->getMessengerEncryptionStatus() == WalletModel::Locked)
+    {
+        AskMessengerPassphraseDialog dlg(AskMessengerPassphraseDialog::Unlock, this);
+        dlg.setModel(walletModel);
+        dlg.exec();
+    }
 }
 
 void WalletView::usedSendingAddresses()

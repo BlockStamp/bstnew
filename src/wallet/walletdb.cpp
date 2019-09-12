@@ -88,16 +88,21 @@ bool WalletBatch::WriteKey(const CPubKey& vchPubKey, const CPrivKey& vchPrivKey,
     return WriteIC(std::make_pair(std::string("key"), vchPubKey), std::make_pair(vchPrivKey, Hash(vchKey.begin(), vchKey.end())), false);
 }
 
-bool WalletBatch::WriteMessengerCryptedKey(const std::string& encryptedPrivKey, const std::string& plainTextPrivateKey)
+bool WalletBatch::WriteMessengerCryptedKeys(
+    const std::vector<unsigned char>& encryptedPrivKey,
+    const std::vector<unsigned char>& msgIv)
 {
-    ///TODO: Implement - should public key also be removed?
-    std::cout << "WalletBatch::WriteMessengerCryptedKey, vchCryptedSecret = " << encryptedPrivKey << std::endl;
+    ///TODO: Review this implementation
+    if (!WriteIC(std::string("_cryptedmessengerkey"), encryptedPrivKey, false)) {
+        return false;
+    }
 
-    if (!WriteIC(std::string("_cryptedprivatekey"), encryptedPrivKey, false)) {
+    if (!WriteIC(std::string("_messengeriv"), msgIv, false)) {
         return false;
     }
 
     EraseIC(std::string("_privatekey"));
+    EraseIC(std::string("_publickey"));
     return true;
 }
 
@@ -210,9 +215,9 @@ bool WalletBatch::ReadPrivateKey(std::string& privateKey)
     return m_batch.Read(std::string("_privatekey"), privateKey);
 }
 
-bool WalletBatch::ReadMessengerCryptedKey(std::string& cryptedPrivateKey)
+bool WalletBatch::ReadMessengerCryptedKeys(std::string& cryptedKeys)
 {
-    return m_batch.Read(std::string("_cryptedprivatekey"), cryptedPrivateKey);
+    return m_batch.Read(std::string("_cryptedmessengerkey"), cryptedKeys);
 }
 
 

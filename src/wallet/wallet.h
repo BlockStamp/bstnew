@@ -878,7 +878,7 @@ public:
     bool LoadCScript(const CScript& redeemScript);
 
     //! Adds an encrypted messenger key to the store, and saves it to disk.
-    bool AddMessengerCryptedKey(const std::vector<unsigned char> &vchCryptedSecret, const std::vector<unsigned char> &plainTextPrivKey);
+    bool AddMessengerCryptedKey(const std::vector<unsigned char> &vchCryptedSecret, const std::vector<unsigned char> &iv);
 
     //! Adds a destination data tuple to the store, and saves it to disk
     bool AddDestData(const CTxDestination &dest, const std::string &key, const std::string &value);

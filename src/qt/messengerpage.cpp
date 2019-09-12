@@ -517,7 +517,7 @@ void MessengerPage::unlockWallet()
     }
 }
 
-void MessengerPage::unlockMessengerWallet()
+void MessengerPage::unlockMessenger()
 {
     if (walletModel->getMessengerEncryptionStatus() == WalletModel::Locked)
     {
@@ -557,10 +557,10 @@ void MessengerPage::read(const std::string& txnId)
             wallet->BlockUntilSyncedToCurrentChain();
             LOCK2(cs_main, wallet->cs_wallet);
 
-            unlockWallet();
-            if (walletModel->getEncryptionStatus() == WalletModel::Locked)
+            WalletModel::MessengerUnlockContext ctx(walletModel->requestMessengerUnlock());
+            if (!ctx.isValid())
             {
-                throw std::runtime_error("ReadTransaction failed, wallet encrypted");
+                return;
             }
 
             std::string privateRsaKey;
