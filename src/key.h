@@ -22,8 +22,7 @@
  * (PRIVATE_KEY_SIZE bytes)
  */
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
-typedef std::vector<unsigned char, secure_allocator<unsigned char> > MessengerPrivateKey;
-typedef std::vector<unsigned char> MessengerPublicKey;
+typedef std::vector<unsigned char, secure_allocator<unsigned char> > MessengerKey;
 
 
 /** An encapsulated private key. */

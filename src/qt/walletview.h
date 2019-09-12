@@ -117,6 +117,8 @@ public Q_SLOTS:
 
     /** Encrypt the messenger */
     void encryptMessenger(bool status);
+    /** Ask for passphrase to unlock messenger wallet temporarily */
+    void unlockMessenger();
 
     /** Show used sending addresses */
     void usedSendingAddresses();

@@ -585,6 +585,44 @@ void WalletModel::UnlockContext::CopyFrom(const UnlockContext& rhs)
     rhs.relock = false;
 }
 
+// WalletModel::MessengerUnlockContext implementation
+WalletModel::MessengerUnlockContext WalletModel::requestMessengerUnlock()
+{
+    bool was_locked = getMessengerEncryptionStatus() == Locked;
+    if(was_locked)
+    {
+        // Request UI to unlock wallet
+        Q_EMIT requireMessengerUnlock();
+    }
+
+    // If wallet is still locked, unlock was failed or cancelled, mark context as invalid
+    bool valid = getMessengerEncryptionStatus() != Locked;
+
+    return MessengerUnlockContext(this, valid, was_locked);
+}
+
+WalletModel::MessengerUnlockContext::MessengerUnlockContext(WalletModel *_wallet, bool _valid, bool _relock):
+        wallet(_wallet),
+        valid(_valid),
+        relock(_relock)
+{
+}
+
+WalletModel::MessengerUnlockContext::~MessengerUnlockContext()
+{
+    if(valid && relock)
+    {
+        wallet->setMessengerLocked(true);
+    }
+}
+
+void WalletModel::MessengerUnlockContext::CopyFrom(const MessengerUnlockContext& rhs)
+{
+    // Transfer context; old object no longer relocks wallet
+    *this = rhs;
+    rhs.relock = false;
+}
+
 void WalletModel::loadReceiveRequests(std::vector<std::string>& vReceiveRequests)
 {
     vReceiveRequests = m_wallet->getDestValues("rr"); // receive request

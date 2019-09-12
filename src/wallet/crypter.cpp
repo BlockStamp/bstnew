@@ -8,7 +8,9 @@
 #include <crypto/sha512.h>
 #include <script/script.h>
 #include <script/standard.h>
+#include <messages/message_encryption.h>
 #include <util.h>
+#include <random.h>
 
 #include <string>
 #include <vector>
@@ -118,13 +120,15 @@ static bool EncryptSecret(const CKeyingMaterial& vMasterKey, const CKeyingMateri
     return cKeyCrypter.Encrypt(*((const CKeyingMaterial*)&vchPlaintext), vchCiphertext);
 }
 
-static bool EncryptMessengerSecret(const CKeyingMaterial& vMasterKey, const CKeyingMaterial &vchPlaintext, const uint256& nIV, std::vector<unsigned char> &vchCiphertext)
+static bool EncryptMessengerSecret(
+    const CKeyingMaterial& vMasterKey,
+    const CKeyingMaterial &vchPlaintext,
+    const std::vector<unsigned char> msgIV,
+    std::vector<unsigned char> &vchCiphertext)
 {
-    ///TODO: Implement
+    ///TODO: Review this implementation
     CCrypter cKeyCrypter;
-    std::vector<unsigned char> chIV(WALLET_CRYPTO_IV_SIZE);
-    memcpy(chIV.data(), &nIV, WALLET_CRYPTO_IV_SIZE);
-    if(!cKeyCrypter.SetKey(vMasterKey, chIV))
+    if(!cKeyCrypter.SetKey(vMasterKey, msgIV))
         return false;
     return cKeyCrypter.Encrypt(*((const CKeyingMaterial*)&vchPlaintext), vchCiphertext);
 }
@@ -137,6 +141,43 @@ static bool DecryptSecret(const CKeyingMaterial& vMasterKey, const std::vector<u
     if(!cKeyCrypter.SetKey(vMasterKey, chIV))
         return false;
     return cKeyCrypter.Decrypt(vchCiphertext, *((CKeyingMaterial*)&vchPlaintext));
+}
+
+static bool DecryptMessengerSecret(
+    const CKeyingMaterial& vMasterKey,
+    const std::vector<unsigned char>& cryptedKeys,
+    const std::vector<unsigned char>& msgIV,
+    CKeyingMaterial& vchPlaintext)
+{
+    CCrypter cKeyCrypter;
+    if(!cKeyCrypter.SetKey(vMasterKey, msgIV))
+        return false;
+    return cKeyCrypter.Decrypt(cryptedKeys, *((CKeyingMaterial*)&vchPlaintext));
+}
+
+static bool DecryptMessengerKeys(
+    const CKeyingMaterial& vMasterKey,
+    const std::vector<unsigned char>& cryptedKey,
+    const std::vector<unsigned char>& msgIv,
+    MessengerKey& privMsgKey,
+    MessengerKey& pubMsgKey)
+{
+    ///TODO: review this implementation
+
+    CKeyingMaterial plaintextKeys;
+    if(!DecryptMessengerSecret(vMasterKey, cryptedKey, msgIv, plaintextKeys)) {
+        return false;
+    }
+
+    if (plaintextKeys.size() != PRIVATE_RSA_KEY_LEN + PUBLIC_RSA_KEY_LEN) {
+        return false;
+    }
+
+    privMsgKey.assign(plaintextKeys.begin(), plaintextKeys.begin() + PRIVATE_RSA_KEY_LEN);
+    pubMsgKey.assign(plaintextKeys.begin() + PRIVATE_RSA_KEY_LEN, plaintextKeys.end());
+
+    return matchRSAKeys(std::string(pubMsgKey.begin(), pubMsgKey.end()),
+                        std::string(privMsgKey.begin(), privMsgKey.end()));
 }
 
 static bool DecryptKey(const CKeyingMaterial& vMasterKey, const std::vector<unsigned char>& vchCryptedSecret, const CPubKey& vchPubKey, CKey& key)
@@ -170,7 +211,7 @@ bool CCryptoKeyStore::SetMsgCrypted()
     if (fMsgUseCrypto)
         return true;
 
-    if (!messengerPrivateKey.empty())
+    if (!messengerPrivateKey.empty() || !messengerPrivateKey.empty())
         return false;
     fMsgUseCrypto = true;
     return true;
@@ -261,9 +302,27 @@ bool CCryptoKeyStore::Unlock(const CKeyingMaterial& vMasterKeyIn)
     return true;
 }
 
-bool CCryptoKeyStore::MsgUnlock(const CKeyingMaterial& /*vMasterKeyIn*/)
+bool CCryptoKeyStore::MsgUnlock(const CKeyingMaterial& vMasterKeyIn)
 {
-    ///TODO: Implement like CCryptoKeyStore::Unlock
+    ///TODO: Review this implementation
+    std::cout << "CCryptoKeyStore::MsgUnlock\n";
+
+    {
+        LOCK(cs_KeyStore);
+        if (!SetMsgCrypted())
+            return false;
+
+        MessengerKey privMsgKey, pubMsgKey;
+        if (!DecryptMessengerKeys(vMasterKeyIn, cryptedMessengerKeys, messengerKeyIV, privMsgKey, pubMsgKey))
+        {
+            LogPrintf("The messenger wallet is probably corrupted\n");
+            assert(false);
+        }
+
+        vMessengerMasterKey = vMasterKeyIn;
+    }
+
+    NotifyMessengerStatusChanged(this);
     return true;
 }
 
@@ -303,7 +362,7 @@ bool CCryptoKeyStore::AddCryptedKey(const CPubKey &vchPubKey, const std::vector<
     return true;
 }
 
-bool CCryptoKeyStore::SetMessengerKeys(const MessengerPrivateKey& privKey, const MessengerPublicKey& pubKey)
+bool CCryptoKeyStore::SetMessengerKeys(const MessengerKey &privKey, const MessengerKey &pubKey)
 {
     LOCK(cs_KeyStore);
     if (!IsMsgCrypted()) {
@@ -318,14 +377,17 @@ bool CCryptoKeyStore::SetMessengerKeys(const MessengerPrivateKey& privKey, const
     return true;
 }
 
-bool CCryptoKeyStore::AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &/*plainTextPrivKey*/)
+bool CCryptoKeyStore::AddMessengerCryptedKey(
+    const std::vector<unsigned char> &cryptedPrivKey,
+    const std::vector<unsigned char> &iv)
 {
     LOCK(cs_KeyStore);
     if (!SetMsgCrypted()) {
         return false;
     }
 
-    cryptedMessengerPrivateKey = cryptedPrivKey;
+    cryptedMessengerKeys = cryptedPrivKey;
+    messengerKeyIV = iv;
     return true;
 }
 
@@ -410,22 +472,27 @@ bool CCryptoKeyStore::EncryptMessengerKeys(CKeyingMaterial& vMasterKeyIn)
 {
     ///TODO: Implement
     LOCK(cs_KeyStore);
-    if (!cryptedMessengerPrivateKey.empty() || IsMsgCrypted() || messengerPublicKey.empty())
+    if (!cryptedMessengerKeys.empty() || IsMsgCrypted()) {
         return false;
+    }
 
     fMsgUseCrypto = true;
 
+    CKeyingMaterial messengerKeyData(messengerPrivateKey.begin(), messengerPrivateKey.end());
+    messengerKeyData.insert(messengerKeyData.end(), messengerPublicKey.begin(), messengerPublicKey.end());
+
+    std::vector<unsigned char> msgIV(WALLET_CRYPTO_IV_SIZE);
+    GetStrongRandBytes(&msgIV[0], WALLET_CRYPTO_IV_SIZE);
+
     std::vector<unsigned char> cryptedMessengerSecret;
-
-    ///TODO: check if this is the proper use of IV
-    const uint256 IV = Hash(messengerPublicKey.begin(), messengerPublicKey.end());
-    std::cout << "Using IV: " << IV.ToString() << std::endl;
-
-    if (!EncryptMessengerSecret(vMasterKeyIn, messengerPrivateKey, IV, cryptedMessengerSecret))
+    if (!EncryptMessengerSecret(vMasterKeyIn, messengerKeyData, msgIV, cryptedMessengerSecret)) {
         return false;
-    if (!AddMessengerCryptedKey(cryptedMessengerSecret, std::vector<unsigned char>(messengerPrivateKey.begin(), messengerPrivateKey.end())))
+    }
+    if (!AddMessengerCryptedKey(cryptedMessengerSecret, msgIV)) {
         return false;
+    }
 
     messengerPrivateKey.clear();
+    messengerPublicKey.clear();
     return true;
 }

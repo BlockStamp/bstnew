@@ -149,7 +149,9 @@ protected:
 
     CryptedKeyMap mapCryptedKeys GUARDED_BY(cs_KeyStore);
 
-    std::vector<unsigned char> cryptedMessengerPrivateKey;
+    std::vector<unsigned char> cryptedMessengerKeys;
+    std::vector<unsigned char> messengerKeyIV;
+
 
 public:
     CCryptoKeyStore() : fUseCrypto(false), fMsgUseCrypto(false), fDecryptionThoroughlyChecked(false)
@@ -165,14 +167,14 @@ public:
     bool MsgLock();
 
     virtual bool AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
-    virtual bool AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &plainTextPrivKey);
+    virtual bool AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &iv);
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;
     bool HaveKey(const CKeyID &address) const override;
     bool GetKey(const CKeyID &address, CKey& keyOut) const override;
     bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const override;
     std::set<CKeyID> GetKeys() const override;
 
-    bool SetMessengerKeys(const MessengerPrivateKey& privKey, const MessengerPublicKey& pubKey);
+    bool SetMessengerKeys(const MessengerKey& privKey, const MessengerKey& pubKey);
 
 
     /**
