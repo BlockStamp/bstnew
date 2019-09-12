@@ -1,5 +1,11 @@
 #include "message_utils.h"
 
+#include "logging.h"
+
+bool is_base64(unsigned char c) {
+    return (isalnum(c) || (c=='+') || (c=='/'));
+}
+
 //TODO: Consider using openssl for key validation
 bool checkRSApublicKey(const std::string& rsaPublicKey) {
     const std::string keyBeg = "-----BEGIN PUBLIC KEY-----";
@@ -18,7 +24,7 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
     std::size_t encodingLength = 0;
     for(size_t i = keyBeg.length(); i < posend; ++i)
     {
-        if (rsaPublicKey[i] != '\n' && rsaPublicKey[i] != ' ')
+        if (is_base64(rsaPublicKey[i]))
         {
             ++encodingLength;
         }
@@ -41,6 +47,7 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
 //        return true;
 //    }
 
+    LogPrintf("Incorrect length of public key: %u\n", encodingLength);
     return false;
 }
 
@@ -62,15 +69,16 @@ bool checkRSAprivateKey(const std::string& rsaPrivateKey)
     std::size_t encodingLength = 0;
     for(size_t i = keyBeg.length(); i < posend; ++i)
     {
-        if (rsaPrivateKey[i] != '\n' && rsaPrivateKey[i] != ' ')
+        if (is_base64(rsaPrivateKey[i]))
         {
             ++encodingLength;
         }
     }
 
-    if (encodingLength == 1588) {
+    if (encodingLength == 1590) {
         return true;
     }
+    LogPrintf("Incorrect length of private key: %u\n", encodingLength);
 
     return false;
 }

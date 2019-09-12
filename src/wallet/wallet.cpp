@@ -3506,6 +3506,24 @@ bool CWallet::DelMsgAddressBook(const std::string &address)
     return WalletBatch(*msgDatabase).EraseMsgAddress(address);
 }
 
+bool CWallet::DelMsgAddressBookForLabel(const std::string& label)
+{
+    {
+        LOCK(cs_wallet);
+        for (auto it = mapMessengerAddressBook.begin(); it != mapMessengerAddressBook.end(); ++it)
+        {
+            if (it->second.compare(label) ==  0)
+            {
+                const std::string address(it->first);
+                mapMessengerAddressBook.erase(it);
+                NotifyMessengerAddressBookChanged(this, address, label, CT_DELETED);
+                return WalletBatch(*msgDatabase).EraseMsgAddress(address);
+            }
+        }
+    }
+    return false;
+}
+
 bool CWallet::SetAddressBook(const CTxDestination& address, const std::string& strName, const std::string& strPurpose)
 {
     bool fUpdated = false;

@@ -144,6 +144,11 @@ void EditMsgAddressDialog::accept()
                 getDuplicateAddressWarning(),
                 QMessageBox::Ok, QMessageBox::Ok);
             break;
+        case MessengerBookModel::DUPLICATE_LABEL:
+            QMessageBox::warning(this, windowTitle(),
+                tr("The entered label already exists in address book."),
+                QMessageBox::Ok, QMessageBox::Ok);
+            break;
         }
         return;
     }

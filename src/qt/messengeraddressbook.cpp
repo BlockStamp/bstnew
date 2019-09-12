@@ -119,6 +119,8 @@ void MessengerAddressBook::setModel(MessengerBookModel *_model)
     proxyModel = new MsgAddressBookSortFilterProxyModel(this);
     proxyModel->setSourceModel(_model);
 
+    model->addOwnAddressToBook();
+
     connect(ui->searchLineEdit, &QLineEdit::textChanged, proxyModel, &QSortFilterProxyModel::setFilterWildcard);
 
     ui->tableView->setModel(proxyModel);

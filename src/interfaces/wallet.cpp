@@ -201,6 +201,11 @@ public:
         return m_wallet.DelMsgAddressBook(dest);
     }
 
+    bool delMsgAddressBookForLabel(const std::string& label) override
+    {
+        return m_wallet.DelMsgAddressBookForLabel(label);
+    }
+
     bool getMsgAddress(const std::string& dest, std::string* name) override
     {
         LOCK(m_wallet.cs_wallet);
@@ -221,7 +226,9 @@ public:
         {
             if (it.second.compare(name) ==  0)
             {
-                *address = it.first;
+                if (address) {
+                    *address = it.first;
+                }
                 return true;
             }
         }

@@ -18,6 +18,7 @@
 #include <utilmoneystr.h>
 #include <wallet/coincontrol.h>
 #include <wallet/fees.h>
+#include <wallet/crypter.h>
 #include <univalue.h>
 #include <memory>
 #include <messages/message_encryption.h>
@@ -277,6 +278,13 @@ UniValue importmsgkey(const JSONRPCRequest& request)
             // store key in database
             walletBatch.WritePublicKey(publicRsaKey);
             walletBatch.WritePrivateKey(privateRsaKey);
+
+            MessengerPrivateKey privKey(privateRsaKey.begin(), privateRsaKey.end());
+            MessengerPublicKey pubKey(publicRsaKey.begin(), publicRsaKey.end());
+
+
+            ///TODO: add here new imported keys to messenger address book model
+            CCryptoKeyStore().SetMessengerKeys(privKey, pubKey);
         } else
         {
             return UniValue(UniValue::VSTR, std::string("Import failed. Incorrect key format"));

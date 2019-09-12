@@ -39,6 +39,7 @@ public:
         NO_CHANGES,             /**< No changes were made during edit operation */
         INVALID_ADDRESS,        /**< Unparseable address */
         DUPLICATE_ADDRESS,      /**< Address already in address book */
+        DUPLICATE_LABEL         /**< Label already exists in address book */
     };
 
     /** @name Methods overridden from QAbstractTableModel
@@ -58,10 +59,16 @@ public:
      */
     QString addRow(const QString &label, const QString &address);
 
+    /* Edit an address. Used for set 'my address' after import the new one.
+     * NOTE! data will replace label and/or address already existing
+     */
+    QString editRow(const QString &label, const QString &address);
+
     /** Look up label for address in address book, if not found return empty string. */
     QString labelForAddress(const QString &address) const;
 
     EditStatus getEditStatus() const { return editStatus; }
+    void addOwnAddressToBook();
 
 private:
     WalletModel* const walletModel;
@@ -75,7 +82,6 @@ private:
     /** Notify listeners that data changed. */
     void emitDataChanged(int index);
 
-    void addOwnAddressToBook();
 
 public Q_SLOTS:
     /* Update address list from core.

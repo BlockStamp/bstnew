@@ -1064,6 +1064,7 @@ public:
     bool SetMsgAddressBook(const std::string& address, const std::string& label);
 
     bool DelMsgAddressBook(const std::string& address);
+    bool DelMsgAddressBookForLabel(const std::string& label);
 
 
     const std::string& GetLabelName(const CScript& scriptPubKey) const;

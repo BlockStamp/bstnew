@@ -128,6 +128,9 @@ public:
     //! Remove messenger address
     virtual bool delMsgAddressBook(const std::string& dest) = 0;
 
+    //! Remove messenger address for label
+    virtual bool delMsgAddressBookForLabel(const std::string& label) = 0;
+
     //! Get messenger address
     virtual bool getMsgAddress(const std::string& dest, std::string* name) = 0;
 

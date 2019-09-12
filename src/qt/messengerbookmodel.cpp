@@ -315,8 +315,38 @@ QString MessengerBookModel::addRow(const QString &label, const QString &address)
         return QString();
     }
 
+    if (walletModel->wallet().getMsgAddressFromName(/* name= */ nullptr, strLabel))
+    {
+        editStatus = DUPLICATE_LABEL;
+        return QString();
+    }
+
     // Add entry
     walletModel->wallet().setMsgAddressBook(strAddress, strLabel);
+    return QString::fromStdString(strAddress);
+}
+
+QString MessengerBookModel::editRow(const QString &label, const QString &address)
+{
+    std::string strLabel = label.toStdString();
+    std::string strAddress = address.toStdString();
+
+    editStatus = OK;
+    if (!checkRSApublicKey(strAddress))
+    {
+        editStatus = INVALID_ADDRESS;
+        return QString();
+    }
+
+    //remove entry, duplicated label
+    walletModel->wallet().delMsgAddressBookForLabel(strLabel);
+
+    //add entry
+    walletModel->wallet().setMsgAddressBook(strAddress, strLabel);
+
+    if (priv)
+        priv->refreshAddressTable(walletModel->wallet());
+
     return QString::fromStdString(strAddress);
 }
 
@@ -365,5 +395,5 @@ void MessengerBookModel::addOwnAddressToBook()
     WalletBatch walletBatch(dbh);
     std::string publicRsaKey;
     walletBatch.ReadPublicKey(publicRsaKey);
-    this->addRow(QString(MY_ADDRESS_LABEL), QString(publicRsaKey.c_str()));
+    this->editRow(QString(MY_ADDRESS_LABEL), QString(publicRsaKey.c_str()));
 }
