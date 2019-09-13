@@ -16,10 +16,16 @@
   <layout class="QVBoxLayout" name="verticalLayout_20">
    <item>
     <widget class="QTabWidget" name="tabWidget">
+     <property name="toolTip">
+      <string/>
+     </property>
      <property name="currentIndex">
       <number>1</number>
      </property>
      <widget class="QWidget" name="sendTab">
+      <property name="toolTip">
+       <string/>
+      </property>
       <attribute name="title">
        <string>Send</string>
       </attribute>
@@ -606,6 +612,9 @@
               </item>
               <item>
                <widget class="QToolButton" name="addressBookButton">
+                <property name="toolTip">
+                 <string>Choose recipient from address book.</string>
+                </property>
                 <property name="text">
                  <string>...</string>
                 </property>
@@ -624,7 +633,11 @@
              </layout>
             </item>
             <item>
-             <widget class="QTextEdit" name="addressEdit"/>
+             <widget class="QTextEdit" name="addressEdit">
+              <property name="toolTip">
+               <string>Enter recipient public key.</string>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QLabel" name="subjectLabel">
@@ -634,7 +647,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="subjectEdit"/>
+             <widget class="QLineEdit" name="subjectEdit">
+              <property name="toolTip">
+               <string>Enter subject of a message.</string>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QLabel" name="messageLabel">
@@ -650,6 +667,9 @@
                 <width>0</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="toolTip">
+               <string>Enter message body.</string>
               </property>
              </widget>
             </item>
@@ -1188,6 +1208,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
              <height>0</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>Confirm the send action.</string>
+           </property>
            <property name="text">
             <string>Send</string>
            </property>
@@ -1247,6 +1270,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
       </layout>
      </widget>
      <widget class="QWidget" name="readTab">
+      <property name="toolTip">
+       <string/>
+      </property>
       <attribute name="title">
        <string>Read</string>
       </attribute>
@@ -1263,14 +1289,38 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
           <item>
            <layout class="QVBoxLayout" name="readVerticalLayout">
             <item>
-             <widget class="QLabel" name="transactionsLabel">
+             <widget class="QLineEdit" name="searchTxnEdit">
+              <property name="toolTip">
+               <string>Enter subject to search transactions.</string>
+              </property>
+              <property name="accessibleName">
+               <string/>
+              </property>
+              <property name="accessibleDescription">
+               <string/>
+              </property>
               <property name="text">
-               <string>Transactions:</string>
+               <string/>
+              </property>
+              <property name="placeholderText">
+               <string>Search for transaction subject</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QTableWidget" name="transactionTable">
+              <property name="toolTip">
+               <string/>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <property name="tabKeyNavigation">
+               <bool>false</bool>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
               <property name="sortingEnabled">
                <bool>true</bool>
               </property>
@@ -1317,6 +1367,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
               </item>
               <item>
                <widget class="QLabel" name="fromLabel">
+                <property name="toolTip">
+                 <string>Messege sender.</string>
+                </property>
                 <property name="text">
                  <string/>
                 </property>
@@ -1337,6 +1390,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
               </item>
               <item>
                <widget class="QToolButton" name="addressBookButton_read">
+                <property name="toolTip">
+                 <string>Add recipient to address book.</string>
+                </property>
                 <property name="text">
                  <string>...</string>
                 </property>
