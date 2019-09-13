@@ -201,7 +201,6 @@ static bool DecryptMessengerKeys(
     MessengerKey& pubMsgKey)
 {
     ///TODO: review this implementation
-
     CKeyingMaterial plaintextKeys;
     if(!DecryptMessengerSecret(vMasterKey, cryptedKey, msgIv, plaintextKeys)) {
          return false;
@@ -475,7 +474,7 @@ bool CCryptoKeyStore::GetMessengerKeys(std::string& privMsgKeyStr, std::string& 
     }
 
     MessengerKey privMsgKey, pubMsgKey;
-    if (!DecryptMessengerKeys(vMasterKey, cryptedMessengerKeys, messengerKeyIV, privMsgKey, pubMsgKey)) {
+    if (!DecryptMessengerKeys(vMessengerMasterKey, cryptedMessengerKeys, messengerKeyIV, privMsgKey, pubMsgKey)) {
         std::cout << "Messenger encrypted, but not unlocked - no keys\n";
         return false;
     }
