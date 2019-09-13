@@ -148,10 +148,12 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
+    connect(ui->transactionTable, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(on_transactionTableContextMenuRequest(QPoint)));
+    connect(ui->transactionTable, SIGNAL(itemActivated(QTableWidgetItem*)), this, SLOT(on_itemActivated(QTableWidgetItem*)));
+
     connect(ui->addressBookButton, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
     connect(ui->addressBookButton_read, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
-    connect(ui->transactionTable, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(on_transactionTableContextMenuRequest(QPoint)));
-
+    connect(ui->searchTxnEdit, SIGNAL(textChanged(QString)), this, SLOT(on_searchTxnEdited(QString)));
 }
 
 MessengerPage::~MessengerPage()
@@ -765,7 +767,11 @@ void MessengerPage::fillUpTable()
     }
 
     TransactionsMap& transactions = wallet->encrMsgMapWallet;
+    fillTable(transactions);
+}
 
+void MessengerPage::fillTable(TransactionsMap& transactions)
+{
     ui->transactionTable->clearContents();
     ui->transactionTable->setRowCount(0);
     ui->transactionTable->setRowCount(transactions.size());
@@ -879,4 +885,29 @@ void MessengerPage::addToAddressBook()
     ui->fromLabel->setText("");
     ui->subjectReadLabel->setText("");
     ui->messageViewEdit->setPlainText("");
+}
+
+void MessengerPage::on_searchTxnEdited(const QString& text)
+{
+    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    if (wallet == nullptr) {
+        return;
+    }
+
+    TransactionsMap filtered;
+    for (auto &it : wallet->encrMsgMapWallet)
+    {
+        if (it.second.subject.find(text.toStdString()) != std::string::npos)
+        {
+            filtered.insert(it);
+        }
+    }
+    fillTable(filtered);
+}
+
+void MessengerPage::on_itemActivated(QTableWidgetItem* selecteditem)
+{
+    QTableWidgetItem* item = ui->transactionTable->item(selecteditem->row(), TransactionsTableColumn::DATE);
+    QString txnId = item->data(Qt::UserRole).toString();
+    read(txnId.toUtf8().constData());
 }

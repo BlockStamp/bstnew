@@ -20,6 +20,7 @@ class PlatformStyle;
 class QButtonGroup;
 class CWalletTx;
 class MessengerBookModel;
+class QTableWidgetItem;
 
 namespace Ui {
     class MessengerPage;
@@ -86,6 +87,7 @@ private Q_SLOTS:
     void send();
     void read(const std::string& txnId);
     void fillUpTable();
+    void fillTable(TransactionsMap& transactions);
 
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();
@@ -111,10 +113,14 @@ private Q_SLOTS:
     void on_transactionsTableCellPressed(int row, int col);
     void on_addressBookPressed();
 
+    void on_itemActivated(QTableWidgetItem* selecteditem);
+
     void on_transactionTableContextMenuRequest(QPoint pos);
     void setMessageReply();
     void copySenderAddresssToClipboard();
     void addToAddressBook();
+
+    void on_searchTxnEdited(const QString& text);
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H
