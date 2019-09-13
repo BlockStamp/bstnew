@@ -864,6 +864,52 @@ bool CWallet::EncryptMessenger(const SecureString& strMessengerPassphrase)
     return true;
 }
 
+bool CWallet::ChangeMessengerPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase)
+{
+    bool fWasLocked = IsMsgLocked();
+
+    {
+        LOCK(cs_wallet);
+        MsgLock();
+
+        CCrypter crypter;
+        CKeyingMaterial _vMasterKey;
+        for (MasterKeyMap::value_type& pMasterKey : mapMessengerMasterKeys)
+        {
+            if(!crypter.SetKeyFromPassphrase(strOldWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+                return false;
+            if (!crypter.Decrypt(pMasterKey.second.vchCryptedKey, _vMasterKey))
+                return false;
+            if (CCryptoKeyStore::MsgUnlock(_vMasterKey))
+            {
+                int64_t nStartTime = GetTimeMillis();
+                crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod);
+                pMasterKey.second.nDeriveIterations = static_cast<unsigned int>(pMasterKey.second.nDeriveIterations * (100 / ((double)(GetTimeMillis() - nStartTime))));
+
+                nStartTime = GetTimeMillis();
+                crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod);
+                pMasterKey.second.nDeriveIterations = (pMasterKey.second.nDeriveIterations + static_cast<unsigned int>(pMasterKey.second.nDeriveIterations * 100 / ((double)(GetTimeMillis() - nStartTime)))) / 2;
+
+                if (pMasterKey.second.nDeriveIterations < 25000)
+                    pMasterKey.second.nDeriveIterations = 25000;
+
+                WalletLogPrintf("Messenger passphrase changed to an nDeriveIterations of %i\n", pMasterKey.second.nDeriveIterations);
+
+                if (!crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+                    return false;
+                if (!crypter.Encrypt(_vMasterKey, pMasterKey.second.vchCryptedKey))
+                    return false;
+                WalletBatch(*msgDatabase).WriteMessengerMasterKey(pMasterKey.first, pMasterKey.second);
+                if (fWasLocked)
+                    MsgLock();
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 DBErrors CWallet::ReorderTransactions()
 {
     LOCK(cs_wallet);

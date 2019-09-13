@@ -459,10 +459,8 @@ bool WalletModel::setMessengerLocked(bool locked, const SecureString &passPhrase
 
 bool WalletModel::changeMessengerPassphrase(const SecureString &oldPass, const SecureString &newPass)
 {
-    ///TODO: Implement
-//    m_wallet->lock(); // Make sure wallet is locked before attempting pass change
-//    return m_wallet->changeWalletPassphrase(oldPass, newPass);
-
+    m_wallet->msgLock(); // Make sure messenger is locked before attempting pass change
+    return m_wallet->changeMessengerPassphrase(oldPass, newPass);
 
     return true;
 }

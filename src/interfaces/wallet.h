@@ -83,6 +83,10 @@ public:
     //! Return whether messenger is locked.
     virtual bool isMsgLocked() = 0;
 
+    //! Change messenger passphrase.
+    virtual bool changeMessengerPassphrase(const SecureString& old_wallet_passphrase,
+        const SecureString& new_wallet_passphrase) = 0;
+
     //! Abort a rescan.
     virtual void abortRescan() = 0;
 

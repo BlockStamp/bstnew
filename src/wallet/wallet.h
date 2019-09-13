@@ -901,10 +901,11 @@ public:
     int64_t nRelockTime = 0;
 
     bool Unlock(const SecureString& strWalletPassphrase);
-    bool MsgUnlock(const SecureString& strWalletPassphrase);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
 
+    bool MsgUnlock(const SecureString& strWalletPassphrase);
+    bool ChangeMessengerPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptMessenger(const SecureString& strMessengerPassphrase);
 
     void GetKeyBirthTimes(std::map<CTxDestination, int64_t> &mapKeyBirth) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);

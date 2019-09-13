@@ -140,6 +140,11 @@ public:
     bool msgLock() override { return m_wallet.MsgLock(); }
     bool msgUnlock(const SecureString& wallet_passphrase) override { return m_wallet.MsgUnlock(wallet_passphrase); }
     bool isMsgLocked() override { return m_wallet.IsMsgLocked(); }
+    bool changeMessengerPassphrase(const SecureString& old_wallet_passphrase,
+        const SecureString& new_wallet_passphrase) override
+    {
+        return m_wallet.ChangeMessengerPassphrase(old_wallet_passphrase, new_wallet_passphrase);
+    }
 
     void abortRescan() override { m_wallet.AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet.BackupWallet(filename); }
