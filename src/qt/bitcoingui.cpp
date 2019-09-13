@@ -148,6 +148,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
     frameBlocksLayout->setSpacing(3);
     unitDisplayControl = new UnitDisplayStatusBarControl(platformStyle);
     labelWalletEncryptionIcon = new QLabel();
+    labelMessengerEncryptionIcon = new QLabel();
     labelWalletHDStatusIcon = new QLabel();
     labelProxyIcon = new GUIUtil::ClickableLabel();
     connectionsControl = new GUIUtil::ClickableLabel();
@@ -158,6 +159,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const PlatformStyle *_platformSty
         frameBlocksLayout->addWidget(unitDisplayControl);
         frameBlocksLayout->addStretch();
         frameBlocksLayout->addWidget(labelWalletEncryptionIcon);
+        frameBlocksLayout->addWidget(labelMessengerEncryptionIcon);
         frameBlocksLayout->addWidget(labelWalletHDStatusIcon);
     }
     frameBlocksLayout->addWidget(labelProxyIcon);
@@ -359,7 +361,8 @@ void BitcoinGUI::createActions()
     encryptWalletAction->setStatusTip(tr("Encrypt the private keys that belong to your wallet"));
     encryptWalletAction->setCheckable(true);
 
-    encryptMessengerAction = new QAction(platformStyle->TextColorIcon(":/icons/lock_closed"), tr("&Encrypt Messenger..."), this);
+    ///TODO: Encrypt Wallet has a shortcut, should Encrypt Messenger have one too?
+    encryptMessengerAction = new QAction(platformStyle->TextColorIcon(":/icons/lock_closed"), tr("Encrypt Messenger..."), this);
     encryptMessengerAction->setStatusTip(tr("Encrypt the private RSA key used by messenger"));
     encryptMessengerAction->setCheckable(true);
 
@@ -367,6 +370,8 @@ void BitcoinGUI::createActions()
     backupWalletAction->setStatusTip(tr("Backup wallet to another location"));
     changePassphraseAction = new QAction(platformStyle->TextColorIcon(":/icons/key"), tr("&Change Passphrase..."), this);
     changePassphraseAction->setStatusTip(tr("Change the passphrase used for wallet encryption"));
+    changeMessengerPassphraseAction = new QAction(platformStyle->TextColorIcon(":/icons/key"), tr("Change Messenger Passphrase..."), this);
+    changeMessengerPassphraseAction->setStatusTip(tr("Change the passphrase used for messenger encryption"));
     signMessageAction = new QAction(platformStyle->TextColorIcon(":/icons/edit"), tr("Sign &message..."), this);
     signMessageAction->setStatusTip(tr("Sign messages with your BST addresses to prove you own them"));
     verifyMessageAction = new QAction(platformStyle->TextColorIcon(":/icons/verify"), tr("&Verify message..."), this);
@@ -399,6 +404,7 @@ void BitcoinGUI::createActions()
     // prevents an open debug window from becoming stuck/unusable on client shutdown
     connect(quitAction, &QAction::triggered, rpcConsole, &QWidget::hide);
 
+    ///TODO: Check Messenger with wallet disabled
 #ifdef ENABLE_WALLET
     if(walletFrame)
     {
@@ -406,6 +412,7 @@ void BitcoinGUI::createActions()
         connect(encryptMessengerAction, &QAction::triggered, walletFrame, &WalletFrame::encryptMessenger);
         connect(backupWalletAction, &QAction::triggered, walletFrame, &WalletFrame::backupWallet);
         connect(changePassphraseAction, &QAction::triggered, walletFrame, &WalletFrame::changePassphrase);
+        connect(changeMessengerPassphraseAction, &QAction::triggered, walletFrame, &WalletFrame::changeMessengerPassphrase);
         connect(signMessageAction, &QAction::triggered, [this]{ gotoSignMessageTab(); });
         connect(verifyMessageAction, &QAction::triggered, [this]{ gotoVerifyMessageTab(); });
         connect(usedSendingAddressesAction, &QAction::triggered, walletFrame, &WalletFrame::usedSendingAddresses);
@@ -449,6 +456,7 @@ void BitcoinGUI::createMenuBar()
         settings->addAction(encryptWalletAction);
         settings->addAction(encryptMessengerAction);
         settings->addAction(changePassphraseAction);
+        settings->addAction(changeMessengerPassphraseAction);
         settings->addSeparator();
     }
     settings->addAction(optionsAction);
@@ -642,6 +650,7 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     encryptMessengerAction->setEnabled(enabled);
     backupWalletAction->setEnabled(enabled);
     changePassphraseAction->setEnabled(enabled);
+    changeMessengerPassphraseAction->setEnabled(enabled);
     signMessageAction->setEnabled(enabled);
     verifyMessageAction->setEnabled(enabled);
     usedSendingAddressesAction->setEnabled(enabled);
@@ -1199,6 +1208,31 @@ void BitcoinGUI::setEncryptionStatus(int status)
 void BitcoinGUI::setMessengerEncryptionStatus(int status)
 {
     ///TODO: Implement like BitcoinGUI::setEncryptionStatus
+    switch(status)
+    {
+    case WalletModel::Unencrypted:
+        labelMessengerEncryptionIcon->hide();
+        encryptMessengerAction->setChecked(false);
+        changeMessengerPassphraseAction->setEnabled(false);
+        encryptMessengerAction->setEnabled(true);
+        break;
+    case WalletModel::Unlocked:
+        labelMessengerEncryptionIcon->show();
+        labelMessengerEncryptionIcon->setPixmap(platformStyle->SingleColorIcon(":/icons/lock_open").pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
+        labelMessengerEncryptionIcon->setToolTip(tr("Messenger is <b>encrypted</b> and currently <b>unlocked</b>"));
+        encryptMessengerAction->setChecked(true);
+        changeMessengerPassphraseAction->setEnabled(true);
+        encryptMessengerAction->setEnabled(false); // TODO: decrypt currently not supported
+        break;
+    case WalletModel::Locked:
+        labelMessengerEncryptionIcon->show();
+        labelMessengerEncryptionIcon->setPixmap(platformStyle->SingleColorIcon(":/icons/lock_closed").pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
+        labelMessengerEncryptionIcon->setToolTip(tr("Messenger is <b>encrypted</b> and currently <b>locked</b>"));
+        encryptMessengerAction->setChecked(true);
+        changeMessengerPassphraseAction->setEnabled(true);
+        encryptMessengerAction->setEnabled(false); // TODO: decrypt currently not supported
+        break;
+    }
 }
 
 void BitcoinGUI::updateWalletStatus()
@@ -1225,7 +1259,7 @@ void BitcoinGUI::updateMessengerWalletStatus()
         return;
     }
     WalletModel * const walletModel = walletView->getWalletModel();
-    setMessengerEncryptionStatus(walletModel->getEncryptionStatus());
+    setMessengerEncryptionStatus(walletModel->getMessengerEncryptionStatus());
 
     ///TODO: What to do with the following:
     //setHDStatus(walletModel->wallet().hdEnabled());

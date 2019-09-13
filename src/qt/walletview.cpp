@@ -322,6 +322,13 @@ void WalletView::changePassphrase()
     dlg.exec();
 }
 
+void WalletView::changeMessengerPassphrase()
+{
+    AskMessengerPassphraseDialog dlg(AskMessengerPassphraseDialog::ChangePass, this);
+    dlg.setModel(walletModel);
+    dlg.exec();
+}
+
 void WalletView::unlockWallet()
 {
     if(!walletModel)

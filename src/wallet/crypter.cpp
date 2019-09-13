@@ -14,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 int CCrypter::BytesToKeySHA512AES(const std::vector<unsigned char>& chSalt, const SecureString& strKeyData, int count, unsigned char *key,unsigned char *iv) const
 {
@@ -155,6 +156,43 @@ static bool DecryptMessengerSecret(
     return cKeyCrypter.Decrypt(cryptedKeys, *((CKeyingMaterial*)&vchPlaintext));
 }
 
+static bool AssignMessengerKeys(
+    const CKeyingMaterial& plaintextKeys,
+    MessengerKey& privMsgKey,
+    MessengerKey& pubMsgKey)
+{
+    const std::string privBeg = "-----BEGIN RSA PRIVATE KEY-----";
+    const std::string privEnd = "-----END RSA PRIVATE KEY-----";
+
+    auto posBeg = std::search(plaintextKeys.begin(), plaintextKeys.end(), privBeg.begin(), privBeg.end());
+    if (posBeg != plaintextKeys.begin()) {
+        return false;
+    }
+    auto posEnd = std::search(posBeg+privBeg.size(), plaintextKeys.end(), privEnd.begin(), privEnd.end());
+    if (posEnd == plaintextKeys.end()) {
+        return false;
+    }
+    posEnd += privEnd.size();
+    privMsgKey.assign(posBeg, posEnd);
+
+
+    const std::string pubBeg = "-----BEGIN PUBLIC KEY-----";
+    const std::string pubEnd = "-----END PUBLIC KEY-----";
+
+    posBeg = std::search(posEnd, plaintextKeys.end(), pubBeg.begin(), pubBeg.end());
+    if (posBeg == plaintextKeys.end()) {
+        return false;
+    }
+    posEnd = std::search(posBeg + pubBeg.size(), plaintextKeys.end(), pubEnd.begin(), pubEnd.end());
+    if (posEnd == plaintextKeys.end()) {
+        return false;
+    }
+    posEnd += pubEnd.size();
+    pubMsgKey.assign(posBeg, posEnd);
+
+    return true;
+}
+
 static bool DecryptMessengerKeys(
     const CKeyingMaterial& vMasterKey,
     const std::vector<unsigned char>& cryptedKey,
@@ -166,15 +204,12 @@ static bool DecryptMessengerKeys(
 
     CKeyingMaterial plaintextKeys;
     if(!DecryptMessengerSecret(vMasterKey, cryptedKey, msgIv, plaintextKeys)) {
-        return false;
+         return false;
     }
 
-    if (plaintextKeys.size() != PRIVATE_RSA_KEY_LEN + PUBLIC_RSA_KEY_LEN) {
+    if(!AssignMessengerKeys(plaintextKeys, privMsgKey, pubMsgKey)) {
         return false;
     }
-
-    privMsgKey.assign(plaintextKeys.begin(), plaintextKeys.begin() + PRIVATE_RSA_KEY_LEN);
-    pubMsgKey.assign(plaintextKeys.begin() + PRIVATE_RSA_KEY_LEN, plaintextKeys.end());
 
     return matchRSAKeys(std::string(pubMsgKey.begin(), pubMsgKey.end()),
                         std::string(privMsgKey.begin(), privMsgKey.end()));
@@ -305,8 +340,6 @@ bool CCryptoKeyStore::Unlock(const CKeyingMaterial& vMasterKeyIn)
 bool CCryptoKeyStore::MsgUnlock(const CKeyingMaterial& vMasterKeyIn)
 {
     ///TODO: Review this implementation
-    std::cout << "CCryptoKeyStore::MsgUnlock\n";
-
     {
         LOCK(cs_KeyStore);
         if (!SetMsgCrypted())

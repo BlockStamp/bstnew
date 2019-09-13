@@ -86,6 +86,7 @@ bool WalletFrame::setCurrentWallet(const QString& name)
     walletStack->setCurrentWidget(walletView);
     assert(walletView);
     walletView->updateEncryptionStatus();
+    walletView->updateMessengerEncryptionStatus();
     return true;
 }
 
@@ -215,6 +216,13 @@ void WalletFrame::changePassphrase()
     WalletView *walletView = currentWalletView();
     if (walletView)
         walletView->changePassphrase();
+}
+
+void WalletFrame::changeMessengerPassphrase()
+{
+    WalletView *walletView = currentWalletView();
+    if (walletView)
+        walletView->changeMessengerPassphrase();
 }
 
 void WalletFrame::unlockWallet()
