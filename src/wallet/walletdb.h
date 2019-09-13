@@ -219,8 +219,6 @@ public:
     /// Erase destination data tuple from wallet database
     bool EraseDestData(const std::string &address, const std::string &key);
 
-    bool ReadMessengerCryptedKeys(std::string& cryptedKeys);
-
     DBErrors LoadWallet(CWallet* pwallet);
     DBErrors FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);
     DBErrors FindEncrMsgTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx); //TODO: Only for debugging - remove later

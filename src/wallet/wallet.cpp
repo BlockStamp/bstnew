@@ -353,6 +353,11 @@ bool CWallet::LoadCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigne
     return CCryptoKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret);
 }
 
+bool CWallet::LoadMessengerCryptedKey(const std::vector<unsigned char> &msgCryptedKey, const std::vector<unsigned char> &msgIv)
+{
+    return CCryptoKeyStore::AddMessengerCryptedKey(msgCryptedKey, msgIv);
+}
+
 /**
  * Update wallet first key creation time. This should be called whenever keys
  * are added to the wallet, with the oldest key creation time.
@@ -3413,18 +3418,12 @@ void CWallet::generateMessengerKeys()
     //TODO: Consider using SecureString instead of ordinary std::string
 
     WalletBatch walletBatch(*msgDatabase);
-    std::string publicRsaKey, privateRsaKey, cryptedPrivateRsaKey;
+    std::string publicRsaKey, privateRsaKey;
 
     walletBatch.ReadPublicKey(publicRsaKey);
     walletBatch.ReadPrivateKey(privateRsaKey);
-    walletBatch.ReadMessengerCryptedKeys(cryptedPrivateRsaKey);
 
-    std::cout << "publicRsaKey.size(): " << publicRsaKey.size()
-              << "privateRsaKey.size(): " << privateRsaKey.size()
-              << "cryptedPrivateRsaKey.size(): " << cryptedPrivateRsaKey.size()
-              << std::endl;
-
-    if (cryptedPrivateRsaKey.empty() && (publicRsaKey.empty() || privateRsaKey.empty())) {
+    if (publicRsaKey.empty() || privateRsaKey.empty()) {
         std::cout << "Generating new keys\n";
         // generate key
         generateKeysPair(publicRsaKey, privateRsaKey);

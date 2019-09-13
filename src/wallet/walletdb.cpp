@@ -93,11 +93,7 @@ bool WalletBatch::WriteMessengerCryptedKeys(
     const std::vector<unsigned char>& msgIv)
 {
     ///TODO: Review this implementation
-    if (!WriteIC(std::string("_cryptedmessengerkey"), encryptedPrivKey, false)) {
-        return false;
-    }
-
-    if (!WriteIC(std::string("_messengeriv"), msgIv, false)) {
+    if (!WriteIC(std::make_pair(std::string("_cryptedmessengerkey"), encryptedPrivKey), msgIv, false)) {
         return false;
     }
 
@@ -209,12 +205,6 @@ bool WalletBatch::ReadPrivateKey(std::string& privateKey)
 {
     return m_batch.Read(std::string("_privatekey"), privateKey);
 }
-
-bool WalletBatch::ReadMessengerCryptedKeys(std::string& cryptedKeys)
-{
-    return m_batch.Read(std::string("_cryptedmessengerkey"), cryptedKeys);
-}
-
 
 
 class CWalletScanState {
@@ -455,6 +445,34 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             ssValue >> vchPubKey;
             if (!vchPubKey.IsValid()) {
                 strErr = "Error reading wallet database: Default Key corrupt";
+                return false;
+            }
+        }
+        else if (strType == "msg_mkey")
+        {
+            unsigned int nID;
+            ssKey >> nID;
+            CMasterKey kMasterKey;
+            ssValue >> kMasterKey;
+            if(pwallet->mapMessengerMasterKeys.count(nID) != 0)
+            {
+                strErr = strprintf("Error reading messenger wallet database: duplicate CMasterKey id %u", nID);
+                return false;
+            }
+            pwallet->mapMessengerMasterKeys[nID] = kMasterKey;
+            if (pwallet->nMessengerMasterKeyMaxID < nID)
+                pwallet->nMessengerMasterKeyMaxID = nID;
+        }
+        else if (strType == "_cryptedmessengerkey")
+        {
+            std::vector<unsigned char> cryptedMsgKeys;
+            ssKey >> cryptedMsgKeys;
+            std::vector<unsigned char> msgIv;
+            ssValue >> msgIv;
+
+            if (!pwallet->LoadMessengerCryptedKey(cryptedMsgKeys, msgIv))
+            {
+                strErr = "Error reading wallet database: LoadMessengerCryptedKey failed";
                 return false;
             }
         }

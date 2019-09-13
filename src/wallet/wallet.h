@@ -874,6 +874,8 @@ public:
     bool AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret) override;
     //! Adds an encrypted key to the store, without saving it to disk (used by LoadWallet)
     bool LoadCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+    //! Adds an encrypted messenger key to the store, without saving it to disk (used by LoadWallet)
+    bool LoadMessengerCryptedKey(const std::vector<unsigned char> &msgCryptedKey, const std::vector<unsigned char> &msgIv);
     bool AddCScript(const CScript& redeemScript) override;
     bool LoadCScript(const CScript& redeemScript);
 
