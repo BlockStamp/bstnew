@@ -89,3 +89,25 @@ bool CSVModelWriter::write()
 
     return file.error() == QFile::NoError;
 }
+
+bool CSVModelWriter::read(std::vector<std::string> &addr)
+{
+    QFile file(filename);
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+    QTextStream in(&file);
+    std::string data = in.readAll().toStdString();
+
+    std::size_t _beg=0, _end=0-1;
+    while (1)
+    {
+        _beg = data.find("\"", _end + 1);
+        _end = data.find("\"", _beg + 1);
+        if (_beg == std::string::npos || _end == std::string::npos) break;
+        addr.push_back(data.substr(_beg+1, _end - _beg - 1));
+    }
+
+    if (addr.size()%2 != 0) return false;
+
+    return true;
+}

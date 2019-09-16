@@ -29,6 +29,7 @@ public:
         @returns true on success, false otherwise
     */
     bool write();
+    bool read(std::vector<std::string> &addr);
 
 private:
     QString filename;

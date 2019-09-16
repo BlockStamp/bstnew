@@ -14,6 +14,7 @@
 #include <qt/editmsgaddressdialog.h>
 #include <qt/guiutil.h>
 #include <qt/platformstyle.h>
+#include <qt/csvmodelwriter.h>
 
 #include <QIcon>
 #include <QMenu>
@@ -74,7 +75,6 @@ MessengerAddressBook::MessengerAddressBook(const PlatformStyle *platformStyle, Q
     ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->tableView->setFocus();
     ui->closeButton->setText(tr("C&hoose"));
-    ui->exportButton->hide();
 
     ui->labelExplanation->setText(tr("These are addresses for use in messenger"));
     ui->deleteAddress->setVisible(true);
@@ -103,6 +103,7 @@ MessengerAddressBook::MessengerAddressBook(const PlatformStyle *platformStyle, Q
 
     connect(ui->tableView, &QWidget::customContextMenuRequested, this, &MessengerAddressBook::contextualMenu);
     connect(ui->closeButton, &QPushButton::clicked, this, &QDialog::accept);
+//    connect(ui->exportButton, &QPushButton::clicked, this, &MessengerAddressBook::on_exportButton_clicked);
 }
 
 MessengerAddressBook::~MessengerAddressBook()
@@ -290,5 +291,49 @@ void MessengerAddressBook::selectNewAddress(const QModelIndex &parent, int begin
         ui->tableView->setFocus();
         ui->tableView->selectRow(idx.row());
         newAddressToSelect.clear();
+    }
+}
+
+void MessengerAddressBook::on_exportButton_clicked()
+{
+    printf("on exportButton clicked\n");
+    // CSV is currently the only supported format
+    QString filename = GUIUtil::getSaveFileName(this,
+        tr("Export Address List"), QString(),
+        tr("Comma separated file (*.csv)"), nullptr);
+
+    if (filename.isNull())
+        return;
+
+    CSVModelWriter writer(filename);
+
+    // name, column, role
+    writer.setModel(proxyModel);
+    writer.addColumn("Label", MessengerBookModel::Label, Qt::EditRole);
+    writer.addColumn("Address", MessengerBookModel::Address, Qt::EditRole);
+
+    if(!writer.write()) {
+        QMessageBox::critical(this, tr("Exporting Failed"),
+            tr("There was an error trying to save the address list to %1. Please try again.").arg(filename));
+    }
+}
+
+void MessengerAddressBook::on_importButton_clicked()
+{
+    QString filename = GUIUtil::getOpenFileName(this,
+        tr("Import Address List"), QString(),
+        tr("Comma separated file (*.csv)"), nullptr);
+
+    if (filename.isNull())
+        return;
+
+    std::vector<std::string> addresses;
+    CSVModelWriter writer(filename);
+    writer.read(addresses);
+
+    for (auto it = addresses.begin(); it != addresses.end(); it +=2)
+    {
+        if (it->compare(MY_ADDRESS_LABEL) == 0) continue;
+        model->addRow(QString(it->c_str()), QString((it+1)->c_str()));
     }
 }

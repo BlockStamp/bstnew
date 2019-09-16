@@ -59,6 +59,10 @@ private Q_SLOTS:
     void onCopyLabelAction();
     /** Edit currently selected address entry (no button) */
     void onEditAction();
+    /** Export messenger address book */
+    void on_exportButton_clicked();
+    /** Import messenger address book */
+    void on_importButton_clicked();
 
     /** Set button states based on selected tab and selection */
     void selectionChanged();
