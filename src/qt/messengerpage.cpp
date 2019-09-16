@@ -825,8 +825,12 @@ void MessengerPage::on_addressBookPressed()
 
 void MessengerPage::on_transactionTableContextMenuRequest(QPoint pos)
 {
-    int row = ui->transactionTable->selectionModel()->currentIndex().row();
+    if (ui->transactionTable->rowCount() == 0)
+    {
+        return;
+    }
 
+    int row = ui->transactionTable->selectionModel()->currentIndex().row();
     QMenu *menu = new QMenu(this);
 
     QAction *replyItem = new QAction(tr("Reply"), this);
