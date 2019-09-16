@@ -593,6 +593,7 @@ bool CWallet::HasWalletSpend(const uint256& txid) const
 void CWallet::Flush(bool shutdown)
 {
     database->Flush(shutdown);
+    msgDatabase->Flush(shutdown);
 }
 
 void CWallet::SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator> range)
@@ -4361,7 +4362,7 @@ bool CWallet::Verify(std::string wallet_file, bool salvage_wallet, std::string& 
 
     if (salvage_wallet) {
         // Recover readable keypairs:
-        CWallet dummyWallet("dummy", WalletDatabase::CreateDummy());
+        CWallet dummyWallet("dummy", WalletDatabase::CreateDummy(), WalletDatabase::CreateDummy());
         std::string backup_filename;
         if (!WalletBatch::Recover(wallet_path, (void *)&dummyWallet, WalletBatch::RecoverKeysOnlyFilter, backup_filename)) {
             return false;
@@ -4381,8 +4382,11 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(const std::string& name, 
     if (gArgs.GetBoolArg("-zapwallettxes", false)) {
         uiInterface.InitMessage(_("Zapping all transactions from wallet..."));
 
+        std::unique_ptr<CWallet> tempWallet =
+            MakeUnique<CWallet>(name,
+            WalletDatabase::Create(DbType::WALLET, path),
+            WalletDatabase::Create(DbType::MSG_WALLET, path));
 
-        std::unique_ptr<CWallet> tempWallet = MakeUnique<CWallet>(name, WalletDatabase::Create(path));
         DBErrors nZapWalletRet = tempWallet->ZapWalletTx(vWtx);
         if (nZapWalletRet != DBErrors::LOAD_OK) {
             InitError(strprintf(_("Error loading %s: Wallet corrupted"), walletFile));
@@ -4396,7 +4400,12 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(const std::string& name, 
     bool fFirstRun = true;
     // TODO: Can't use std::make_shared because we need a custom deleter but
     // should be possible to use std::allocate_shared.
-    std::shared_ptr<CWallet> walletInstance(new CWallet(name, WalletDatabase::Create(path)), ReleaseWallet);
+    std::shared_ptr<CWallet> walletInstance(
+        new CWallet(name,
+            WalletDatabase::Create(DbType::WALLET, path),
+            WalletDatabase::Create(DbType::MSG_WALLET, path)),
+       ReleaseWallet);
+
     DBErrors nLoadWalletRet = walletInstance->LoadWallet(fFirstRun);
     if (nLoadWalletRet != DBErrors::LOAD_OK)
     {

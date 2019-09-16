@@ -87,6 +87,7 @@ bool WalletFrame::setCurrentWallet(const QString& name)
     assert(walletView);
     walletView->updateEncryptionStatus();
     walletView->updateMessengerEncryptionStatus();
+    walletView->clearMessenger();
     return true;
 }
 

@@ -56,7 +56,10 @@ void EditAddressAndSubmit(
 void TestAddAddressesToSendBook()
 {
     TestChain100Setup test;
-    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>("mock", WalletDatabase::CreateMock());
+    std::shared_ptr<CWallet> wallet =
+        std::make_shared<CWallet>("mock",
+            WalletDatabase::CreateMock(DbType::WALLET),
+            WalletDatabase::CreateMock(DbType::MSG_WALLET));
     bool firstRun;
     wallet->LoadWallet(firstRun);
 

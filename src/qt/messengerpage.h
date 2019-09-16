@@ -82,6 +82,7 @@ protected:
 
 public Q_SLOTS:
     void setBalance(const interfaces::WalletBalances& balances);
+    void clearMessenger();
 
 private Q_SLOTS:
     void send();

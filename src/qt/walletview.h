@@ -139,6 +139,9 @@ public Q_SLOTS:
     /** User has requested more information about the out of sync state */
     void requestedSyncWarningInfo();
 
+    /** Clear messenger e.g. New wallet loaded */
+    void clearMessenger();
+
 Q_SIGNALS:
     /** Signal that we want to show the main window */
     void showNormalIfMinimized();
@@ -149,6 +152,8 @@ Q_SIGNALS:
 
     /** Encryption status of wallet changed */
     void messengerEncryptionStatusChanged();
+    /** Clear messenger fields */
+    void clearMessengerFields();
 
     /** HD-Enabled status of wallet changed (only possible during startup) */
     void hdEnabledStatusChanged();

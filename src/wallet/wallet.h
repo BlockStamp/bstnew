@@ -780,16 +780,22 @@ public:
     unsigned int nMessengerMasterKeyMaxID = 0;
 
     /** Construct wallet with specified name and database implementation. */
-    CWallet(std::string name, std::unique_ptr<WalletDatabase> database) : m_name(std::move(name)), database(std::move(database))
+    CWallet(
+        std::string name,
+        std::unique_ptr<WalletDatabase> database,
+        std::unique_ptr<WalletDatabase> msgDatabase) :
+        m_name(std::move(name)),
+        database(std::move(database)),
+        msgDatabase(std::move(msgDatabase))
     {
-        msgDatabase = WalletDatabase::Create(GetWalletDir());
-        msgDatabase->setDbName("msg_wallet.dat");
     }
 
     ~CWallet()
     {
         delete encrypted_batch;
         encrypted_batch = nullptr;
+        delete messenger_encrypted_batch;
+        messenger_encrypted_batch = nullptr;
     }
 
     std::map<uint256, CWalletTx> mapWallet;
@@ -800,7 +806,6 @@ public:
     TxItems wtxOrdered;
 
     int64_t nOrderPosNext = 0;
-    int64_t nEncrMsgOrderPosNext = 0;
     uint64_t nAccountingEntryNumber = 0;
 
     std::map<CTxDestination, CAddressBookData> mapAddressBook;

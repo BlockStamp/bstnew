@@ -91,6 +91,7 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     connect(sendCoinsPage, &SendCoinsDialog::message, this, &WalletView::message);
     // Pass through messages from transactionView
     connect(transactionView, &TransactionView::message, this, &WalletView::message);
+
 }
 
 WalletView::~WalletView()
@@ -179,7 +180,14 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
 
         // Show progress dialog
         connect(_walletModel, &WalletModel::showProgress, this, &WalletView::showProgress);
+
+        connect(this, &WalletView::clearMessengerFields, messengerPage, &MessengerPage::clearMessenger);
     }
+}
+
+void WalletView::clearMessenger()
+{
+    Q_EMIT clearMessengerFields();
 }
 
 void WalletView::processNewTransaction(const QModelIndex& parent, int start, int /*end*/)

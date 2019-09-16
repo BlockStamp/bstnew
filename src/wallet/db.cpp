@@ -56,7 +56,7 @@ CCriticalSection cs_db;
 std::map<std::string, BerkeleyEnvironment> g_dbenvs GUARDED_BY(cs_db); //!< Map from directory name to open db environment.
 } // namespace
 
-BerkeleyEnvironment* GetWalletEnv(const fs::path& wallet_path, std::string& database_filename)
+BerkeleyEnvironment* GetWalletEnv(DbType type, const fs::path& wallet_path, std::string& database_filename)
 {
     fs::path env_directory;
     if (fs::is_regular_file(wallet_path)) {
@@ -69,7 +69,7 @@ BerkeleyEnvironment* GetWalletEnv(const fs::path& wallet_path, std::string& data
         // Normal case: Interpret wallet path as a directory path containing
         // data and log files.
         env_directory = wallet_path;
-        database_filename = "wallet.dat";
+        database_filename = (type == DbType::WALLET ? "wallet.dat" : "msg_wallet.dat");
     }
     LOCK(cs_db);
     // Note: An unused temporary BerkeleyEnvironment object may be created inside the
@@ -250,7 +250,7 @@ BerkeleyEnvironment::VerifyResult BerkeleyEnvironment::Verify(const std::string&
 bool BerkeleyBatch::Recover(const fs::path& file_path, void *callbackDataIn, bool (*recoverKVcallback)(void* callbackData, CDataStream ssKey, CDataStream ssValue), std::string& newFilename)
 {
     std::string filename;
-    BerkeleyEnvironment* env = GetWalletEnv(file_path, filename);
+    BerkeleyEnvironment* env = GetWalletEnv(DbType::WALLET, file_path, filename);
 
     // Recovery procedure:
     // move wallet file to walletfilename.timestamp.bak
@@ -319,7 +319,7 @@ bool BerkeleyBatch::Recover(const fs::path& file_path, void *callbackDataIn, boo
 bool BerkeleyBatch::VerifyEnvironment(const fs::path& file_path, std::string& errorStr)
 {
     std::string walletFile;
-    BerkeleyEnvironment* env = GetWalletEnv(file_path, walletFile);
+    BerkeleyEnvironment* env = GetWalletEnv(DbType::WALLET, file_path, walletFile);
     fs::path walletDir = env->Directory();
 
     LogPrintf("Using BerkeleyDB version %s\n", DbEnv::version(0, 0, 0));
@@ -340,10 +340,11 @@ bool BerkeleyBatch::VerifyEnvironment(const fs::path& file_path, std::string& er
     return true;
 }
 
+///TODO:: What to do with msg_wallet.dat???
 bool BerkeleyBatch::VerifyDatabaseFile(const fs::path& file_path, std::string& warningStr, std::string& errorStr, BerkeleyEnvironment::recoverFunc_type recoverFunc)
 {
     std::string walletFile;
-    BerkeleyEnvironment* env = GetWalletEnv(file_path, walletFile);
+    BerkeleyEnvironment* env = GetWalletEnv(DbType::WALLET, file_path, walletFile);
     fs::path walletDir = env->Directory();
 
     if (fs::exists(walletDir / walletFile))

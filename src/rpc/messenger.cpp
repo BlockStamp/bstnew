@@ -31,7 +31,7 @@ static constexpr size_t maxDataSize=MAX_OP_RETURN_RELAY-6;
 
 UniValue sendmessage(const JSONRPCRequest& request)
 {   
-    std::shared_ptr<CWallet> const wallet = GetWallets()[0];
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
@@ -87,7 +87,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
     EnsureWalletIsUnlocked(pwallet);
 
     std::string rsaPrivateKey, rsaPublicKey;
-    if (!GetWallets()[0]->GetMessengerKeys(rsaPrivateKey, rsaPublicKey)) {
+    if (!pwallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey)) {
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
     }
 
@@ -138,14 +138,13 @@ UniValue readmessage(const JSONRPCRequest& request)
 {
     RPCTypeCheck(request.params, {UniValue::VSTR});
 
-    std::shared_ptr<CWallet> const wallet = GetWallets()[0];
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
     {
         return NullUniValue;
     }
-
 
     if (request.fHelp || request.params.size() != 1)
     throw std::runtime_error(
@@ -214,8 +213,15 @@ UniValue getmsgkey(const JSONRPCRequest& request)
     );
 
     //TODO: Locking wallet may be needed - to be checked
+
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+
+    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp)) {
+        return NullUniValue;
+    }
+
     std::string privateRsaKeys, publicRsaKey;
-    if (!GetWallets()[0]->GetMessengerKeys(privateRsaKeys, publicRsaKey))
+    if (!wallet->GetMessengerKeys(privateRsaKeys, publicRsaKey))
     {
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
     }
@@ -239,7 +245,15 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
     );
 
     std::string publicRsaKey, privateRsaKey;
-    if (!GetWallets()[0]->GetMessengerKeys(privateRsaKey, publicRsaKey))
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+    {
+        return NullUniValue;
+    }
+
+    if (!pwallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
     {
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
     }
@@ -276,7 +290,15 @@ UniValue importmsgkey(const JSONRPCRequest& request)
                 && checkRSAprivateKey(privateRsaKey)
                 && matchRSAKeys(publicRsaKey, privateRsaKey))
         {
-            WalletDatabase& dbh = GetWallets()[0]->GetMsgDBHandle();
+            std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+            CWallet* const pwallet = wallet.get();
+
+            if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+            {
+                return NullUniValue;
+            }
+
+            WalletDatabase& dbh = wallet->GetMsgDBHandle();
             WalletBatch walletBatch(dbh);
             // store key in database
             walletBatch.WritePublicKey(publicRsaKey);

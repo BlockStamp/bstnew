@@ -391,8 +391,15 @@ void MessengerBookModel::emitDataChanged(int idx)
 
 void MessengerBookModel::addOwnAddressToBook()
 {
+    interfaces::Wallet& wlt = walletModel->wallet();
+    std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
+
+    if (wallet == nullptr) {
+        return;
+    }
+
     std::string privateRsaKey, publicRsaKey;
-    if (!GetWallets()[0]->GetMessengerKeys(privateRsaKey, publicRsaKey)) {
+    if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey)) {
         std::cout << "Failed to add my own public key to the messenger book\n";
         return;
     }

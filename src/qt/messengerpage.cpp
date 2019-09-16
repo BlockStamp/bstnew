@@ -335,7 +335,6 @@ void MessengerPage::setModel(WalletModel *model)
     connect(walletModel->getOptionsModel(), &OptionsModel::coinControlFeaturesChanged, this, &MessengerPage::coinControlFeatureChanged);
     ui->frameCoinControl->setVisible(walletModel->getOptionsModel()->getCoinControlFeatures());
     coinControlUpdateLabels();
-    fillUpTable();
 }
 
 void MessengerPage::showEvent(QShowEvent * event)
@@ -540,6 +539,21 @@ void MessengerPage::on_transactionsTableCellSelected(int row, int col)
 void MessengerPage::on_transactionsTableCellPressed(int row, int)
 {
     ui->transactionTable->selectRow(row);
+}
+
+void MessengerPage::clearMessenger()
+{
+    ui->addressEdit->clear();
+    ui->subjectEdit->clear();
+    ui->messageStoreEdit->clear();
+
+    ui->transactionTable->clearContents();
+    ui->transactionTable->setRowCount(0);
+    ui->fromLabel->clear();
+    ui->subjectLabel->clear();
+    ui->messageViewEdit->clear();
+
+    fillUpTable();
 }
 
 void MessengerPage::read(const std::string& txnId)
@@ -761,7 +775,8 @@ std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress
 
 void MessengerPage::fillUpTable()
 {
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    interfaces::Wallet& wlt = walletModel->wallet();
+    std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
     if (wallet == nullptr) {
         return;
     }
@@ -893,7 +908,8 @@ void MessengerPage::addToAddressBook()
 
 void MessengerPage::on_searchTxnEdited(const QString& text)
 {
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    interfaces::Wallet& wlt = walletModel->wallet();
+    std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
     if (wallet == nullptr) {
         return;
     }

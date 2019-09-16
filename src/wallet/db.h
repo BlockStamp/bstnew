@@ -25,6 +25,12 @@
 static const unsigned int DEFAULT_WALLET_DBLOGSIZE = 100;
 static const bool DEFAULT_WALLET_PRIVDB = true;
 
+enum class DbType
+{
+    WALLET,
+    MSG_WALLET
+};
+
 class BerkeleyEnvironment
 {
 private:
@@ -89,7 +95,7 @@ public:
 };
 
 /** Get BerkeleyEnvironment and database filename given a wallet path. */
-BerkeleyEnvironment* GetWalletEnv(const fs::path& wallet_path, std::string& database_filename);
+BerkeleyEnvironment* GetWalletEnv(DbType type, const fs::path& wallet_path, std::string& database_filename);
 
 /** An instance of this class represents one database.
  * For BerkeleyDB this is just a (env, strFile) tuple.
@@ -98,16 +104,17 @@ class BerkeleyDatabase
 {
     friend class BerkeleyBatch;
 public:
+
     /** Create dummy DB handle */
     BerkeleyDatabase() : nUpdateCounter(0), nLastSeen(0), nLastFlushed(0), nLastWalletUpdate(0), env(nullptr)
     {
     }
 
     /** Create DB handle to real database */
-    BerkeleyDatabase(const fs::path& wallet_path, bool mock = false) :
+    BerkeleyDatabase(DbType type, const fs::path& wallet_path, bool mock = false) :
         nUpdateCounter(0), nLastSeen(0), nLastFlushed(0), nLastWalletUpdate(0)
     {
-        env = GetWalletEnv(wallet_path, strFile);
+        env = GetWalletEnv(type, wallet_path, strFile);
         if (mock) {
             env->Close();
             env->Reset();
@@ -116,9 +123,9 @@ public:
     }
 
     /** Return object for accessing database at specified path. */
-    static std::unique_ptr<BerkeleyDatabase> Create(const fs::path& path)
+    static std::unique_ptr<BerkeleyDatabase> Create(DbType type, const fs::path& path)
     {
-        return MakeUnique<BerkeleyDatabase>(path);
+        return MakeUnique<BerkeleyDatabase>(type, path);
     }
 
     /** Return object for accessing dummy database with no read/write capabilities. */
@@ -128,14 +135,9 @@ public:
     }
 
     /** Return object for accessing temporary in-memory database. */
-    static std::unique_ptr<BerkeleyDatabase> CreateMock()
+    static std::unique_ptr<BerkeleyDatabase> CreateMock(DbType type)
     {
-        return MakeUnique<BerkeleyDatabase>("", true /* mock */);
-    }
-
-    void setDbName(const std::string& dbName)
-    {
-        strFile = dbName;
+        return MakeUnique<BerkeleyDatabase>(type, "", true /* mock */);
     }
 
     std::string getDbName() const

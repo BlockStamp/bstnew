@@ -507,11 +507,6 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         {
             ssValue >> pwallet->nOrderPosNext;
         }
-        else if (strType == "encrmsgorderposnext")
-        {
-            //TODO: probably not needed
-            ssValue >> pwallet->nOrderPosNext;
-        }
         else if (strType == "destdata")
         {
             std::string strAddress, strKey, strValue;
@@ -878,6 +873,8 @@ void MaybeCompactWalletDB()
     fOneThread = false;
 }
 
+
+///TODO: What to do with msg_wallet.db???
 //
 // Try to (very carefully!) recover wallet file if there is a problem.
 //

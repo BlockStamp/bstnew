@@ -8,7 +8,10 @@
 #include <wallet/db.h>
 
 WalletTestingSetup::WalletTestingSetup(const std::string& chainName):
-    TestingSetup(chainName), m_wallet("mock", WalletDatabase::CreateMock())
+    TestingSetup(chainName),
+    m_wallet("mock",
+        WalletDatabase::CreateMock(DbType::WALLET),
+        WalletDatabase::CreateMock(DbType::MSG_WALLET))
 {
     bool fFirstRun;
     m_wallet.LoadWallet(fFirstRun);
