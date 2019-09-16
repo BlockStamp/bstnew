@@ -3412,11 +3412,13 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
     return true;
 }
 
-void CWallet::generateMessengerKeys()
+void CWallet::GenerateMessengerKeys()
 {
-    //TODO: Consider moving messenger key generation to the place where ordinary bst keys are generated
-    //TODO: Consider using SecureString instead of ordinary std::string
+    if (IsMsgCrypted()) {
+        return;
+    }
 
+    //TODO: Consider using SecureString instead of ordinary std::string
     WalletBatch walletBatch(*msgDatabase);
     std::string publicRsaKey, privateRsaKey;
 
@@ -3424,7 +3426,6 @@ void CWallet::generateMessengerKeys()
     walletBatch.ReadPrivateKey(privateRsaKey);
 
     if (publicRsaKey.empty() || privateRsaKey.empty()) {
-        std::cout << "Generating new keys\n";
         // generate key
         generateKeysPair(publicRsaKey, privateRsaKey);
         // store key in database
@@ -3473,7 +3474,7 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
             return nLoadWalletRet;
     }
 
-    generateMessengerKeys();
+    GenerateMessengerKeys();
 
     return DBErrors::LOAD_OK;
 }
