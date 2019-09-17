@@ -608,10 +608,7 @@ WalletModel::MessengerUnlockContext::MessengerUnlockContext(WalletModel *_wallet
 
 WalletModel::MessengerUnlockContext::~MessengerUnlockContext()
 {
-    if(valid && relock)
-    {
-        wallet->setMessengerLocked(true);
-    }
+    ///TODO: Check if no locking is the correct solution
 }
 
 void WalletModel::MessengerUnlockContext::CopyFrom(const MessengerUnlockContext& rhs)

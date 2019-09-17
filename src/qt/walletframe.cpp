@@ -171,6 +171,14 @@ void WalletFrame::gotoGamePage()
 
 void WalletFrame::gotoMessengerPage()
 {
+    WalletView *walletView = currentWalletView();
+    WalletModel* walletModel = walletView->getWalletModel();
+    WalletModel::MessengerUnlockContext ctx(walletModel->requestMessengerUnlock());
+    if (!ctx.isValid())
+    {
+        return;
+    }
+
     QMap<QString, WalletView*>::const_iterator i;
     for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
         i.value()->gotoMessengerPage();
