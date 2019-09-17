@@ -317,6 +317,85 @@ UniValue importmsgkey(const JSONRPCRequest& request)
     return UniValue(UniValue::VSTR, std::string("Keys imported successful."));
 }
 
+static void LockMessenger(CWallet* pWallet)
+{
+    LOCK(pWallet->cs_wallet);
+    pWallet->nMessengerRelockTime = 0;
+    pWallet->MsgLock();
+}
+
+static UniValue messengerpassphrase(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 2) {
+        throw std::runtime_error(
+            "messengerpassphrase \"passphrase\" timeout\n"
+            "\nStores the messenger decryption key in memory for 'timeout' seconds.\n"
+            "This is needed prior to performing transactions related to messenger keys such as sendmessage\n"
+            "\nArguments:\n"
+            "1. \"passphrase\"     (string, required) The messenger passphrase\n"
+            "2. timeout            (numeric, required) The time to keep the decryption key in seconds; capped at 100000000 (~3 years).\n"
+            "\nNote:\n"
+            "Issuing the messengerpassphrase command while the messenger is already unlocked will set a new unlock\n"
+            "time that overrides the old one.\n"
+            "\nExamples:\n"
+            "\nUnlock messenger for 60 seconds\n"
+            + HelpExampleCli("messengerpassphrase", "\"my pass phrase\" 60") +
+            "\nLock messenger again (before 60 seconds)\n"
+            + HelpExampleCli("messengerlock", "") +
+            "\nAs json rpc call\n"
+            + HelpExampleRpc("messengerpassphrase", "\"my pass phrase\", 60")
+        );
+    }
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    if (!pwallet->IsMsgCrypted()) {
+        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted messenger, but messengerpassphrase was called.");
+    }
+
+    // Note that the messengerpassphrase is stored in request.params[0] which is not mlock()ed
+    SecureString strMsgPass;
+    strMsgPass.reserve(100);
+    // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
+    // Alternately, find a way to make request.params[0] mlock()'d to begin with.
+    strMsgPass = request.params[0].get_str().c_str();
+
+    // Get the timeout
+    int64_t nSleepTime = request.params[1].get_int64();
+    // Timeout cannot be negative, otherwise it will relock immediately
+    if (nSleepTime < 0) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Timeout cannot be negative.");
+    }
+    // Clamp timeout
+    constexpr int64_t MAX_SLEEP_TIME = 100000000; // larger values trigger a macos/libevent bug?
+    if (nSleepTime > MAX_SLEEP_TIME) {
+        nSleepTime = MAX_SLEEP_TIME;
+    }
+
+    if (strMsgPass.length() > 0)
+    {
+        if (!pwallet->MsgUnlock(strMsgPass)) {
+            throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The messenger passphrase entered was incorrect.");
+        }
+    }
+    else
+        throw std::runtime_error(
+            "messengerpassphrase <passphrase> <timeout>\n"
+            "Stores the messenger decryption key in memory for <timeout> seconds.");
+
+    pwallet->nMessengerRelockTime = GetTime() + nSleepTime;
+    RPCRunLater(strprintf("lockmessenger(%s)", pwallet->GetName()), std::bind(LockMessenger, pwallet), nSleepTime);
+
+    return NullUniValue;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
@@ -325,6 +404,7 @@ static const CRPCCommand commands[] =
     { "blockstamp",         "getmsgkey",                    &getmsgkey,                 {} },
     { "blockstamp",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
     { "blockstamp",         "importmsgkey",                 &importmsgkey,              {"source_path"} },
+    { "blockstamp",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)
