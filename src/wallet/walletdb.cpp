@@ -93,7 +93,7 @@ bool WalletBatch::WriteMessengerCryptedKeys(
     const std::vector<unsigned char>& msgIv)
 {
     ///TODO: Review this implementation
-    if (!WriteIC(std::make_pair(std::string("_cryptedmessengerkey"), encryptedPrivKey), msgIv, false)) {
+    if (!WriteIC(std::string("_cryptedmessengerkey"), std::make_pair(encryptedPrivKey, msgIv))) {
         return false;
     }
 
@@ -466,7 +466,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         else if (strType == "_cryptedmessengerkey")
         {
             std::vector<unsigned char> cryptedMsgKeys;
-            ssKey >> cryptedMsgKeys;
+            ssValue >> cryptedMsgKeys;
             std::vector<unsigned char> msgIv;
             ssValue >> msgIv;
 

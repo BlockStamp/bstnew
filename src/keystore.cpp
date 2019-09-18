@@ -188,10 +188,8 @@ bool CBasicKeyStore::HaveWatchOnly() const
 bool CBasicKeyStore::GetMessengerKeys(std::string& privMsgKey, std::string& pubMsgKey) const
 {
     LOCK(cs_KeyStore);
-    if (messengerPrivateKey.size() != PRIVATE_RSA_KEY_LEN
-        && messengerPublicKey.size() != PUBLIC_RSA_KEY_LEN)
+    if (messengerPrivateKey.empty() || messengerPublicKey.empty())
     {
-        std::cout << "CBasicKeyStore::GetMessengerKeys!!!\n";
         return false;
     }
 
