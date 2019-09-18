@@ -85,6 +85,9 @@ enum RPCErrorCode
     RPC_WALLET_NOT_FOUND            = -18, //!< Invalid wallet specified
     RPC_WALLET_NOT_SPECIFIED        = -19, //!< No wallet specified (error when there are multiple wallets loaded)
 
+    //! Messenger errors
+    RPC_MSG_WALLET_UNLOCK_NEEDED    = 40,  //!< messenger unlock is needed
+
     //! Backwards compatible aliases
     RPC_WALLET_INVALID_ACCOUNT_NAME = RPC_WALLET_INVALID_LABEL_NAME,
 

@@ -75,9 +75,9 @@ bool checkRSAprivateKey(const std::string& rsaPrivateKey)
         }
     }
 
-    if (encodingLength == 1590) {
+//    if (encodingLength == 1590) {
         return true;
-    }
+//    }
     LogPrintf("Incorrect length of private key: %u\n", encodingLength);
 
     return false;

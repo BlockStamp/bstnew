@@ -90,6 +90,13 @@ void EnsureWalletIsUnlocked(CWallet * const pwallet)
     }
 }
 
+void EnsureMsgWalletIsUnlocked(CWallet * const pwallet)
+{
+    if (pwallet->IsMsgLocked()) {
+        throw JSONRPCError(RPC_MSG_WALLET_UNLOCK_NEEDED, "Error: Please enter the messenger passphrase with messengerpassphrase first.");
+    }
+}
+
 static void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     int confirms = wtx.GetDepthInMainChain();

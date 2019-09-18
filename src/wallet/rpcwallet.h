@@ -32,6 +32,7 @@ std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& reques
 std::string HelpRequiringPassphrase(CWallet *);
 void EnsureWalletIsUnlocked(CWallet *);
 bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
+void EnsureMsgWalletIsUnlocked(CWallet *);
 CTransactionRef SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
                                   const CTxIn* withInput, CAmount nValue,
                                   bool fSubtractFeeFromAmount,

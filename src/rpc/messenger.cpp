@@ -85,6 +85,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
     );
 
     EnsureWalletIsUnlocked(pwallet);
+    EnsureMsgWalletIsUnlocked(pwallet);
 
     std::string rsaPrivateKey, rsaPublicKey;
     if (!pwallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey)) {
@@ -163,7 +164,7 @@ UniValue readmessage(const JSONRPCRequest& request)
         + HelpExampleRpc("readmessage", "\"txid\"")
     );
 
-    EnsureWalletIsUnlocked(pwallet);
+    EnsureMsgWalletIsUnlocked(pwallet);
 
     std::string txid=request.params[0].get_str();
     std::vector<char> OPreturnData=getOPreturnData(txid, request);
@@ -215,10 +216,13 @@ UniValue getmsgkey(const JSONRPCRequest& request)
     //TODO: Locking wallet may be needed - to be checked
 
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
 
-    if (!EnsureWalletIsAvailable(wallet.get(), request.fHelp)) {
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
         return NullUniValue;
     }
+
+    EnsureMsgWalletIsUnlocked(pwallet);
 
     std::string privateRsaKeys, publicRsaKey;
     if (!wallet->GetMessengerKeys(privateRsaKeys, publicRsaKey))
@@ -252,6 +256,8 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
     {
         return NullUniValue;
     }
+
+    EnsureMsgWalletIsUnlocked(pwallet);
 
     if (!pwallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
     {
@@ -298,13 +304,21 @@ UniValue importmsgkey(const JSONRPCRequest& request)
                 return NullUniValue;
             }
 
-            WalletDatabase& dbh = wallet->GetMsgDBHandle();
-            WalletBatch walletBatch(dbh);
-            // store key in database
-            walletBatch.WritePublicKey(publicRsaKey);
-            walletBatch.WritePrivateKey(privateRsaKey);
+            EnsureMsgWalletIsUnlocked(pwallet);
 
-            ///TODO: Update keys stored in memory
+            if (!pwallet->IsMsgCrypted())
+            {
+                WalletBatch walletBatch(pwallet->GetDBHandle());
+                walletBatch.WritePublicKey(publicRsaKey);
+                walletBatch.WritePrivateKey(privateRsaKey);
+            }
+
+            MessengerKey privKey(privateRsaKey.begin(), privateRsaKey.end());
+            MessengerKey pubKey(publicRsaKey.begin(), publicRsaKey.end());
+            if (!pwallet->SetMessengerKeys(privKey, pubKey))
+            {
+                return UniValue(UniValue::VSTR, std::string("Import failed. Can't encrypt new pair of keys."));
+            }
         } else
         {
             return UniValue(UniValue::VSTR, std::string("Import failed. Incorrect key format"));

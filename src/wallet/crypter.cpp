@@ -406,6 +406,20 @@ bool CCryptoKeyStore::SetMessengerKeys(const MessengerKey &privKey, const Messen
     }
 
     ///TODO: Implement the rest of this function like  CCryptoKeyStore::AddKeyPubKey
+    CKeyingMaterial messengerKeyData(privKey.begin(), privKey.end());
+    messengerKeyData.insert(messengerKeyData.end(), pubKey.begin(), pubKey.end());
+
+    std::vector<unsigned char> msgIV(WALLET_CRYPTO_IV_SIZE);
+    GetStrongRandBytes(&msgIV[0], WALLET_CRYPTO_IV_SIZE);
+
+    std::vector<unsigned char> cryptedMessengerSecret;
+    if (!EncryptMessengerSecret(vMessengerMasterKey, messengerKeyData, msgIV, cryptedMessengerSecret)) {
+        return false;
+    }
+    if (!AddMessengerCryptedKey(cryptedMessengerSecret, msgIV)) {
+        return false;
+    }
+
     return true;
 }
 
