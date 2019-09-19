@@ -200,7 +200,7 @@ UniValue abortrescan(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 0)
         throw std::runtime_error(
             "abortrescan\n"
-            "\nStops current wallet rescan triggered by an RPC call, e.g. by an importprivkey call.\n"
+            "\nStops current wallet and messenger rescan triggered by an RPC call, e.g. by an importprivkey call.\n"
             "\nExamples:\n"
             "\nImport a private key\n"
             + HelpExampleCli("importprivkey", "\"mykey\"") +
@@ -210,8 +210,16 @@ UniValue abortrescan(const JSONRPCRequest& request)
             + HelpExampleRpc("abortrescan", "")
         );
 
-    if (!pwallet->IsScanning() || pwallet->IsAbortingRescan()) return false;
+    if (!pwallet->IsScanning() && !pwallet->IsMsgScanning()) {
+        return false;
+    }
+
+    if (pwallet->IsAbortingRescan() && pwallet->IsMsgAbortingRescan()) {
+        return false;
+    }
+
     pwallet->AbortRescan();
+    pwallet->AbortMsgRescan();
     return true;
 }
 

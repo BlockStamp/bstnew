@@ -524,9 +524,9 @@ void CWallet::ChainStateFlushed(const CBlockLocator& loc)
     batch.WriteBestBlock(loc);
 }
 
-CBlockIndex* CWallet::ScanForMessages()
+CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
 {
-    std::cout << "CWallet::ScanForMessages() called\n";
+    assert(reserver.isReserved());
     CBlockIndex *pindexStart = chainActive.Genesis();
     {
         WalletBatch batch(*msgDatabase);
@@ -565,7 +565,6 @@ CBlockIndex* CWallet::ScanForMessages()
         {
             LOCK(cs_main);
             pindex = chainActive.Next(pindex);
-            std::cout << "Set pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
         }
     }
 

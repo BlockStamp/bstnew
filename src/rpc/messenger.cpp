@@ -357,6 +357,7 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
         );
     }
 
+    MessengerRescanReserver reserver(pwallet);
 
     {
         LOCK2(cs_main, pwallet->cs_wallet);
@@ -365,7 +366,6 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted messenger, but messengerpassphrase was called.");
         }
 
-        MessengerRescanReserver reserver(pwallet);
         if (!reserver.reserve()) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Messenger is currently rescanning. Abort unlocking messenger and wait.");
         }
@@ -389,7 +389,7 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
                 "Stores the messenger decryption key in memory until the node is shutdown");
     }
 
-    pwallet->ScanForMessages();
+    pwallet->ScanForMessages(reserver);
     return NullUniValue;
 }
 

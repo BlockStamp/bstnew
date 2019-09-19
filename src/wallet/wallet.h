@@ -865,6 +865,10 @@ public:
     bool IsAbortingRescan() { return fAbortRescan; }
     bool IsScanning() { return fScanningWallet; }
 
+    void AbortMsgRescan() { fAbortMsgRescan = true; }
+    bool IsMsgAbortingRescan() { return fAbortMsgRescan; }
+    bool IsMsgScanning() { return fScanningMessenger; }
+
     /**
      * keystore implementation
      * Generate a new key
@@ -1081,7 +1085,7 @@ public:
     bool DelMsgAddressBook(const std::string& address);
     bool DelMsgAddressBookForLabel(const std::string& label);
 
-    CBlockIndex *ScanForMessages();
+    CBlockIndex *ScanForMessages(const MessengerRescanReserver &reserver);
 
     const std::string& GetLabelName(const CScript& scriptPubKey) const;
 
@@ -1327,6 +1331,7 @@ public:
         if (m_wallet->fScanningMessenger) {
             return false;
         }
+
         m_wallet->fScanningMessenger = true;
         m_could_reserve = true;
         return true;
