@@ -496,7 +496,6 @@ bool CCryptoKeyStore::GetMessengerKeys(std::string& privMsgKeyStr, std::string& 
     privMsgKeyStr.assign(privMsgKey.begin(), privMsgKey.end());
     pubMsgKeyStr.assign(pubMsgKey.begin(), pubMsgKey.end());
 
-    std::cout << "Messenger encrypted - decrypted keys correctly\n";
     return true;
 }
 

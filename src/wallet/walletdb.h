@@ -200,6 +200,9 @@ public:
     bool WriteBestBlock(const CBlockLocator& locator);
     bool ReadBestBlock(CBlockLocator& locator);
 
+    bool WriteBestMessengerBlock(const CBlockLocator& locator);
+    bool ReadBestMessengerBlock(CBlockLocator& locator);
+
     bool WriteOrderPosNext(int64_t nOrderPosNext);
 
     bool ReadPool(int64_t nPool, CKeyPool& keypool);

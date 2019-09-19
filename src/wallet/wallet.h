@@ -613,6 +613,8 @@ typedef std::map<uint256, TransactionValue> TransactionsMap;
 
 
 class WalletRescanReserver; //forward declarations for ScanForWalletTransactions/RescanFromTime
+class MessengerRescanReserver;
+
 /**
  * A CWallet is an extension of a keystore, which also maintains a set of transactions and balances,
  * and provides the ability to create new transactions.
@@ -624,6 +626,11 @@ private:
     std::atomic<bool> fScanningWallet{false}; // controlled by WalletRescanReserver
     std::mutex mutexScanning;
     friend class WalletRescanReserver;
+
+    std::atomic<bool> fAbortMsgRescan{false};
+    std::atomic<bool> fScanningMessenger{false}; // controlled by MessengerRescanReserver
+    std::mutex mutexMsgScanning;
+    friend class MessengerRescanReserver;
 
     WalletBatch *encrypted_batch = nullptr;
     WalletBatch *messenger_encrypted_batch = nullptr;
@@ -907,9 +914,6 @@ public:
     //! Holds a timestamp at which point the wallet is scheduled (externally) to be relocked. Caller must arrange for actual relocking to occur via Lock().
     int64_t nRelockTime = 0;
 
-    //! Holds a timestamp at which point the messenger is scheduled (externally) to be relocked. Caller must arrange for actual relocking to occur via Lock().
-    int64_t nMessengerRelockTime = 0;
-
     bool Unlock(const SecureString& strWalletPassphrase);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
@@ -1077,6 +1081,7 @@ public:
     bool DelMsgAddressBook(const std::string& address);
     bool DelMsgAddressBookForLabel(const std::string& label);
 
+    CBlockIndex *ScanForMessages();
 
     const std::string& GetLabelName(const CScript& scriptPubKey) const;
 
@@ -1302,6 +1307,41 @@ public:
         std::lock_guard<std::mutex> lock(m_wallet->mutexScanning);
         if (m_could_reserve) {
             m_wallet->fScanningWallet = false;
+        }
+    }
+};
+
+/** RAII object to check and reserve a messenger rescan */
+class MessengerRescanReserver
+{
+private:
+    CWallet* m_wallet;
+    bool m_could_reserve;
+public:
+    explicit MessengerRescanReserver(CWallet* w) : m_wallet(w), m_could_reserve(false) {}
+
+    bool reserve()
+    {
+        assert(!m_could_reserve);
+        std::lock_guard<std::mutex> lock(m_wallet->mutexMsgScanning);
+        if (m_wallet->fScanningMessenger) {
+            return false;
+        }
+        m_wallet->fScanningMessenger = true;
+        m_could_reserve = true;
+        return true;
+    }
+
+    bool isReserved() const
+    {
+        return (m_could_reserve && m_wallet->fScanningMessenger);
+    }
+
+    ~MessengerRescanReserver()
+    {
+        std::lock_guard<std::mutex> lock(m_wallet->mutexMsgScanning);
+        if (m_could_reserve) {
+            m_wallet->fScanningMessenger = false;
         }
     }
 };

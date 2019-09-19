@@ -161,6 +161,16 @@ bool WalletBatch::ReadBestBlock(CBlockLocator& locator)
     return m_batch.Read(std::string("bestblock_nomerkle"), locator);
 }
 
+bool WalletBatch::WriteBestMessengerBlock(const CBlockLocator& locator)
+{
+    return WriteIC(std::string("bestmessengerblock"), locator);
+}
+
+bool WalletBatch::ReadBestMessengerBlock(CBlockLocator& locator)
+{
+    return m_batch.Read(std::string("bestmessengerblock"), locator);
+}
+
 bool WalletBatch::WriteOrderPosNext(int64_t nOrderPosNext)
 {
     return WriteIC(std::string("orderposnext"), nOrderPosNext);

@@ -524,6 +524,59 @@ void CWallet::ChainStateFlushed(const CBlockLocator& loc)
     batch.WriteBestBlock(loc);
 }
 
+CBlockIndex* CWallet::ScanForMessages()
+{
+    std::cout << "CWallet::ScanForMessages() called\n";
+    CBlockIndex *pindexStart = chainActive.Genesis();
+    {
+        WalletBatch batch(*msgDatabase);
+        CBlockLocator locator;
+        if (batch.ReadBestMessengerBlock(locator))
+            pindexStart = FindForkInGlobalIndex(chainActive, locator);
+    }
+
+    std::cout << "Scanning for messages from " << (pindexStart ? pindexStart->nHeight : 0) << std::endl;
+
+    CBlockIndex *pindex = pindexStart;
+    CBlockIndex* ret = nullptr;
+    fAbortMsgRescan = false;
+
+    while (pindex && !fAbortMsgRescan && !ShutdownRequested())
+    {
+        CBlock block;
+        if (ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
+            LOCK2(cs_main, cs_wallet);
+            if (pindex && !chainActive.Contains(pindex)) {
+                // Abort scan if current block is no longer active, to prevent
+                // marking transactions as coming from the wrong block.
+                ret = pindex;
+                break;
+            }
+            for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
+                AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock]);
+            }
+        }
+        else {
+            ret = pindex;
+        }
+        if (pindex == nullptr) {
+            break;
+        }
+        {
+            LOCK(cs_main);
+            pindex = chainActive.Next(pindex);
+            std::cout << "Set pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
+        }
+    }
+
+    if (!fAbortMsgRescan) {
+        WalletBatch batch(*msgDatabase);
+        batch.WriteBestMessengerBlock(chainActive.GetLocator());
+    }
+
+    return ret;
+}
+
 void CWallet::SetMinVersion(enum WalletFeature nVersion, WalletBatch* batch_in, bool fExplicit)
 {
     LOCK(cs_wallet); // nWalletVersion
@@ -840,6 +893,9 @@ bool CWallet::EncryptMessenger(const SecureString& strMessengerPassphrase)
         // Encryption was introduced in version 0.4.0
         /// TODO: check if this must stay
 //        SetMinVersion(FEATURE_WALLETCRYPT, messenger_encrypted_batch, true);
+
+        std::cout << "Messenger encryption at: " << chainActive.Height() << std::endl;
+        messenger_encrypted_batch->WriteBestMessengerBlock(chainActive.GetLocator());
 
         if (!messenger_encrypted_batch->TxnCommit()) {
             delete messenger_encrypted_batch;
@@ -1183,6 +1239,7 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
 
 void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
     AssertLockHeld(cs_wallet);
+
     const CTransaction& tx = *ptx;
     std::vector<char> opReturn;
     tx.loadOpReturn(opReturn);
