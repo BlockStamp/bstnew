@@ -527,12 +527,29 @@ void CWallet::ChainStateFlushed(const CBlockLocator& loc)
 CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
 {
     assert(reserver.isReserved());
-    CBlockIndex *pindexStart = chainActive.Genesis();
+    LOCK(cs_main);
+
+    CBlockIndex *pindexStart;
     {
+        pindexStart = chainActive.Genesis();
+
+        LOCK(cs_wallet);
         WalletBatch batch(*msgDatabase);
         CBlockLocator locator;
         if (batch.ReadBestMessengerBlock(locator))
             pindexStart = FindForkInGlobalIndex(chainActive, locator);
+    }
+
+    // If pruning enabled, don't scan beyond non-pruned blocks
+    if (fPruneMode) {
+        std::cout << "Pruning enabled\n";
+
+        CBlockIndex *block = chainActive.Tip();
+        while (block && block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA) && block->pprev->nTx > 0 && pindexStart != block)
+            block = block->pprev;
+
+        std::cout << "In prunning setting pindexStart to " << (block ? block->nHeight : 0) << std::endl;
+        pindexStart = block;
     }
 
     std::cout << "Scanning for messages from " << (pindexStart ? pindexStart->nHeight : 0) << std::endl;
@@ -545,13 +562,14 @@ CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
     {
         CBlock block;
         if (ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
-            LOCK2(cs_main, cs_wallet);
             if (pindex && !chainActive.Contains(pindex)) {
                 // Abort scan if current block is no longer active, to prevent
                 // marking transactions as coming from the wrong block.
                 ret = pindex;
                 break;
             }
+
+            LOCK(cs_wallet);
             for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
                 AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock]);
             }
@@ -562,13 +580,12 @@ CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
         if (pindex == nullptr) {
             break;
         }
-        {
-            LOCK(cs_main);
-            pindex = chainActive.Next(pindex);
-        }
+
+        pindex = chainActive.Next(pindex);
     }
 
     if (!fAbortMsgRescan) {
+        LOCK(cs_wallet);
         WalletBatch batch(*msgDatabase);
         batch.WriteBestMessengerBlock(chainActive.GetLocator());
     }
