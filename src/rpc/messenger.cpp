@@ -541,6 +541,56 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+static UniValue messengerpassphrasechange(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 2) {
+        throw std::runtime_error(
+            "messengerpassphrasechange \"oldpassphrase\" \"newpassphrase\"\n"
+            "\nChanges the messenger passphrase from 'oldpassphrase' to 'newpassphrase'.\n"
+            "\nArguments:\n"
+            "1. \"oldpassphrase\"      (string) The current passphrase\n"
+            "2. \"newpassphrase\"      (string) The new passphrase\n"
+            "\nExamples:\n"
+            + HelpExampleCli("messengerpassphrasechange", "\"old one\" \"new one\"")
+            + HelpExampleRpc("messengerpassphrasechange", "\"old one\", \"new one\"")
+        );
+    }
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    if (!pwallet->IsMsgCrypted()) {
+        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted messenger, but messengerpassphrasechange was called.");
+    }
+
+    // TODO: get rid of these .c_str() calls by implementing SecureString::operator=(std::string)
+    // Alternately, find a way to make request.params[0] mlock()'d to begin with.
+    SecureString strOldWalletPass;
+    strOldWalletPass.reserve(100);
+    strOldWalletPass = request.params[0].get_str().c_str();
+
+    SecureString strNewWalletPass;
+    strNewWalletPass.reserve(100);
+    strNewWalletPass = request.params[1].get_str().c_str();
+
+    if (strOldWalletPass.length() < 1 || strNewWalletPass.length() < 1)
+        throw std::runtime_error(
+            "messengerpassphrasechange <oldpassphrase> <newpassphrase>\n"
+            "Changes the messenger passphrase from <oldpassphrase> to <newpassphrase>.");
+
+    if (!pwallet->ChangeMessengerPassphrase(strOldWalletPass, strNewWalletPass)) {
+        throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The messenger passphrase entered was incorrect.");
+    }
+
+    return NullUniValue;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
@@ -552,6 +602,7 @@ static const CRPCCommand commands[] =
     { "blockstamp",         "encryptmessenger",             &encryptmessenger,          {"passphrase"} },
     { "blockstamp",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
     { "blockstamp",         "messengerlock",                &messengerlock,             {} },
+    { "blockstamp",         "messengerpassphrasechange",    &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)
