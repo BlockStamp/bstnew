@@ -524,7 +524,7 @@ void CWallet::ChainStateFlushed(const CBlockLocator& loc)
     batch.WriteBestBlock(loc);
 }
 
-void CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanReserver& reserver)
+CBlockIndex* CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanReserver& reserver)
 {
     std::cout << "ScanForMessages called\n";
     assert(reserver.isReserved());
@@ -532,6 +532,7 @@ void CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanRes
 
     std::cout << "Scanning for messages from " << (pindexStart ? pindexStart->nHeight : 0) << std::endl;
 
+    CBlockIndex* ret = nullptr;
     CBlockIndex *pindex = pindexStart;
     fAbortMsgRescan = false;
 
@@ -542,6 +543,7 @@ void CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanRes
             if (pindex && !chainActive.Contains(pindex)) {
                 // Abort scan if current block is no longer active, to prevent
                 // marking transactions as coming from the wrong block.
+                ret = pindex;
                 break;
             }
 
@@ -550,63 +552,8 @@ void CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanRes
                 AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock]);
             }
         }
-
-        if (pindex == nullptr) {
-            break;
-        }
-
-        pindex = chainActive.Next(pindex);
-        std::cout << "Set pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
-    }
-}
-
-void CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
-{
-    assert(reserver.isReserved());
-    LOCK(cs_main);
-
-    CBlockIndex *pindexStart;
-    {
-        pindexStart = chainActive.Genesis();
-
-        LOCK(cs_wallet);
-        WalletBatch batch(*msgDatabase);
-        CBlockLocator locator;
-        if (batch.ReadBestMessengerBlock(locator))
-            pindexStart = FindForkInGlobalIndex(chainActive, locator);
-    }
-
-    // If pruning enabled, don't scan beyond non-pruned blocks
-    if (fPruneMode) {
-        std::cout << "Pruning enabled\n";
-
-        CBlockIndex *block = chainActive.Tip();
-        while (block && block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA) && block->pprev->nTx > 0 && pindexStart != block)
-            block = block->pprev;
-
-        std::cout << "In prunning setting pindexStart to " << (block ? block->nHeight : 0) << std::endl;
-        pindexStart = block;
-    }
-
-    std::cout << "Scanning for messages from " << (pindexStart ? pindexStart->nHeight : 0) << std::endl;
-
-    CBlockIndex *pindex = pindexStart;
-    fAbortMsgRescan = false;
-
-    while (pindex && !fAbortMsgRescan && !ShutdownRequested())
-    {
-        CBlock block;
-        if (ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
-            if (pindex && !chainActive.Contains(pindex)) {
-                // Abort scan if current block is no longer active, to prevent
-                // marking transactions as coming from the wrong block.
-                break;
-            }
-
-            LOCK(cs_wallet);
-            for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
-                AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock]);
-            }
+        else {
+            ret = pindex;
         }
 
         if (pindex == nullptr) {
@@ -614,14 +561,11 @@ void CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
         }
 
         pindex = chainActive.Next(pindex);
-        std::cout << "Set pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
+        std::cout << "\tSet pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
     }
 
-    if (!fAbortMsgRescan) {
-        LOCK(cs_wallet);
-        WalletBatch batch(*msgDatabase);
-        batch.WriteBestMessengerBlock(chainActive.GetLocator());
-    }
+    std::cout << "Returning from ScanForMessages - " <<  (ret ? ret->nHeight : 0) << std::endl;
+    return ret;
 }
 
 void CWallet::SetMinVersion(enum WalletFeature nVersion, WalletBatch* batch_in, bool fExplicit)
