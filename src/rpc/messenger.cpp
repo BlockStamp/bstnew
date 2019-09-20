@@ -290,6 +290,43 @@ static UniValue encryptmessenger(const JSONRPCRequest& request)
     return "messenger encrypted; You need to make a new backup.";
 }
 
+static UniValue messengerlock(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 0) {
+        throw std::runtime_error(
+            "messengerlock\n"
+            "\nRemoves the messenger encryption key from memory, locking the messenger.\n"
+            "After calling this method, you will need to call messengerpassphrase again\n"
+            "before being able to call any methods which require the messenger to be unlocked.\n"
+            "\nExamples:\n"
+            "\nUnlock the messenger with messengerpassphrase (the messenger is unlocked till the end session\n"
+            "i.e. until the program is turned off or messengerlock is called)\n"
+            + HelpExampleCli("messengerpassphrase", "\"my pass phrase\"") +
+            "\nPerform a messenger command, e.g. getmsgkey (requires messenger passphrase set)\n"
+            "\nClear the passphrase since we are already done\n"
+            + HelpExampleCli("messengerlock", "") +
+            "\nAs json rpc call\n"
+            + HelpExampleRpc("messengerlock", "")
+        );
+    }
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    if (!pwallet->IsMsgCrypted()) {
+        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted messenger, but messengerlock was called.");
+    }
+
+    pwallet->MsgLock();
+    return NullUniValue;
+}
+
 UniValue exportmsgkey(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -514,6 +551,7 @@ static const CRPCCommand commands[] =
     { "blockstamp",         "importmsgkey",                 &importmsgkey,              {"source_path", "rescan"} },
     { "blockstamp",         "encryptmessenger",             &encryptmessenger,          {"passphrase"} },
     { "blockstamp",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
+    { "blockstamp",         "messengerlock",                &messengerlock,             {} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)
