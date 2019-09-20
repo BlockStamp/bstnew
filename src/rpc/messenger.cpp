@@ -308,19 +308,30 @@ UniValue importmsgkey(const JSONRPCRequest& request)
                 return NullUniValue;
             }
 
-            EnsureMsgWalletIsUnlocked(pwallet);
+            LOCK(pwallet->cs_wallet);
 
-            if (!pwallet->IsMsgCrypted())
-            {
-                WalletBatch walletBatch(pwallet->GetDBHandle());
-                walletBatch.WritePublicKey(publicRsaKey.toString());
-                walletBatch.WritePrivateKey(privateRsaKey.toString());
-            }
+            EnsureMsgWalletIsUnlocked(pwallet);
 
             if (!pwallet->SetMessengerKeys(privateRsaKey.get(), publicRsaKey.get()))
             {
                 return UniValue(UniValue::VSTR, std::string("Import failed. Can't encrypt new pair of keys."));
             }
+
+            {
+                WalletBatch walletBatch(pwallet->GetMsgDBHandle());
+                for (const auto& tx : pwallet->encrMsgMapWallet)
+                    walletBatch.EraseEncrMsgTx(tx.first);
+
+                pwallet->encrMsgMapWallet.clear();
+
+                if (!pwallet->IsMsgCrypted())
+                {
+                    walletBatch.WritePublicKey(publicRsaKey.toString());
+                    walletBatch.WritePrivateKey(privateRsaKey.toString());
+                }
+            }
+
+            pwallet->NotifyEncrMsgTransactionChanged(pwallet);
         } else
         {
             return UniValue(UniValue::VSTR, std::string("Import failed. Incorrect key format"));

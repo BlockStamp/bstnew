@@ -59,7 +59,6 @@ bool CBasicKeyStore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 
 bool CBasicKeyStore::SetMessengerKeys(const MessengerKey &privKey, const MessengerKey &pubKey)
 {
-    ///TODO: Implement like CBasicKeyStore::AddKeyPubKey
     LOCK(cs_KeyStore);
     messengerPrivateKey = privKey;
     messengerPublicKey = pubKey;

@@ -57,6 +57,11 @@ bool WalletBatch::WriteEncrMsgTx(const std::string& from, const std::string& sub
     return WriteIC(std::make_pair(std::string("msg_tx"), wtx.GetHash()), TransactionValue{from, subject, wtx});
 }
 
+bool WalletBatch::EraseEncrMsgTx(uint256 hash)
+{
+    return EraseIC(std::make_pair(std::string("msg_tx"), hash));
+}
+
 bool WalletBatch::WriteMsgAddress(const std::string& address, const std::string& label)
 {
     return WriteIC(std::make_pair(std::string("msg_address"), address), label);
@@ -67,7 +72,6 @@ bool WalletBatch::EraseMsgAddress(const std::string& address)
     return EraseIC(std::make_pair(std::string("msg_address"), address));
 }
 
-//TODO: Should we write similar function for Encrypted Msgs?
 bool WalletBatch::EraseTx(uint256 hash)
 {
     return EraseIC(std::make_pair(std::string("tx"), hash));

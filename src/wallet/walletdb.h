@@ -181,6 +181,7 @@ public:
     bool EraseTx(uint256 hash);
 
     bool WriteEncrMsgTx(const std::string& from, const std::string& subject, const CWalletTx& wtx);
+    bool EraseEncrMsgTx(uint256 hash);
 
     bool WriteMsgAddress(const std::string& address, const std::string& label);
     bool EraseMsgAddress(const std::string& address);

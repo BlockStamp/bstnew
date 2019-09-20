@@ -276,7 +276,6 @@ bool CCryptoKeyStore::Lock()
 
 bool CCryptoKeyStore::IsMsgLocked() const
 {
-    ///TODO: Review implementation
     if (!IsMsgCrypted()) {
         return false;
     }
