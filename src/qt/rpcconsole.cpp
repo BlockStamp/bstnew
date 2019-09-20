@@ -73,6 +73,7 @@ const QStringList historyFilter = QStringList()
     << "walletpassphrase"
     << "walletpassphrasechange"
     << "encryptwallet"
+    << "encryptmessenger"
     << "messengerpassphrase";
 
 }

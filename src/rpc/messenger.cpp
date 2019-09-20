@@ -234,6 +234,62 @@ UniValue getmsgkey(const JSONRPCRequest& request)
     return UniValue(UniValue::VSTR, publicRsaKey.toString());
 }
 
+static UniValue encryptmessenger(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            "encryptmessenger \"passphrase\"\n"
+            "\nEncrypts the messenger with 'passphrase'. This is for first time encryption.\n"
+            "After this, any calls that interact with messages such as sending or reading\n"
+            "will require the passphrase to be set prior the making these calls.\n"
+            "Use the messengerpassphrase call for this, and then messengerlock call.\n"
+            "If the messenger is already encrypted, use the messengerpassphrasechange call.\n"
+            "\nArguments:\n"
+            "1. \"passphrase\"    (string) The pass phrase to encrypt the messenger with. It must be at least 1 character, but should be long.\n"
+            "\nExamples:\n"
+            "\nEncrypt your messenger\n"
+            + HelpExampleCli("encryptmessenger", "\"my pass phrase\"") +
+            "\nNow set the passphrase to use the messenger, such as for sending messages\n"
+            + HelpExampleCli("messengerpassphrase", "\"my pass phrase\"") +
+            "\nNow we can do something like reading and sending messages\n"
+            "\nNow lock the messenger again by removing the passphrase\n"
+            + HelpExampleCli("messengerlock", "") +
+            "\nAs a json rpc call\n"
+            + HelpExampleRpc("encryptmessegner", "\"my pass phrase\"")
+        );
+    }
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    if (pwallet->IsMsgCrypted()) {
+        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an encrypted messenger, but encryptmessenger was called.");
+    }
+
+    // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
+    // Alternately, find a way to make request.params[0] mlock()'d to begin with.
+    SecureString strWalletPass;
+    strWalletPass.reserve(100);
+    strWalletPass = request.params[0].get_str().c_str();
+
+    if (strWalletPass.length() < 1)
+        throw std::runtime_error(
+            "encryptmessenger <passphrase>\n"
+            "Encrypts the messenger with <passphrase>.");
+
+    if (!pwallet->EncryptMessenger(strWalletPass)) {
+        throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: Failed to encrypt the messenger.");
+    }
+
+    return "messenger encrypted; You need to make a new backup.";
+}
+
 UniValue exportmsgkey(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -456,6 +512,7 @@ static const CRPCCommand commands[] =
     { "blockstamp",         "getmsgkey",                    &getmsgkey,                 {} },
     { "blockstamp",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
     { "blockstamp",         "importmsgkey",                 &importmsgkey,              {"source_path", "rescan"} },
+    { "blockstamp",         "encryptmessenger",             &encryptmessenger,          {"passphrase"} },
     { "blockstamp",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
 };
 
