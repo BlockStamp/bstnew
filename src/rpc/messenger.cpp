@@ -273,72 +273,88 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
 
 UniValue importmsgkey(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 1)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
     throw std::runtime_error(
         "importmsgkey \n"
         "\nImport pair of keys to use in messenger from source path.\n"
 
         "\nArguments:\n"
         "1. \"source_path\"                        (string, required) The source file path.\n"
-
+        "2. rescan                                 (boolean, optional, default=true) Rescan the wallet for messenger transactions\n"
+        "\nNote: This call can take a long time to complete if rescan is true, during that time, other rpc calls may not work correctly\n"
         "\nExamples:\n"
         + HelpExampleCli("importmsgkey", "\"source_path\"")
         + HelpExampleRpc("importmsgkey", "\"source_path\"")
     );
 
     std::ifstream file(request.params[0].get_str().c_str(), std::ifstream::in);
-    if (file.is_open())
-    {
-        std::string tmp;
-        std::getline(file, tmp, MSG_DELIMITER);
-        CMessengerKey publicRsaKey(tmp, CMessengerKey::PUBLIC_KEY);
-        std::getline(file, tmp, MSG_DELIMITER);
-        CMessengerKey privateRsaKey(tmp, CMessengerKey::PRIVATE_KEY);
-
-        ///TODO: this can be removed, already check in CMessengerKey cstr
-        if (checkRSApublicKey(publicRsaKey.toString())
-                && checkRSAprivateKey(privateRsaKey.toString())
-                && matchRSAKeys(publicRsaKey.toString(), privateRsaKey.toString()))
-        {
-            std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-            CWallet* const pwallet = wallet.get();
-
-            if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
-            {
-                return NullUniValue;
-            }
-
-            LOCK(pwallet->cs_wallet);
-
-            EnsureMsgWalletIsUnlocked(pwallet);
-
-            if (!pwallet->SetMessengerKeys(privateRsaKey.get(), publicRsaKey.get()))
-            {
-                return UniValue(UniValue::VSTR, std::string("Import failed. Can't encrypt new pair of keys."));
-            }
-
-            {
-                WalletBatch walletBatch(pwallet->GetMsgDBHandle());
-                for (const auto& tx : pwallet->encrMsgMapWallet)
-                    walletBatch.EraseEncrMsgTx(tx.first);
-
-                pwallet->encrMsgMapWallet.clear();
-
-                if (!pwallet->IsMsgCrypted())
-                {
-                    walletBatch.WritePublicKey(publicRsaKey.toString());
-                    walletBatch.WritePrivateKey(privateRsaKey.toString());
-                }
-            }
-
-            pwallet->NotifyEncrMsgTransactionChanged(pwallet);
-        } else
-        {
-            return UniValue(UniValue::VSTR, std::string("Import failed. Incorrect key format"));
-        }
-    } else
+    if (!file.is_open())
     {
         return UniValue(UniValue::VSTR, std::string("Import failed. File open error."));
+    }
+
+    std::string tmp;
+    std::getline(file, tmp, MSG_DELIMITER);
+    CMessengerKey publicRsaKey(tmp, CMessengerKey::PUBLIC_KEY);
+    std::getline(file, tmp, MSG_DELIMITER);
+    CMessengerKey privateRsaKey(tmp, CMessengerKey::PRIVATE_KEY);
+
+    ///TODO: this can be removed, already check in CMessengerKey cstr
+    if (!checkRSApublicKey(publicRsaKey.toString())
+        || !checkRSAprivateKey(privateRsaKey.toString())
+        || !matchRSAKeys(publicRsaKey.toString(), privateRsaKey.toString()))
+    {
+        return UniValue(UniValue::VSTR, std::string("Import failed. Incorrect key format"));
+    }
+
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+    {
+        return NullUniValue;
+    }
+
+    {
+        LOCK2(cs_main, pwallet->cs_wallet);
+        EnsureMsgWalletIsUnlocked(pwallet);
+        MessengerRescanReserver reserver(pwallet);
+
+        // Whether to perform rescan after import
+        bool fRescan = true;
+        if (!request.params[1].isNull())
+            fRescan = request.params[1].get_bool();
+
+        if (fRescan && fPruneMode)
+            throw JSONRPCError(RPC_WALLET_ERROR, "Rescan is disabled in pruned mode");
+
+        if (fRescan && !reserver.reserve()) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Messenger is currently rescanning. Abort existing rescan or wait.");
+        }
+
+        if (!pwallet->SetMessengerKeys(privateRsaKey.get(), publicRsaKey.get()))
+        {
+            return UniValue(UniValue::VSTR, std::string("Import failed. Can't encrypt new pair of keys."));
+        }
+
+        {
+            WalletBatch walletBatch(pwallet->GetMsgDBHandle());
+            for (const auto& tx : pwallet->encrMsgMapWallet)
+                walletBatch.EraseEncrMsgTx(tx.first);
+
+            pwallet->encrMsgMapWallet.clear();
+
+            if (!pwallet->IsMsgCrypted())
+            {
+                walletBatch.WritePublicKey(publicRsaKey.toString());
+                walletBatch.WritePrivateKey(privateRsaKey.toString());
+            }
+        }
+        pwallet->NotifyEncrMsgTransactionChanged(pwallet);
+
+        if (fRescan) {
+            std::cout << "Rescan will be done\n";
+            pwallet->ScanForMessages(chainActive.Genesis(), reserver);
+        }
     }
 
     return UniValue(UniValue::VSTR, std::string("Keys imported successful."));
@@ -413,7 +429,7 @@ static const CRPCCommand commands[] =
     { "blockstamp",         "readmessage",                  &readmessage,               {"txid"} },
     { "blockstamp",         "getmsgkey",                    &getmsgkey,                 {} },
     { "blockstamp",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
-    { "blockstamp",         "importmsgkey",                 &importmsgkey,              {"source_path"} },
+    { "blockstamp",         "importmsgkey",                 &importmsgkey,              {"source_path", "rescan"} },
     { "blockstamp",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
 };
 

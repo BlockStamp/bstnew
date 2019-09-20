@@ -140,6 +140,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "importpubkey", 2, "rescan" },
     { "importmulti", 0, "requests" },
     { "importmulti", 1, "options" },
+    { "importmsgkey", 1, "rescan" },
     { "verifychain", 0, "checklevel" },
     { "verifychain", 1, "nblocks" },
     { "getblockstats", 0, "hash_or_height" },

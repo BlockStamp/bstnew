@@ -1086,6 +1086,7 @@ public:
     bool DelMsgAddressBookForLabel(const std::string& label);
 
     void ScanForMessages(const MessengerRescanReserver &reserver);
+    void ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanReserver& reserver);
 
     const std::string& GetLabelName(const CScript& scriptPubKey) const;
 

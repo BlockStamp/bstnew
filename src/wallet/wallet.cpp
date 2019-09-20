@@ -524,6 +524,42 @@ void CWallet::ChainStateFlushed(const CBlockLocator& loc)
     batch.WriteBestBlock(loc);
 }
 
+void CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanReserver& reserver)
+{
+    std::cout << "ScanForMessages called\n";
+    assert(reserver.isReserved());
+    LOCK(cs_main);
+
+    std::cout << "Scanning for messages from " << (pindexStart ? pindexStart->nHeight : 0) << std::endl;
+
+    CBlockIndex *pindex = pindexStart;
+    fAbortMsgRescan = false;
+
+    while (pindex && !fAbortMsgRescan && !ShutdownRequested())
+    {
+        CBlock block;
+        if (ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
+            if (pindex && !chainActive.Contains(pindex)) {
+                // Abort scan if current block is no longer active, to prevent
+                // marking transactions as coming from the wrong block.
+                break;
+            }
+
+            LOCK(cs_wallet);
+            for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
+                AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock]);
+            }
+        }
+
+        if (pindex == nullptr) {
+            break;
+        }
+
+        pindex = chainActive.Next(pindex);
+        std::cout << "Set pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
+    }
+}
+
 void CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
 {
     assert(reserver.isReserved());
