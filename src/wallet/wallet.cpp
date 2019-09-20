@@ -524,7 +524,7 @@ void CWallet::ChainStateFlushed(const CBlockLocator& loc)
     batch.WriteBestBlock(loc);
 }
 
-CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
+void CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
 {
     assert(reserver.isReserved());
     LOCK(cs_main);
@@ -555,7 +555,6 @@ CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
     std::cout << "Scanning for messages from " << (pindexStart ? pindexStart->nHeight : 0) << std::endl;
 
     CBlockIndex *pindex = pindexStart;
-    CBlockIndex* ret = nullptr;
     fAbortMsgRescan = false;
 
     while (pindex && !fAbortMsgRescan && !ShutdownRequested())
@@ -565,7 +564,6 @@ CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
             if (pindex && !chainActive.Contains(pindex)) {
                 // Abort scan if current block is no longer active, to prevent
                 // marking transactions as coming from the wrong block.
-                ret = pindex;
                 break;
             }
 
@@ -574,14 +572,13 @@ CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
                 AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock]);
             }
         }
-        else {
-            ret = pindex;
-        }
+
         if (pindex == nullptr) {
             break;
         }
 
         pindex = chainActive.Next(pindex);
+        std::cout << "Set pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
     }
 
     if (!fAbortMsgRescan) {
@@ -589,8 +586,6 @@ CBlockIndex* CWallet::ScanForMessages(const MessengerRescanReserver& reserver)
         WalletBatch batch(*msgDatabase);
         batch.WriteBestMessengerBlock(chainActive.GetLocator());
     }
-
-    return ret;
 }
 
 void CWallet::SetMinVersion(enum WalletFeature nVersion, WalletBatch* batch_in, bool fExplicit)
@@ -884,7 +879,7 @@ bool CWallet::EncryptMessenger(const SecureString& strMessengerPassphrase)
         return false;
 
     {
-        LOCK(cs_wallet);
+        LOCK2(cs_main, cs_wallet);
         mapMessengerMasterKeys[++nMessengerMasterKeyMaxID] = kMasterKey;
         assert(!messenger_encrypted_batch);
         messenger_encrypted_batch = new WalletBatch(*msgDatabase);
