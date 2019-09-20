@@ -185,7 +185,7 @@ bool CBasicKeyStore::HaveWatchOnly() const
     return (!setWatchOnly.empty());
 }
 
-bool CBasicKeyStore::GetMessengerKeys(std::string& privMsgKey, std::string& pubMsgKey) const
+bool CBasicKeyStore::GetMessengerKeys(CMessengerKey &privMsgKey, CMessengerKey &pubMsgKey) const
 {
     LOCK(cs_KeyStore);
     if (messengerPrivateKey.empty() || messengerPublicKey.empty())
@@ -193,8 +193,8 @@ bool CBasicKeyStore::GetMessengerKeys(std::string& privMsgKey, std::string& pubM
         return false;
     }
 
-    privMsgKey.assign(messengerPrivateKey.begin(), messengerPrivateKey.end());
-    pubMsgKey.assign(messengerPublicKey.begin(), messengerPublicKey.end());
+    privMsgKey = CMessengerKey(messengerPrivateKey, CMessengerKey::PRIVATE_KEY);
+    pubMsgKey = CMessengerKey(messengerPublicKey, CMessengerKey::PUBLIC_KEY);
     return true;
 }
 

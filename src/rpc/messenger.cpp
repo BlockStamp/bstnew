@@ -87,13 +87,14 @@ UniValue sendmessage(const JSONRPCRequest& request)
     EnsureWalletIsUnlocked(pwallet);
     EnsureMsgWalletIsUnlocked(pwallet);
 
-    std::string rsaPrivateKey, rsaPublicKey;
+    CMessengerKey rsaPrivateKey, rsaPublicKey;
+
     if (!pwallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey)) {
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
     }
 
     std::string msg=MSG_RECOGNIZE_TAG
-            + rsaPublicKey
+            + rsaPublicKey.toString()
             + MSG_DELIMITER
             + request.params[0].get_str()
             + MSG_DELIMITER
@@ -104,9 +105,9 @@ UniValue sendmessage(const JSONRPCRequest& request)
         throw std::runtime_error(strprintf("data size is grater than %d bytes", maxDataSize));
     }
 
-    std::string public_key=request.params[2].get_str();
+    CMessengerKey public_key(request.params[2].get_str(), CMessengerKey::PUBLIC_KEY);
     std::cout << "msg: " << msg << std::endl;
-    std::cout << "public_key: " << public_key << std::endl;
+    std::cout << "public_key: " << public_key.toString() << std::endl;
 
     CCoinControl coin_control;
     if (!request.params[3].isNull())
@@ -129,7 +130,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
     std::vector<unsigned char> data = createEncryptedMessage(
     reinterpret_cast<const unsigned char*>(msg.c_str()),
     msg.length(),
-    public_key.c_str());
+    public_key.toString().c_str());
 
     std::cout << "data.size(): " << data.size() << std::endl;
     return setOPreturnData(data, coin_control, request);
@@ -171,7 +172,7 @@ UniValue readmessage(const JSONRPCRequest& request)
 
     if(!OPreturnData.empty())
     {
-        std::string privateRsaKey, publicRsaKey;
+        CMessengerKey privateRsaKey, publicRsaKey;
         auto wallet = GetWalletForJSONRPCRequest(request);
         if (!wallet || !wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
         {
@@ -181,7 +182,7 @@ UniValue readmessage(const JSONRPCRequest& request)
         std::vector<unsigned char> decryptedData = createDecryptedMessage(
             reinterpret_cast<unsigned char*>(OPreturnData.data()),
             OPreturnData.size(),
-            privateRsaKey.c_str());
+            privateRsaKey.toString().c_str());
 
         // replace msg_delimiter with new line character
         int counter = 0;
@@ -224,13 +225,13 @@ UniValue getmsgkey(const JSONRPCRequest& request)
 
     EnsureMsgWalletIsUnlocked(pwallet);
 
-    std::string privateRsaKeys, publicRsaKey;
+    CMessengerKey privateRsaKeys, publicRsaKey;
     if (!wallet->GetMessengerKeys(privateRsaKeys, publicRsaKey))
     {
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
     }
 
-    return UniValue(UniValue::VSTR, publicRsaKey);
+    return UniValue(UniValue::VSTR, publicRsaKey.toString());
 }
 
 UniValue exportmsgkey(const JSONRPCRequest& request)
@@ -248,7 +249,7 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
         + HelpExampleRpc("exportmsgkey", "\"destination_path\"")
     );
 
-    std::string publicRsaKey, privateRsaKey;
+    CMessengerKey publicRsaKey, privateRsaKey;
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 
@@ -265,7 +266,7 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
     }
 
     std::ofstream file(request.params[0].get_str().c_str(), std::ofstream::trunc);
-    file << publicRsaKey << MSG_DELIMITER << privateRsaKey;
+    file << publicRsaKey.toString() << MSG_DELIMITER << privateRsaKey.toString();
 
     return UniValue(UniValue::VSTR, std::string("Keys exported successful."));
 }
@@ -288,13 +289,16 @@ UniValue importmsgkey(const JSONRPCRequest& request)
     std::ifstream file(request.params[0].get_str().c_str(), std::ifstream::in);
     if (file.is_open())
     {
-        std::string publicRsaKey, privateRsaKey;
-        std::getline(file, publicRsaKey, MSG_DELIMITER);
-        std::getline(file, privateRsaKey, MSG_DELIMITER);
+        std::string tmp;
+        std::getline(file, tmp, MSG_DELIMITER);
+        CMessengerKey publicRsaKey(tmp, CMessengerKey::PUBLIC_KEY);
+        std::getline(file, tmp, MSG_DELIMITER);
+        CMessengerKey privateRsaKey(tmp, CMessengerKey::PRIVATE_KEY);
 
-        if (checkRSApublicKey(publicRsaKey)
-                && checkRSAprivateKey(privateRsaKey)
-                && matchRSAKeys(publicRsaKey, privateRsaKey))
+        ///TODO: this can be removed, already check in CMessengerKey cstr
+        if (checkRSApublicKey(publicRsaKey.toString())
+                && checkRSAprivateKey(privateRsaKey.toString())
+                && matchRSAKeys(publicRsaKey.toString(), privateRsaKey.toString()))
         {
             std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
             CWallet* const pwallet = wallet.get();
@@ -309,13 +313,11 @@ UniValue importmsgkey(const JSONRPCRequest& request)
             if (!pwallet->IsMsgCrypted())
             {
                 WalletBatch walletBatch(pwallet->GetDBHandle());
-                walletBatch.WritePublicKey(publicRsaKey);
-                walletBatch.WritePrivateKey(privateRsaKey);
+                walletBatch.WritePublicKey(publicRsaKey.toString());
+                walletBatch.WritePrivateKey(privateRsaKey.toString());
             }
 
-            MessengerKey privKey(privateRsaKey.begin(), privateRsaKey.end());
-            MessengerKey pubKey(publicRsaKey.begin(), publicRsaKey.end());
-            if (!pwallet->SetMessengerKeys(privKey, pubKey))
+            if (!pwallet->SetMessengerKeys(privateRsaKey.get(), publicRsaKey.get()))
             {
                 return UniValue(UniValue::VSTR, std::string("Import failed. Can't encrypt new pair of keys."));
             }

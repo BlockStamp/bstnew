@@ -40,7 +40,7 @@ public:
     virtual bool HaveWatchOnly(const CScript &dest) const =0;
     virtual bool HaveWatchOnly() const =0;
 
-    virtual bool GetMessengerKeys(std::string& privMsgKey, std::string& pubMsgKey) const =0;
+    virtual bool GetMessengerKeys(CMessengerKey& privMsgKey, CMessengerKey& pubMsgKey) const =0;
 };
 
 /** Basic key store, that keeps keys in an address->secret map */
@@ -83,7 +83,7 @@ public:
     bool HaveWatchOnly(const CScript &dest) const override;
     bool HaveWatchOnly() const override;
 
-    bool GetMessengerKeys(std::string& privMsgKey, std::string& pubMsgKey) const override;
+    bool GetMessengerKeys(CMessengerKey& privMsgKey, CMessengerKey& pubMsgKey) const override;
 };
 
 /** Return the CKeyID of the key involved in a script (if there is a unique one). */

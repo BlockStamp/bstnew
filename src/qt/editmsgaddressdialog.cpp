@@ -12,6 +12,7 @@
 #include <QMessageBox>
 
 #include <messages/message_utils.h>
+#include <key.h>
 
 static void setupAddressWidget(QTextEdit *widget, QWidget *parent)
 {
@@ -91,14 +92,18 @@ bool EditMsgAddressDialog::saveCurrentRow()
     switch(mode)
     {
     case NewSendingAddress:
+        {
+        CMessengerKey addressKey(ui->addressEdit->toPlainText().toStdString(), CMessengerKey::PUBLIC_KEY);
         address = model->addRow(
             ui->labelEdit->text(),
-            ui->addressEdit->toPlainText());
+            QString(addressKey.toString().c_str()));
+        }
         break;
     case EditSendingAddress:
         if(mapper->submit())
         {
-            address = ui->addressEdit->toPlainText();
+            CMessengerKey addressKey(ui->addressEdit->toPlainText().toStdString(), CMessengerKey::PUBLIC_KEY);
+            address = QString(addressKey.toString().c_str());
         }
         break;
     }

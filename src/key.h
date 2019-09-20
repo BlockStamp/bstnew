@@ -24,7 +24,6 @@
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > MessengerKey;
 
-
 /** An encapsulated private key. */
 class CKey
 {
@@ -190,5 +189,38 @@ void ECC_Stop(void);
 
 /** Check that required EC support is available at runtime. */
 bool ECC_InitSanityCheck(void);
+
+/**
+ * @brief The CMessengerKey class, store rsa key.
+ */
+class CMessengerKey
+{
+public:
+    enum Type
+    {
+        NONE = -1,
+        PUBLIC_KEY = 0,
+        PRIVATE_KEY = 1
+
+    };
+
+    CMessengerKey();
+    CMessengerKey(const std::string& key, Type type);
+    CMessengerKey(MessengerKey key, Type type);
+    void set(const std::string& key, Type type);
+    MessengerKey get();
+    const std::string toString();
+    const std::vector<unsigned char> toVChar();
+    bool toString(std::string& key);
+    bool toVChar(std::vector<unsigned char>& key);
+
+    CMessengerKey& operator=(CMessengerKey key);
+private:
+    bool verifyPublicKey();
+    bool verifyPrivateKey();
+
+    MessengerKey m_key;
+    Type m_type;
+};
 
 #endif // BITCOIN_KEY_H

@@ -1256,7 +1256,7 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
     tx.loadOpReturn(opReturn);
 
     if (IsEnrcyptedMsg(opReturn)) {
-        std::string privateRsaKey, publicRsaKey;
+        CMessengerKey privateRsaKey, publicRsaKey;
         if(!GetMessengerKeys(privateRsaKey, publicRsaKey))
         {
             std::cout << "\nWARNING: Could not get messenger keys"
@@ -1269,14 +1269,15 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
             std::vector<unsigned char> decryptedData = createDecryptedMessage(
                 reinterpret_cast<unsigned char*>(opReturn.data()),
                 opReturn.size(),
-                privateRsaKey.c_str());
+                privateRsaKey.toString().c_str());
 
             std::string message(decryptedData.begin(), decryptedData.end());
 
             std::size_t newlinepos, previous = 0;
             if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
                 throw std::runtime_error("Incorrect message format");
-            const auto from = message.substr(previous, newlinepos-1);
+            CMessengerKey fromKey(message.substr(previous, newlinepos), CMessengerKey::PUBLIC_KEY);
+            const auto from = fromKey.toString();
             previous = newlinepos+1;
 
             if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)

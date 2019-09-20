@@ -428,6 +428,7 @@ libbitcoin_common_a_SOURCES = \
   key_io.cpp \
   keystore.cpp \
   messages/message_encryption.cpp \
+  messages/message_utils.cpp \
   names/common.cpp \
   names/encoding.cpp \
   netaddress.cpp \

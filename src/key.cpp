@@ -9,6 +9,7 @@
 #include <crypto/common.h>
 #include <crypto/hmac_sha512.h>
 #include <random.h>
+#include <messages/message_utils.h>
 
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
@@ -364,4 +365,108 @@ void ECC_Stop() {
     if (ctx) {
         secp256k1_context_destroy(ctx);
     }
+}
+
+template<typename T>
+static inline void ltrim(T &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+        return (ch=='-');
+    }));
+}
+
+template<typename T>
+static inline void rtrim(T &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+        return (ch=='-');
+    }).base(), s.end());
+}
+
+template<typename T>
+static inline void trim(T &s) {
+    ltrim(s);
+    rtrim(s);
+}
+
+CMessengerKey::CMessengerKey() : m_type(NONE) {
+
+}
+
+CMessengerKey::CMessengerKey(const std::string& key, Type type)
+    : m_type(type) {
+    bool rv = true;
+
+    m_key.assign(key.begin(), key.end());
+    trim(m_key);
+    rv = ((type == PUBLIC_KEY) ? verifyPublicKey() : verifyPrivateKey());
+    if (!rv) {
+        m_key.clear();
+        throw std::runtime_error("ERROR: Key validation failed");
+    }
+}
+
+CMessengerKey::CMessengerKey(MessengerKey key, Type type)
+    : m_key(key), m_type(type) {
+    bool rv = true;
+
+    trim(m_key);
+    rv = ((type == PUBLIC_KEY) ? verifyPublicKey() : verifyPrivateKey());
+    if (!rv) {
+        m_key.clear();
+        throw std::runtime_error("ERROR: Key validation failed");
+    }
+}
+
+void CMessengerKey::set(const std::string& key, Type type) {
+    m_key.assign(key.begin(), key.end());
+    m_type = type;
+    trim(m_key);
+    bool rv = ((type == PUBLIC_KEY) ? verifyPublicKey() : verifyPrivateKey());
+    if (!rv) {
+        m_key.clear();
+        throw std::runtime_error("ERROR: Key validation failed");
+    }
+}
+
+MessengerKey CMessengerKey::get() {
+    if (m_key.empty())
+        throw std::runtime_error("ERROR: No key");
+    return m_key;
+}
+
+bool CMessengerKey::verifyPrivateKey() {
+    return checkRSAprivateKey(std::string(m_key.begin(), m_key.end()));
+}
+
+bool CMessengerKey::verifyPublicKey() {
+    return checkRSApublicKey(std::string(m_key.begin(), m_key.end()));
+}
+
+const std::string CMessengerKey::toString() {
+    return std::string(m_key.begin(), m_key.end());
+}
+
+const std::vector<unsigned char> CMessengerKey::toVChar() {
+    return std::vector<unsigned char>(m_key.begin(), m_key.end());
+}
+
+bool CMessengerKey::toString(std::string& key) {
+    if (m_key.empty()) {
+        return false;
+    }
+    key.assign(m_key.begin(), m_key.end());
+    return true;
+}
+
+bool CMessengerKey::toVChar(std::vector<unsigned char>& key) {
+    if (m_key.empty()) {
+        return false;
+    }
+    std::copy(m_key.begin(), m_key.end(), key.begin());
+    return true;
+}
+
+CMessengerKey& CMessengerKey::operator=(CMessengerKey key) {
+    m_key = key.get();
+    m_type = key.m_type;
+    return *this;
 }

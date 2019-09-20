@@ -167,7 +167,7 @@ public:
     bool MsgLock();
     virtual bool AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &iv);
     bool SetMessengerKeys(const MessengerKey& privKey, const MessengerKey& pubKey);
-    bool GetMessengerKeys(std::string& privMsgKeyStr, std::string& pubMsgKeyStr) const;
+    bool GetMessengerKeys(CMessengerKey &privMsgKeyStr, CMessengerKey &pubMsgKeyStr) const;
 
     virtual bool AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override;

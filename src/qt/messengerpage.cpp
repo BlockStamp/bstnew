@@ -579,7 +579,7 @@ void MessengerPage::read(const std::string& txnId)
                 return;
             }
 
-            std::string privateRsaKey, publicRsaKey;
+            CMessengerKey privateRsaKey, publicRsaKey;
             if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey)) {
                 return;
             }
@@ -598,14 +598,15 @@ void MessengerPage::read(const std::string& txnId)
             std::vector<unsigned char> decryptedData = createDecryptedMessage(
                 reinterpret_cast<unsigned char*>(OPreturnData.data()),
                 OPreturnData.size(),
-                privateRsaKey.c_str());
+                privateRsaKey.toString().c_str());
 
             std::string message(decryptedData.begin(), decryptedData.end());
 
             std::size_t newlinepos, previous = 0;
             if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
                 throw std::runtime_error("Incorrect message format");
-            const auto from = message.substr(previous, newlinepos-1);
+            CMessengerKey fromKey(message.substr(previous, newlinepos), CMessengerKey::PUBLIC_KEY);
+            const auto from = fromKey.toString();
             previous = newlinepos+1;
 
             if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
@@ -668,14 +669,14 @@ void MessengerPage::send()
                     return;
                 }
 
-                std::string privateRsaKey, publicRsaKey;
+                CMessengerKey privateRsaKey, publicRsaKey;
                 if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
                 {
                     std::cout << "Failed to read messenger keys - messenger still encrypted?\n";
                     return;
                 }
 
-                std::vector<unsigned char> data = getData(publicRsaKey);
+                std::vector<unsigned char> data = getData(publicRsaKey.toString());
 
                 CRecipient recipient;
                 recipient.scriptPubKey << OP_RETURN << data;

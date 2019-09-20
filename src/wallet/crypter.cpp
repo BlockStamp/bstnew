@@ -479,7 +479,7 @@ bool CCryptoKeyStore::GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) co
     return CBasicKeyStore::GetPubKey(address, vchPubKeyOut);
 }
 
-bool CCryptoKeyStore::GetMessengerKeys(std::string& privMsgKeyStr, std::string& pubMsgKeyStr) const
+bool CCryptoKeyStore::GetMessengerKeys(CMessengerKey& privMsgKeyStr, CMessengerKey& pubMsgKeyStr) const
 {
     LOCK(cs_KeyStore);
     if (!IsMsgCrypted()) {
@@ -493,8 +493,8 @@ bool CCryptoKeyStore::GetMessengerKeys(std::string& privMsgKeyStr, std::string& 
         return false;
     }
 
-    privMsgKeyStr.assign(privMsgKey.begin(), privMsgKey.end());
-    pubMsgKeyStr.assign(pubMsgKey.begin(), pubMsgKey.end());
+    privMsgKeyStr = CMessengerKey(privMsgKey, CMessengerKey::PRIVATE_KEY);
+    pubMsgKeyStr = CMessengerKey(pubMsgKey, CMessengerKey::PUBLIC_KEY);
 
     return true;
 }
