@@ -1267,45 +1267,43 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
     std::vector<char> opReturn;
     tx.loadOpReturn(opReturn);
 
-    if (IsEnrcyptedMsg(opReturn)) {
-        CMessengerKey privateRsaKey, publicRsaKey;
-        if(!GetMessengerKeys(privateRsaKey, publicRsaKey))
-        {
-            std::cout << "\nWARNING: Could not get messenger keys"
-                      << "\npossibly skipped messenger transactions"
-                      << "\nmessenger encrypted???\n";
-        }
-
-        try {
-            //TODO: Consider returning std::string from createDecryptedMessage
-            std::vector<unsigned char> decryptedData = createDecryptedMessage(
-                reinterpret_cast<unsigned char*>(opReturn.data()),
-                opReturn.size(),
-                privateRsaKey.toString().c_str());
-
-            std::string message(decryptedData.begin(), decryptedData.end());
-
-            std::size_t newlinepos, previous = 0;
-            if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
-                throw std::runtime_error("Incorrect message format");
-            CMessengerKey fromKey(message.substr(previous, newlinepos), CMessengerKey::PUBLIC_KEY);
-            const auto from = fromKey.toString();
-            previous = newlinepos+1;
-
-            if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
-                throw std::runtime_error("Incorrect message format");
-            const auto subject = message.substr(previous, newlinepos - previous);
-
-            CWalletTx wtx(this, ptx);
-            AddEncrMsgToWallet(from, subject, wtx);
-        }
-        catch(...) {
-            std::cout << "Is encrypted message, but failed to decrypt\n";
-            //Is encrypted message, but failed to decrypt
-        }
+    if (!IsEnrcyptedMsg(opReturn)) {
+        return;
     }
-    else {
-        std::cout << "Is not encrypted message\n";
+
+    CMessengerKey privateRsaKey, publicRsaKey;
+    if(!GetMessengerKeys(privateRsaKey, publicRsaKey))
+    {
+        std::cout << "\nWARNING: Could not get messenger keys"
+                  << "\npossibly skipped messenger transactions"
+                  << "\nmessenger encrypted???\n";
+    }
+
+    try {
+        //TODO: Consider returning std::string from createDecryptedMessage
+        std::vector<unsigned char> decryptedData = createDecryptedMessage(
+            reinterpret_cast<unsigned char*>(opReturn.data()),
+            opReturn.size(),
+            privateRsaKey.toString().c_str());
+
+        std::string message(decryptedData.begin(), decryptedData.end());
+
+        std::size_t newlinepos, previous = 0;
+        if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
+            throw std::runtime_error("Incorrect message format");
+        CMessengerKey fromKey(message.substr(previous, newlinepos), CMessengerKey::PUBLIC_KEY);
+        const auto from = fromKey.toString();
+        previous = newlinepos+1;
+
+        if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
+            throw std::runtime_error("Incorrect message format");
+        const auto subject = message.substr(previous, newlinepos - previous);
+
+        CWalletTx wtx(this, ptx);
+        AddEncrMsgToWallet(from, subject, wtx);
+    }
+    catch(...) {
+        //Is encrypted message, but failed to decrypt
     }
 }
 
@@ -1564,18 +1562,6 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
     m_last_block_processed = pindex;
 
     std::cout << "BLOCK CONNECTED: " << pblock->GetHash().ToString() << std::endl;
-
-    std::cout << "Prining encrMsgMapWallet txs:\n";
-    for (auto &it : encrMsgMapWallet) {
-        std::cout << it.first.ToString() << std::endl;
-    }
-    std::cout << std::endl;
-
-    {
-        LOCK(cs_wallet);
-        WalletBatch batch(*msgDatabase, "r+", false);
-        batch.printTransaction();
-    }
 }
 
 void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDelete, const std::vector<CTransactionRef>& vNameConflicts) {
