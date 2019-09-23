@@ -1207,7 +1207,6 @@ void BitcoinGUI::setEncryptionStatus(int status)
 
 void BitcoinGUI::setMessengerEncryptionStatus(int status)
 {
-    ///TODO: Implement like BitcoinGUI::setEncryptionStatus
     switch(status)
     {
     case WalletModel::Unencrypted:

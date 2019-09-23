@@ -512,32 +512,7 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
                 "messengerpassphrase <passphrase>\n"
                 "Stores the messenger decryption key in memory until the node is shutdown");
 
-        CBlockIndex *pindexStart = chainActive.Genesis();
-        {
-            WalletBatch batch(pwallet->GetMsgDBHandle());
-            CBlockLocator locator;
-            if (batch.ReadBestMessengerBlock(locator))
-                pindexStart = FindForkInGlobalIndex(chainActive, locator);
-        }
-
-        // If pruning enabled, don't scan beyond non-pruned blocks
-        if (fPruneMode) {
-            std::cout << "Pruning enabled\n";
-
-            CBlockIndex *block = chainActive.Tip();
-            while (block && block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA) && block->pprev->nTx > 0 && pindexStart != block)
-                block = block->pprev;
-
-            std::cout << "In prunning setting pindexStart to " << (block ? block->nHeight : 0) << std::endl;
-            pindexStart = block;
-        }
-
-        CBlockIndex* indexStop = pwallet->ScanForMessages(pindexStart, reserver);
-        // If nullptr returned no blocks skipped
-        if (indexStop == nullptr) {
-            WalletBatch batch(pwallet->GetMsgDBHandle());
-            batch.WriteBestMessengerBlock(chainActive.GetLocator());
-        }
+        pwallet->ScanForMessagesSinceLastScan(reserver);
     }
 
     return NullUniValue;

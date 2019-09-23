@@ -404,7 +404,6 @@ bool CCryptoKeyStore::SetMessengerKeys(const MessengerKey &privKey, const Messen
         return false;
     }
 
-    ///TODO: Implement the rest of this function like  CCryptoKeyStore::AddKeyPubKey
     CKeyingMaterial messengerKeyData(privKey.begin(), privKey.end());
     messengerKeyData.insert(messengerKeyData.end(), pubKey.begin(), pubKey.end());
 
@@ -535,7 +534,6 @@ bool CCryptoKeyStore::EncryptKeys(CKeyingMaterial& vMasterKeyIn)
 
 bool CCryptoKeyStore::EncryptMessengerKeys(CKeyingMaterial& vMasterKeyIn)
 {
-    ///TODO: Implement
     LOCK(cs_KeyStore);
     if (!cryptedMessengerKeys.empty() || !messengerKeyIV.empty() || IsMsgCrypted()) {
         return false;

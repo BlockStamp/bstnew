@@ -178,6 +178,8 @@ public:
     bool setMessengerLocked(bool locked, const SecureString &passPhrase=SecureString());
     bool changeMessengerPassphrase(const SecureString &oldPass, const SecureString &newPass);
 
+    bool scanWalletForMessages();
+
     // RAI object for unlocking wallet, returned by requestUnlock()
     class UnlockContext
     {

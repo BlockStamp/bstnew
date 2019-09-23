@@ -1014,7 +1014,6 @@ public:
     OutputType m_default_change_type{DEFAULT_CHANGE_TYPE};
 
     bool NewKeyPool();
-    bool NewMsgKeyPool();
 
     size_t KeypoolCountExternalKeys() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     bool TopUpKeyPool(unsigned int kpSize = 0);
@@ -1084,6 +1083,8 @@ public:
 
     bool DelMsgAddressBook(const std::string& address);
     bool DelMsgAddressBookForLabel(const std::string& label);
+
+    void ScanForMessagesSinceLastScan(const MessengerRescanReserver& reserver);
 
     CBlockIndex *ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanReserver& reserver);
 

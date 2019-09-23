@@ -436,8 +436,6 @@ bool WalletModel::setMessengerEncrypted(bool encrypted, const SecureString &pass
         // Decrypt -- TODO; not supported yet
         return false;
     }
-
-    return true;
 }
 
 bool WalletModel::setMessengerLocked(bool locked, const SecureString &passPhrase)
@@ -452,17 +450,16 @@ bool WalletModel::setMessengerLocked(bool locked, const SecureString &passPhrase
         // Unlock
         return m_wallet->msgUnlock(passPhrase);
     }
-
-
-    return true;
 }
 
 bool WalletModel::changeMessengerPassphrase(const SecureString &oldPass, const SecureString &newPass)
 {
     m_wallet->msgLock(); // Make sure messenger is locked before attempting pass change
     return m_wallet->changeMessengerPassphrase(oldPass, newPass);
+}
 
-    return true;
+bool WalletModel::scanWalletForMessages() {
+    return m_wallet->scanWalletForMessages();
 }
 
 static void NotifyAddressBookChanged(WalletModel *walletmodel,

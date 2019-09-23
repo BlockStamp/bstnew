@@ -173,10 +173,17 @@ void WalletFrame::gotoMessengerPage()
 {
     WalletView *walletView = currentWalletView();
     WalletModel* walletModel = walletView->getWalletModel();
+
+    bool needsScan = (walletModel->getMessengerEncryptionStatus() == WalletModel::EncryptionStatus::Locked);
+
     WalletModel::MessengerUnlockContext ctx(walletModel->requestMessengerUnlock());
     if (!ctx.isValid())
     {
         return;
+    }
+
+    if (needsScan) {
+        walletModel->scanWalletForMessages();
     }
 
     QMap<QString, WalletView*>::const_iterator i;

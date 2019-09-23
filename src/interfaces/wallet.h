@@ -90,6 +90,9 @@ public:
     //! Abort a rescan.
     virtual void abortRescan() = 0;
 
+    //! Scan for messages that this messenger can decrypt
+    virtual bool scanWalletForMessages() = 0;
+
     //! Back up wallet.
     virtual bool backupWallet(const std::string& filename) = 0;
 

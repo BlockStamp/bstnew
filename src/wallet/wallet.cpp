@@ -452,7 +452,6 @@ bool CWallet::Unlock(const SecureString& strWalletPassphrase)
 
 bool CWallet::MsgUnlock(const SecureString& strWalletPassphrase)
 {
-    ///TODO: Implement like CWallet::Unlock
     CCrypter crypter;
     CKeyingMaterial _vMasterKey;
 
@@ -522,6 +521,39 @@ void CWallet::ChainStateFlushed(const CBlockLocator& loc)
 {
     WalletBatch batch(*database);
     batch.WriteBestBlock(loc);
+}
+
+void CWallet::ScanForMessagesSinceLastScan(const MessengerRescanReserver& reserver)
+{
+    AssertLockHeld(cs_main);
+    AssertLockHeld(cs_wallet);
+
+    CBlockIndex *pindexStart = chainActive.Genesis();
+    {
+        WalletBatch batch(GetMsgDBHandle());
+        CBlockLocator locator;
+        if (batch.ReadBestMessengerBlock(locator))
+            pindexStart = FindForkInGlobalIndex(chainActive, locator);
+    }
+
+    // If pruning enabled, don't scan beyond non-pruned blocks
+    if (fPruneMode) {
+        std::cout << "Pruning enabled\n";
+
+        CBlockIndex *block = chainActive.Tip();
+        while (block && block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA) && block->pprev->nTx > 0 && pindexStart != block)
+            block = block->pprev;
+
+        std::cout << "In prunning setting pindexStart to " << (block ? block->nHeight : 0) << std::endl;
+        pindexStart = block;
+    }
+
+    CBlockIndex* indexStop = ScanForMessages(pindexStart, reserver);
+    // If nullptr returned no blocks skipped
+    if (indexStop == nullptr) {
+        WalletBatch batch(GetMsgDBHandle());
+        batch.WriteBestMessengerBlock(chainActive.GetLocator());
+    }
 }
 
 CBlockIndex* CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanReserver& reserver)
@@ -3716,16 +3748,6 @@ bool CWallet::NewKeyPool()
         }
         WalletLogPrintf("CWallet::NewKeyPool rewrote keypool\n");
     }
-    return true;
-}
-
-/**
- * Mark old keypool keys as used,
- * and generate all new keys
- */
-bool CWallet::NewMsgKeyPool()
-{
-    ///TODO: Implement or remove
     return true;
 }
 

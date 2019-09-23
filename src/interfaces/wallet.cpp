@@ -146,6 +146,19 @@ public:
         return m_wallet.ChangeMessengerPassphrase(old_wallet_passphrase, new_wallet_passphrase);
     }
 
+    bool scanWalletForMessages() override
+    {
+        MessengerRescanReserver reserver(&m_wallet);
+        if (!reserver.reserve()) {
+            std::cout << "WalletImpl::scanWalletForMessages - failed to reserve!!!\n";
+            return false;
+        }
+
+        LOCK2(cs_main, m_wallet.cs_wallet);
+        m_wallet.ScanForMessagesSinceLastScan(reserver);
+        return true;
+    }
+
     void abortRescan() override { m_wallet.AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet.BackupWallet(filename); }
     std::string getWalletName() override { return m_wallet.GetName(); }
