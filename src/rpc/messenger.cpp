@@ -441,6 +441,8 @@ UniValue importmsgkey(const JSONRPCRequest& request)
                 walletBatch.WritePublicKey(publicRsaKey.toString());
                 walletBatch.WritePrivateKey(privateRsaKey.toString());
             }
+            pwallet->DelMsgAddressBookForLabel(MY_ADDRESS_LABEL);
+            pwallet->SetMsgAddressBook(publicRsaKey.toString(), MY_ADDRESS_LABEL);
         }
         pwallet->NotifyEncrMsgTransactionChanged(pwallet);
 

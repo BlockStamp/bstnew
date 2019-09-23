@@ -550,7 +550,6 @@ void MessengerPage::clearMessenger()
     ui->transactionTable->clearContents();
     ui->transactionTable->setRowCount(0);
     ui->fromLabel->clear();
-    ui->subjectLabel->clear();
     ui->messageViewEdit->clear();
 
     fillUpTable();

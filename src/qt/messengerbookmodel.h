@@ -15,8 +15,6 @@ namespace interfaces {
 class Wallet;
 }
 
-const char* const MY_ADDRESS_LABEL = ".::my address::.";
-
 /**
    Qt model of the messenger address book in the core. This allows views to access and modify the address book.
  */

@@ -21,6 +21,8 @@
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
 
+#include <messages/message_encryption.h>
+
 
 class MsgAddressBookSortFilterProxyModel final : public QSortFilterProxyModel
 {

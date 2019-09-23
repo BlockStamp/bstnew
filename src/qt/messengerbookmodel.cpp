@@ -11,6 +11,7 @@
 #include <key_io.h>
 #include <wallet/wallet.h>
 #include <messages/message_utils.h>
+#include <messages/message_encryption.h>
 
 #include <QFont>
 #include <QDebug>
