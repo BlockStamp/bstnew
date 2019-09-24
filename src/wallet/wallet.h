@@ -937,8 +937,8 @@ public:
     DBErrors ReorderTransactions();
 
     void MarkDirty();
-    void AddEncrMsgToWalletIfNeeded(const CTransactionRef &ptx);
-    void AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn);
+    void AddEncrMsgToWalletIfNeeded(const CTransactionRef &ptx, const CBlockIndex *pIndex, int posInBlock);
+    void AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn, const CBlockIndex *pIndex, int posInBlock);
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn);
     void LoadEncrMsgToWallet(const std::string& from, const std::string& subject, const CWalletTx& wtxIn);

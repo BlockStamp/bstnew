@@ -2,7 +2,6 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-
 #include <rpc/server.h>
 #include <rpc/client.h>
 #include <rpc/util.h>
@@ -564,18 +563,111 @@ static UniValue messengerpassphrasechange(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+UniValue listmsgsinceblock(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 2)
+    throw std::runtime_error(
+        "listmsgsinceblock ( \"blockhash\" )\n"
+        "\nGet all messenger transactions in blocks since block [blockhash].\n"
+        "\nArguments:\n"
+        "1. \"blockhash\"            (string, optional) The block hash to list transactions since\n"
+        "\nResult:\n"
+        "{\n"
+        "  \"transactions\": [\n"
+        "    \"date\":\"date\",    (string) Date of incomming transaction.\n"
+        "    \"from\":\"label\",     (string) Label of sender if exists in address book, otherwise empty.\n"
+        "    \"txid\": \"transactionid\",  (string) The transaction id.\n"
+        "    \"block hash\": \"blockhash\", (string) Hash of block containing transaction.\n"
+        "  ],\n"
+        "  \"lastblock\": \"lastblockhash\"     (string) The hash of the block (target_confirmations-1) from the best block on the main chain.\n"
+        "}\n"
+        "\nExamples:\n"
+        + HelpExampleCli("listmsgsinceblock", "")
+        + HelpExampleRpc("listmsgsinceblock", "\"000000000000000bacf66f7497b7dc45ef753ee9a7d38571037cdb1a57f663ad\" ")
+    );
+
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    EnsureMsgWalletIsUnlocked(pwallet);
+
+    pwallet->BlockUntilSyncedToCurrentChain();
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    const CBlockIndex* pindex = nullptr;
+
+    if (!request.params[0].isNull() && !request.params[0].get_str().empty()) {
+        uint256 blockId;
+
+        blockId.SetHex(request.params[0].get_str());
+        pindex = LookupBlockIndex(blockId);
+        if (!pindex) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        }
+        if (chainActive[pindex->nHeight] != pindex) {
+            // the block being asked for is a part of a deactivated chain;
+            // we don't want to depend on its perceived height in the block
+            // chain, we want to instead use the last common ancestor
+            pindex = chainActive.FindFork(pindex);
+        }
+    }
+
+    int depth = pindex ? (1 + chainActive.Height() - pindex->nHeight) : -1;
+
+    TransactionsMap& transactions = pwallet->encrMsgMapWallet;
+    std::map<std::string, std::string> &addressBook = pwallet->mapMessengerAddressBook;
+    UniValue txnsList(UniValue::VARR);
+
+    for (auto index = transactions.begin(); index != transactions.end(); ++index)
+    {
+        const TransactionValue &it = index->second;
+
+        if (depth == -1 || it.wltTx.GetDepthInMainChain() < depth)
+        {
+            UniValue entry(UniValue::VOBJ);
+
+            time_t t = it.wltTx.nTimeReceived;
+            std::tm *ptm = std::localtime(&t);
+            char buffer[32];
+            std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
+            entry.pushKV("date", buffer);
+            entry.pushKV("txid", index->first.ToString().c_str());
+            entry.pushKV("block hash", it.wltTx.hashBlock.ToString().c_str());
+
+            auto sender = addressBook.find(it.from);
+            if (sender != addressBook.end())
+            {
+                entry.pushKV("from", sender->second);
+            }
+
+            txnsList.push_back(entry);
+        }
+    }
+
+    UniValue ret(UniValue::VOBJ);
+    ret.pushKV("transactions", txnsList);
+    ret.pushKV("lastblock", chainActive[chainActive.Height()]->GetBlockHash().GetHex());
+
+    return ret;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
-    { "blockstamp",         "sendmessage",                  &sendmessage,               {"subject", "message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
-    { "blockstamp",         "readmessage",                  &readmessage,               {"txid"} },
-    { "blockstamp",         "getmsgkey",                    &getmsgkey,                 {} },
-    { "blockstamp",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
-    { "blockstamp",         "importmsgkey",                 &importmsgkey,              {"source_path", "rescan"} },
-    { "blockstamp",         "encryptmessenger",             &encryptmessenger,          {"passphrase"} },
-    { "blockstamp",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
-    { "blockstamp",         "messengerlock",                &messengerlock,             {} },
-    { "blockstamp",         "messengerpassphrasechange",    &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
+    { "messenger",         "sendmessage",                  &sendmessage,               {"subject", "message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
+    { "messenger",         "readmessage",                  &readmessage,               {"txid"} },
+    { "messenger",         "getmsgkey",                    &getmsgkey,                 {} },
+    { "messenger",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
+    { "messenger",         "importmsgkey",                 &importmsgkey,              {"source_path", "rescan"} },
+    { "messenger",         "encryptmessenger",             &encryptmessenger,          {"passphrase"} },
+    { "messenger",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
+    { "messenger",         "messengerlock",                &messengerlock,             {} },
+    { "messenger",         "messengerpassphrasechange",    &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
+    { "messenger",         "listmsgsinceblock",            &listmsgsinceblock,         {"blockhash"} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)

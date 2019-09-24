@@ -575,7 +575,7 @@ CBlockIndex* CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerR
 
             LOCK(cs_wallet);
             for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
-                AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock]);
+                AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock], pindex, posInBlock);
             }
         }
         else {
@@ -1200,15 +1200,20 @@ void CWallet::LoadEncrMsgToWallet(const std::string& from, const std::string& su
     encrMsgMapWallet.emplace(hash, TransactionValue{from, subject, wtxIn});
 }
 
-void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn) {
+void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn, const CBlockIndex* pIndex, int posInBlock) {
     uint256 hash = wtxIn.GetHash();
+
     std::pair<TransactionsMap::iterator, bool> ret = encrMsgMapWallet.emplace(hash, TransactionValue{from, subject, wtxIn});
 
     CWalletTx& wtx = ret.first->second.wltTx;
 
+    if (pIndex != nullptr)
+        wtx.SetMerkleBranch(pIndex, posInBlock);
+
     bool fInsertedNew = ret.second;
     if (fInsertedNew) {
         wtx.nTimeReceived = GetAdjustedTime();
+        wtx.nTimeSmart = ComputeTimeSmart(wtx);
     }
 
     bool fUpdated = false;
@@ -1247,7 +1252,7 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
     NotifyEncrMsgTransactionChanged(this);
 }
 
-void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
+void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBlockIndex* pIndex, int posInBlock) {
     AssertLockHeld(cs_wallet);
 
     const CTransaction& tx = *ptx;
@@ -1284,7 +1289,7 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
         const auto subject = message.substr(previous, newlinepos - previous);
 
         CWalletTx wtx(this, ptx);
-        AddEncrMsgToWallet(from, subject, wtx);
+        AddEncrMsgToWallet(from, subject, wtx, pIndex, posInBlock);
     }
     catch(...) {
         //Is encrypted message, but failed to decrypt
@@ -1312,7 +1317,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
         }
 
         /* Add tx to encr msgs if this is encrypted msg to me  */
-        AddEncrMsgToWalletIfNeeded(ptx);
+        AddEncrMsgToWalletIfNeeded(ptx, pIndex, posInBlock);
 
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
