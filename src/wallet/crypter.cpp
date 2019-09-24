@@ -481,13 +481,11 @@ bool CCryptoKeyStore::GetMessengerKeys(CMessengerKey& privMsgKeyStr, CMessengerK
 {
     LOCK(cs_KeyStore);
     if (!IsMsgCrypted()) {
-        std::cout << "Messenger not encrypted - getting keys from memory\n";
         return CBasicKeyStore::GetMessengerKeys(privMsgKeyStr, pubMsgKeyStr);
     }
 
     MessengerKey privMsgKey, pubMsgKey;
     if (!DecryptMessengerKeys(vMessengerMasterKey, cryptedMessengerKeys, messengerKeyIV, privMsgKey, pubMsgKey)) {
-        std::cout << "Messenger encrypted, but not unlocked - no keys\n";
         return false;
     }
 

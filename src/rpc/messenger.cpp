@@ -106,8 +106,6 @@ UniValue sendmessage(const JSONRPCRequest& request)
     }
 
     CMessengerKey public_key(request.params[2].get_str(), CMessengerKey::PUBLIC_KEY);
-    std::cout << "msg: " << msg << std::endl;
-    std::cout << "public_key: " << public_key.toString() << std::endl;
 
     CCoinControl coin_control;
     if (!request.params[3].isNull())
@@ -132,7 +130,6 @@ UniValue sendmessage(const JSONRPCRequest& request)
     msg.length(),
     public_key.toString().c_str());
 
-    std::cout << "data.size(): " << data.size() << std::endl;
     return setOPreturnData(data, coin_control, request);
 }
 
@@ -447,7 +444,6 @@ UniValue importmsgkey(const JSONRPCRequest& request)
         pwallet->NotifyEncrMsgTransactionChanged(pwallet);
 
         if (fRescan) {
-            std::cout << "Rescan will be done\n";
             pwallet->ScanForMessages(chainActive.Genesis(), reserver);
         }
     }

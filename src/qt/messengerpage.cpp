@@ -671,7 +671,6 @@ void MessengerPage::send()
                 CMessengerKey privateRsaKey, publicRsaKey;
                 if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
                 {
-                    std::cout << "Failed to read messenger keys - messenger still encrypted?\n";
                     return;
                 }
 

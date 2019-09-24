@@ -150,7 +150,6 @@ public:
     {
         MessengerRescanReserver reserver(&m_wallet);
         if (!reserver.reserve()) {
-            std::cout << "WalletImpl::scanWalletForMessages - failed to reserve!!!\n";
             return false;
         }
 

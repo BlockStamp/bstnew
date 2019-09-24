@@ -401,7 +401,6 @@ void MessengerBookModel::addOwnAddressToBook()
 
     CMessengerKey privateRsaKey, publicRsaKey;
     if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey)) {
-        std::cout << "Failed to add my own public key to the messenger book\n";
         return;
     }
     this->editRow(QString(MY_ADDRESS_LABEL), QString(publicRsaKey.toString().c_str()));

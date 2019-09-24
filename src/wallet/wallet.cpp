@@ -538,13 +538,10 @@ void CWallet::ScanForMessagesSinceLastScan(const MessengerRescanReserver& reserv
 
     // If pruning enabled, don't scan beyond non-pruned blocks
     if (fPruneMode) {
-        std::cout << "Pruning enabled\n";
-
         CBlockIndex *block = chainActive.Tip();
         while (block && block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA) && block->pprev->nTx > 0 && pindexStart != block)
             block = block->pprev;
 
-        std::cout << "In prunning setting pindexStart to " << (block ? block->nHeight : 0) << std::endl;
         pindexStart = block;
     }
 
@@ -558,11 +555,8 @@ void CWallet::ScanForMessagesSinceLastScan(const MessengerRescanReserver& reserv
 
 CBlockIndex* CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerRescanReserver& reserver)
 {
-    std::cout << "ScanForMessages called\n";
     assert(reserver.isReserved());
     LOCK(cs_main);
-
-    std::cout << "Scanning for messages from " << (pindexStart ? pindexStart->nHeight : 0) << std::endl;
 
     CBlockIndex* ret = nullptr;
     CBlockIndex *pindex = pindexStart;
@@ -593,10 +587,8 @@ CBlockIndex* CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerR
         }
 
         pindex = chainActive.Next(pindex);
-        std::cout << "\tSet pindex to: " << (pindex ? pindex->nHeight : 0) << std::endl;
     }
 
-    std::cout << "Returning from ScanForMessages - " <<  (ret ? ret->nHeight : 0) << std::endl;
     return ret;
 }
 
@@ -913,11 +905,6 @@ bool CWallet::EncryptMessenger(const SecureString& strMessengerPassphrase)
             assert(false);
         }
 
-        // Encryption was introduced in version 0.4.0
-        /// TODO: check if this must stay
-//        SetMinVersion(FEATURE_WALLETCRYPT, messenger_encrypted_batch, true);
-
-        std::cout << "Messenger encryption at: " << chainActive.Height() << std::endl;
         messenger_encrypted_batch->WriteBestMessengerBlock(chainActive.GetLocator());
 
         if (!messenger_encrypted_batch->TxnCommit()) {
@@ -1272,11 +1259,8 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx) {
     }
 
     CMessengerKey privateRsaKey, publicRsaKey;
-    if(!GetMessengerKeys(privateRsaKey, publicRsaKey))
-    {
-        std::cout << "\nWARNING: Could not get messenger keys"
-                  << "\npossibly skipped messenger transactions"
-                  << "\nmessenger encrypted???\n";
+    if(!GetMessengerKeys(privateRsaKey, publicRsaKey)) {
+        return;
     }
 
     try {
@@ -1560,8 +1544,6 @@ void CWallet::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const 
     }
 
     m_last_block_processed = pindex;
-
-    std::cout << "BLOCK CONNECTED: " << pblock->GetHash().ToString() << std::endl;
 }
 
 void CWallet::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDelete, const std::vector<CTransactionRef>& vNameConflicts) {
