@@ -370,7 +370,7 @@ UniValue importmsgkey(const JSONRPCRequest& request)
 
         "\nArguments:\n"
         "1. \"source_path\"                        (string, required) The source file path.\n"
-        "2. rescan                                 (boolean, optional, default=true) Rescan the wallet for messenger transactions\n"
+        "2. rescan                                 (boolean, optional, default=false) Rescan the wallet for messenger transactions\n"
         "\nNote: This call can take a long time to complete if rescan is true, during that time, other rpc calls may not work correctly\n"
         "\nExamples:\n"
         + HelpExampleCli("importmsgkey", "\"source_path\"")
@@ -410,7 +410,7 @@ UniValue importmsgkey(const JSONRPCRequest& request)
         EnsureMsgWalletIsUnlocked(pwallet);
 
         // Whether to perform rescan after import
-        bool fRescan = true;
+        bool fRescan = false;
         if (!request.params[1].isNull())
             fRescan = request.params[1].get_bool();
 
