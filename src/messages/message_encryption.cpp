@@ -76,7 +76,7 @@ std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithRsa(
     int dataLength,
     const char* rsaKey)
 {
-    BIO* keybio = BIO_new_mem_buf(rsaKey, -1);
+    BIO* keybio = BIO_new_mem_buf((char*)rsaKey, -1);
     if (keybio == nullptr) {
         throw std::runtime_error("Failed to create key BIO for message encryption");
     }
@@ -132,7 +132,7 @@ std::vector<unsigned char> createEncryptedMessage(
 
 int decryptKey(unsigned char* encryptedData, int dataLength, const char* rsaKey, unsigned char* decryptedKey)
 {
-    BIO* keybio = BIO_new_mem_buf(rsaKey, -1);
+    BIO* keybio = BIO_new_mem_buf((char*)rsaKey, -1);
     if (keybio == nullptr) {
         throw std::runtime_error("Failed to create BIO");
     }
