@@ -634,6 +634,12 @@
             </item>
             <item>
              <widget class="QTextEdit" name="addressEdit">
+              <property name="font">
+               <font>
+                <family>Monospace</family>
+                <pointsize>9</pointsize>
+               </font>
+              </property>
               <property name="toolTip">
                <string>Enter recipient public key.</string>
               </property>
