@@ -89,33 +89,40 @@ bool EditMsgAddressDialog::saveCurrentRow()
     if(!model)
         return false;
 
-    switch(mode)
-    {
-    case NewSendingAddress:
+    try {
+        switch(mode)
         {
-        CMessengerKey addressKey(ui->addressEdit->toPlainText().toStdString(), CMessengerKey::PUBLIC_KEY);
-        address = model->addRow(
-            ui->labelEdit->text(),
-            QString(addressKey.toString().c_str()));
-        }
-        break;
-    case EditSendingAddress:
-        if(mapper->submit())
-        {
+        case NewSendingAddress:
+            {
             CMessengerKey addressKey(ui->addressEdit->toPlainText().toStdString(), CMessengerKey::PUBLIC_KEY);
-            address = QString(addressKey.toString().c_str());
+            address = model->addRow(
+                ui->labelEdit->text(),
+                QString(addressKey.toString().c_str()));
+            }
+            break;
+        case EditSendingAddress:
+            if(mapper->submit())
+            {
+                CMessengerKey addressKey(ui->addressEdit->toPlainText().toStdString(), CMessengerKey::PUBLIC_KEY);
+                address = QString(addressKey.toString().c_str());
+            }
+            break;
         }
-        break;
+    } catch (std::exception&)
+    {
+        return false;
     }
     return !address.isEmpty();
 }
 
 void EditMsgAddressDialog::validateRsaKey()
 {
-    if (checkRSApublicKey(ui->addressEdit->toPlainText().toStdString())) {
+    try
+    {
+        CMessengerKey(ui->addressEdit->toPlainText().toStdString(), CMessengerKey::PUBLIC_KEY);
         ui->warningLabel->setVisible(false);
-    }
-    else {
+    } catch (std::exception&)
+    {
         QPalette p;
         p.setColor(ui->warningLabel->foregroundRole(), Qt::red);
         ui->warningLabel->setPalette(p);
