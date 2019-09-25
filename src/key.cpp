@@ -370,14 +370,14 @@ void ECC_Stop() {
 template<typename T>
 static inline void ltrim(T &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return (ch=='-');
+        return (ch != ' ' && ch != '\t' && ch != '\n');
     }));
 }
 
 template<typename T>
 static inline void rtrim(T &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return (ch=='-');
+        return (ch != ' ' && ch != '\t' && ch != '\n');
     }).base(), s.end());
 }
 
@@ -388,7 +388,6 @@ static inline void trim(T &s) {
 }
 
 CMessengerKey::CMessengerKey() : m_type(NONE) {
-
 }
 
 CMessengerKey::CMessengerKey(const std::string& key, Type type)

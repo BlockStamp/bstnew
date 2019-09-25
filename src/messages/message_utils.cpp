@@ -17,7 +17,7 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
     }
 
     auto posend = rsaPublicKey.find(keyEnd);
-    if (posend == std::string::npos) {
+    if (posend != rsaPublicKey.length() - keyEnd.length()) {
         return false;
     }
 
@@ -34,8 +34,6 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
 //    if (encodingLength == 216) {
 //        return true;
 //    }
-
-    //TODO: Consider enabling other key lengths
 
     // RSA 2048
     if (encodingLength == 392) {
@@ -58,27 +56,29 @@ bool checkRSAprivateKey(const std::string& rsaPrivateKey)
 
     auto posbeg = rsaPrivateKey.find(keyBeg);
     if (posbeg != 0) {
+        LogPrintf("Incorrect private key header\n");
         return false;
     }
 
     auto posend = rsaPrivateKey.find(keyEnd);
-    if (posend == std::string::npos) {
+    if (posend != rsaPrivateKey.length() - keyEnd.length()) {
+        LogPrintf("Incorrect private key footer\n");
         return false;
     }
 
-    std::size_t encodingLength = 0;
-    for(size_t i = keyBeg.length(); i < posend; ++i)
-    {
-        if (is_base64(rsaPrivateKey[i]))
-        {
-            ++encodingLength;
-        }
-    }
+    return true;
 
-//    if (encodingLength == 1590) {
-        return true;
+//    std::size_t encodingLength = 0;
+//    for(size_t i = keyBeg.length(); i < posend; ++i)
+//    {
+//        if (is_base64(rsaPrivateKey[i]))
+//        {
+//            ++encodingLength;
+//        }
 //    }
-    LogPrintf("Incorrect length of private key: %u\n", encodingLength);
+//    if (encodingLength == 1590) {
+//        LogPrintf("Incorrect length of private key: %u\n", encodingLength);
+//        return false;
+//    }
 
-    return false;
 }
