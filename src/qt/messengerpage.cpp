@@ -795,7 +795,7 @@ void MessengerPage::fillTable(TransactionsMap& transactions)
     for (auto index  = transactions.begin(); index != transactions.end(); ++index)
     {
         const TransactionValue &it  = index->second;
-        QTableWidgetItem *item = new QTableWidgetItem(QString::number(it.wltTx.nTimeReceived));
+        QTableWidgetItem *item = new QTableWidgetItem(QString::number(it.wltTx.nTimeSmart > 0 ? it.wltTx.nTimeSmart : it.wltTx.nTimeReceived));
         item->setData(Qt::UserRole, index->first.ToString().c_str());
 
         std::string label;

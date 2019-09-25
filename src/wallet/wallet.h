@@ -928,6 +928,7 @@ public:
 
     void GetKeyBirthTimes(std::map<CTxDestination, int64_t> &mapKeyBirth) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     unsigned int ComputeTimeSmart(const CWalletTx& wtx) const;
+    unsigned int ComputeMessengerTimeSmart(const CWalletTx& wtx) const;
 
     /**
      * Increment the next transaction order id

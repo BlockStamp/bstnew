@@ -1213,7 +1213,7 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
     bool fInsertedNew = ret.second;
     if (fInsertedNew) {
         wtx.nTimeReceived = GetAdjustedTime();
-        wtx.nTimeSmart = ComputeTimeSmart(wtx);
+        wtx.nTimeSmart = ComputeMessengerTimeSmart(wtx);
     }
 
     bool fUpdated = false;
@@ -4293,6 +4293,25 @@ unsigned int CWallet::ComputeTimeSmart(const CWalletTx& wtx) const
             WalletLogPrintf("%s: found %s in block %s not in index\n", __func__, wtx.GetHash().ToString(), wtx.hashBlock.ToString());
         }
     }
+    return nTimeSmart;
+}
+
+/**
+ * Computes smart time for a messenger transaction.
+ */
+unsigned int CWallet::ComputeMessengerTimeSmart(const CWalletTx& wtx) const
+{
+    int64_t nTimeSmart = wtx.nTimeReceived;
+
+    if (!wtx.hashUnset()) {
+        if (const CBlockIndex* pindex = LookupBlockIndex(wtx.hashBlock)) {
+            int64_t blocktime = pindex->GetBlockTime();
+            nTimeSmart = std::min(blocktime, nTimeSmart);
+        } else {
+            WalletLogPrintf("%s: found %s in block %s not in index\n", __func__, wtx.GetHash().ToString(), wtx.hashBlock.ToString());
+        }
+    }
+
     return nTimeSmart;
 }
 
