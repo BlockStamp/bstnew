@@ -630,7 +630,7 @@ UniValue listmsgsinceblock(const JSONRPCRequest& request)
         {
             UniValue entry(UniValue::VOBJ);
 
-            time_t t = it.wltTx.nTimeReceived;
+            time_t t = (it.wltTx.nTimeSmart > 0 ? it.wltTx.nTimeSmart : it.wltTx.nTimeReceived);
             std::tm *ptm = std::localtime(&t);
             char buffer[32];
             std::strftime(buffer, sizeof(buffer), "%d.%m.%Y %H:%M", ptm);
