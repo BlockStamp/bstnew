@@ -764,10 +764,12 @@ std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress
         throw std::runtime_error("Missing receiver public key, message can't be encrypted");
     }
 
+    CMessengerKey receiverPublicKey(publicKey, CMessengerKey::PUBLIC_KEY);
+
     std::vector<unsigned char> retData = createEncryptedMessage(
         reinterpret_cast<const unsigned char*>(msg.c_str()),
         msg.length(),
-        publicKey.c_str());
+        receiverPublicKey.toString().c_str());
 
     return retData;
 }

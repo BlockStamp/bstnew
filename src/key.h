@@ -207,14 +207,16 @@ public:
     CMessengerKey();
     CMessengerKey(const std::string& key, Type type);
     CMessengerKey(MessengerKey key, Type type);
+    CMessengerKey(const CMessengerKey& key);
+
     void set(const std::string& key, Type type);
-    MessengerKey get();
+    MessengerKey get() const;
     const std::string toString();
     const std::vector<unsigned char> toVChar();
     bool toString(std::string& key);
     bool toVChar(std::vector<unsigned char>& key);
 
-    CMessengerKey& operator=(CMessengerKey key);
+    CMessengerKey& operator=(const CMessengerKey& key);
 private:
     bool verifyPublicKey();
     bool verifyPrivateKey();

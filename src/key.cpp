@@ -415,6 +415,10 @@ CMessengerKey::CMessengerKey(MessengerKey key, Type type)
     }
 }
 
+CMessengerKey::CMessengerKey(const CMessengerKey &key)
+    : m_key(key.m_key), m_type(key.m_type) {
+}
+
 void CMessengerKey::set(const std::string& key, Type type) {
     m_key.assign(key.begin(), key.end());
     m_type = type;
@@ -426,7 +430,7 @@ void CMessengerKey::set(const std::string& key, Type type) {
     }
 }
 
-MessengerKey CMessengerKey::get() {
+MessengerKey CMessengerKey::get() const  {
     if (m_key.empty())
         throw std::runtime_error("ERROR: No key");
     return m_key;
@@ -437,6 +441,34 @@ bool CMessengerKey::verifyPrivateKey() {
 }
 
 bool CMessengerKey::verifyPublicKey() {
+    const std::string LABEL_BEGIN = "-----BEGIN PUBLIC KEY-----";
+    const std::string LABEL_END = "-----END PUBLIC KEY-----";
+    const char NEWLINE = '\n';
+
+    auto labelBeginPos = std::search(
+        m_key.begin(),
+        m_key.end(),
+        LABEL_BEGIN.begin(),
+        LABEL_BEGIN.end());
+
+    if (labelBeginPos == m_key.end()) {
+        std::string labelBegin = LABEL_BEGIN + NEWLINE;
+        m_key.insert(m_key.begin(), labelBegin.begin(), labelBegin.end());
+    }
+
+    auto labelEndPos = std::search(
+        m_key.begin(),
+        m_key.end(),
+        LABEL_END.begin(),
+        LABEL_END.end());
+
+    if (labelEndPos == m_key.end()) {
+        if (m_key.back() != NEWLINE) {
+            m_key.push_back(NEWLINE);
+        }
+        m_key.insert(m_key.end(), LABEL_END.begin(), LABEL_END.end());
+    }
+
     return checkRSApublicKey(std::string(m_key.begin(), m_key.end()));
 }
 
@@ -464,7 +496,7 @@ bool CMessengerKey::toVChar(std::vector<unsigned char>& key) {
     return true;
 }
 
-CMessengerKey& CMessengerKey::operator=(CMessengerKey key) {
+CMessengerKey& CMessengerKey::operator=(const CMessengerKey& key) {
     m_key = key.get();
     m_type = key.m_type;
     return *this;
