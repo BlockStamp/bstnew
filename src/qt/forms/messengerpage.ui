@@ -633,7 +633,7 @@
              </layout>
             </item>
             <item>
-             <widget class="QTextEdit" name="addressEdit">
+             <widget class="QPlainTextEdit" name="addressEdit">
               <property name="font">
                <font>
                 <family>Monospace</family>
@@ -667,13 +667,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QTextEdit" name="messageStoreEdit">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>0</height>
-               </size>
-              </property>
+             <widget class="QPlainTextEdit" name="messageStoreEdit">
               <property name="toolTip">
                <string>Enter message body.</string>
               </property>

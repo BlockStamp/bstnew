@@ -871,7 +871,7 @@ void MessengerPage::setMessageReply()
     QString address = ui->transactionTable->item(row, TransactionsTableColumn::FROM)->data(Qt::UserRole).toString();
     QString subject = ui->transactionTable->item(row, TransactionsTableColumn::SUBJECT)->text();
 
-    ui->addressEdit->setText(address);
+    ui->addressEdit->setPlainText(address);
     ui->subjectEdit->setText(subject);
     ui->tabWidget->setCurrentIndex(TabName::TAB_SEND);
     ui->messageStoreEdit->setFocus();
