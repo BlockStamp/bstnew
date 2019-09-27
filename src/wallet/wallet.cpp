@@ -30,6 +30,7 @@
 #include <wallet/fees.h>
 #include <wallet/walletutil.h>
 #include <messages/message_encryption.h>
+#include <messages/message_utils.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -1269,24 +1270,8 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
     }
 
     try {
-        //TODO: Consider returning std::string from createDecryptedMessage
-        std::vector<unsigned char> decryptedData = createDecryptedMessage(
-            reinterpret_cast<unsigned char*>(opReturn.data()),
-            opReturn.size(),
-            privateRsaKey.toString().c_str());
-
-        std::string message(decryptedData.begin(), decryptedData.end());
-
-        std::size_t newlinepos, previous = 0;
-        if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
-            throw std::runtime_error("Incorrect message format");
-        CMessengerKey fromKey(message.substr(previous, newlinepos), CMessengerKey::PUBLIC_KEY);
-        const auto from = fromKey.toString();
-        previous = newlinepos+1;
-
-        if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
-            throw std::runtime_error("Incorrect message format");
-        const auto subject = message.substr(previous, newlinepos - previous);
+        std::string from, subject, body;
+        decryptMessageAndSplit(opReturn, privateRsaKey.toString(), from, subject, body);
 
         CWalletTx wtx(this, ptx);
         AddEncrMsgToWallet(from, subject, wtx, pIndex, posInBlock);

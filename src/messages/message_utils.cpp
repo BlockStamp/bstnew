@@ -1,4 +1,6 @@
 #include "message_utils.h"
+#include <messages/message_encryption.h>
+#include <key.h>
 
 #include "logging.h"
 
@@ -82,4 +84,42 @@ bool checkRSAprivateKey(const std::string& rsaPrivateKey)
 //        return false;
 //    }
 
+}
+
+void decryptMessageAndSplit(std::vector<char> &opReturnData,
+                            const std::string& privateKey,
+                            std::string& from,
+                            std::string& subject,
+                            std::string& body)
+{
+    std::vector<unsigned char> decryptedData = createDecryptedMessage(
+        reinterpret_cast<unsigned char*>(opReturnData.data()),
+        opReturnData.size(),
+        privateKey.c_str());
+
+    std::string message(decryptedData.begin(), decryptedData.end());
+
+    std::size_t newlinepos, previous = 0;
+    if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
+        throw std::runtime_error("Incorrect message format");
+    const auto signature = message.substr(previous, newlinepos);
+    previous = newlinepos+1;
+
+    if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
+        throw std::runtime_error("Incorrect message format");
+    CMessengerKey fromKey(message.substr(previous, newlinepos - previous), CMessengerKey::PUBLIC_KEY);
+    from = fromKey.toString();
+    previous = newlinepos+1;
+
+    if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
+        throw std::runtime_error("Incorrect message format");
+    subject = message.substr(previous, newlinepos - previous);
+
+    if (!verifySignature(fromKey.toString(), fromKey.toString(), signature.c_str()))
+        throw std::runtime_error("Suspicious message, signature verify failed");
+
+    body = message.substr(newlinepos+1);
+
+    if (from.empty() || subject.empty() || body.empty())
+        throw std::runtime_error("Incorrect message format");
 }

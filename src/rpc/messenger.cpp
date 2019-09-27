@@ -88,11 +88,16 @@ UniValue sendmessage(const JSONRPCRequest& request)
 
     CMessengerKey rsaPrivateKey, rsaPublicKey;
 
-    if (!pwallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey)) {
+    if (!pwallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey))
+    {
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
     }
 
+    char* signature = signMessage(rsaPrivateKey.toString(), rsaPublicKey.toString());
+
     std::string msg=MSG_RECOGNIZE_TAG
+            + signature
+            + MSG_DELIMITER
             + rsaPublicKey.toString()
             + MSG_DELIMITER
             + request.params[0].get_str()
@@ -175,24 +180,12 @@ UniValue readmessage(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
         }
 
-        std::vector<unsigned char> decryptedData = createDecryptedMessage(
-            reinterpret_cast<unsigned char*>(OPreturnData.data()),
-            OPreturnData.size(),
-            privateRsaKey.toString().c_str());
+        std::string from, subject, body;
+        decryptMessageAndSplit(OPreturnData, privateRsaKey.toString(), from, subject, body);
 
-        // replace msg_delimiter with new line character
-        int counter = 0;
-        for (auto &it : decryptedData)
-        {
-            if (it == MSG_DELIMITER)
-            {
-                it = '\n';
-                ++counter;
-            }
-            if (counter == 2) break;
-        }
-
-        return UniValue(UniValue::VSTR, std::string("\"")+std::string(decryptedData.begin(), decryptedData.end())+std::string("\""));
+        std::stringstream msg;
+        msg << from << std::endl << subject << std::endl << body << std::endl;
+        return UniValue(UniValue::VSTR, std::string("\"")+msg.str()+std::string("\""));
     }
 
     return UniValue(UniValue::VSTR, std::string("\"\""));

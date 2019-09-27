@@ -17,4 +17,8 @@ std::vector<unsigned char> createDecryptedMessage(unsigned char* encryptedData, 
 bool generateKeysPair(std::string &publicRsaKey, std::string &privateRsaKey);
 bool matchRSAKeys(const std::string& publicKey, const std::string& privateKey);
 
+char* signMessage(std::string privateKey, std::string plainText);
+bool verifySignature(std::string publicKey, std::string plainText, char* signatureBase64);
+bool verifySignature(std::string publicKey, std::string plainText, const char* signatureBase64);
+
 #endif

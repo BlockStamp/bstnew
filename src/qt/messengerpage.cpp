@@ -593,29 +593,8 @@ void MessengerPage::read(const std::string& txnId)
             const CWalletTx& wtx = it->second.wltTx;
             wtx.tx->loadOpReturn(OPreturnData);
 
-            //TODO: Consider storing decrypted message in memory instead of encrypted data
-            std::vector<unsigned char> decryptedData = createDecryptedMessage(
-                reinterpret_cast<unsigned char*>(OPreturnData.data()),
-                OPreturnData.size(),
-                privateRsaKey.toString().c_str());
-
-            std::string message(decryptedData.begin(), decryptedData.end());
-
-            std::size_t newlinepos, previous = 0;
-            if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
-                throw std::runtime_error("Incorrect message format");
-            CMessengerKey fromKey(message.substr(previous, newlinepos), CMessengerKey::PUBLIC_KEY);
-            const auto from = fromKey.toString();
-            previous = newlinepos+1;
-
-            if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
-                throw std::runtime_error("Incorrect message format");
-            const auto subject = message.substr(previous, newlinepos - previous);
-
-            message = message.substr(newlinepos+1);
-
-            if (from.empty() || subject.empty() || message.empty())
-                throw std::runtime_error("Incorrect message format");
+            std::string from, subject, body;
+            decryptMessageAndSplit(OPreturnData, privateRsaKey.toString(), from, subject, body);
 
             std::string label;
             if (!walletModel->wallet().getMsgAddress(from, &label))
@@ -625,7 +604,7 @@ void MessengerPage::read(const std::string& txnId)
 
             ui->fromLabel->setText(label.c_str());
             ui->subjectReadLabel->setText(subject.c_str());
-            ui->messageViewEdit->setPlainText(message.c_str());
+            ui->messageViewEdit->setPlainText(body.c_str());
         }
         catch(std::exception const& e)
         {
@@ -674,7 +653,8 @@ void MessengerPage::send()
                     return;
                 }
 
-                std::vector<unsigned char> data = getData(publicRsaKey.toString());
+                char* signature = signMessage(privateRsaKey.toString(), publicRsaKey.toString());
+                std::vector<unsigned char> data = getData(publicRsaKey.toString(), signature);
 
                 CRecipient recipient;
                 recipient.scriptPubKey << OP_RETURN << data;
@@ -744,9 +724,11 @@ void MessengerPage::send()
 #endif
 }
 
-std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress)
+std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress, char* signature)
 {
     std::string msg = MSG_RECOGNIZE_TAG
+            + signature
+            + MSG_DELIMITER
             + fromAddress
             + MSG_DELIMITER
             + ui->subjectEdit->text().toUtf8().constData()
