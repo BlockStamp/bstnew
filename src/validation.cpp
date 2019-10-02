@@ -1841,6 +1841,8 @@ static int64_t nBlocksTotal = 0;
 
 bool CChainState::AddOpReturnToDb(const CBlock& block, int height)
 {
+    if (!txdatabase) return true;
+
     for (unsigned int i = 0; i < block.vtx.size(); i++) {
         std::vector<char> opReturn;
         const CTransaction& tx = *(block.vtx[i]);
@@ -2155,7 +2157,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         setDirtyBlockIndex.insert(pindex);
     }
 
-    if (AddOpReturnToDb(block, pindex->nHeight));
+    AddOpReturnToDb(block, pindex->nHeight);
 
     assert(pindex->phashBlock);
     // add this block to the view's block chain

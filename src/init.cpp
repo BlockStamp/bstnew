@@ -370,6 +370,7 @@ void SetupServerArgs()
 #endif
     gArgs.AddArg("-txindex", strprintf("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)", DEFAULT_TXINDEX), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-namehistory", strprintf("Keep track of the full name history (default: %u)", 0), false, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-txdata", strprintf("Save data of every transaction (stored as OP_RETURN) in database (default: %u)", DEFAULT_TXDATA), false, OptionsCategory::OPTIONS);
 
     gArgs.AddArg("-addnode=<ip>", "Add a node to connect to and attempt to keep the connection open (see the `addnode` RPC command help for more info). This option can be specified multiple times to add multiple nodes.", false, OptionsCategory::CONNECTION);
     gArgs.AddArg("-banscore=<n>", strprintf("Threshold for disconnecting misbehaving peers (default: %u)", DEFAULT_BANSCORE_THRESHOLD), false, OptionsCategory::CONNECTION);
@@ -1454,9 +1455,11 @@ bool AppInitMain()
                 pblocktree.reset();
                 pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, false, fReset));
 
-                const fs::path txdbpath = GetDataDir()/"txdatabase";
-                fs::create_directory(txdbpath);
-                txdatabase.reset(new TxBerkeleyDb(txdbpath, "txdb.dat"));
+                if (gArgs.IsArgSet("-txdata")) {
+                    const fs::path txdbpath = GetDataDir()/"txdatabase";
+                    fs::create_directory(txdbpath);
+                    txdatabase.reset(new TxBerkeleyDb(txdbpath, "txdb.dat"));
+                }
 
                 if (fReset) {
                     pblocktree->WriteReindexing(true);
