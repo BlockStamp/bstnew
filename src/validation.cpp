@@ -173,6 +173,9 @@ public:
     // Block disconnection on our pcoinsTip:
     bool DisconnectTip(CValidationState& state, const CChainParams& chainparams, DisconnectedBlockTransactions *disconnectpool);
 
+    // Add op returns to db
+    bool AddOpReturnToDb(const CBlock& block, int height);
+
     // Manual block validity manipulation:
     bool PreciousBlock(CValidationState& state, const CChainParams& params, CBlockIndex* pindex) LOCKS_EXCLUDED(cs_main);
     bool InvalidateBlock(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
@@ -294,6 +297,7 @@ CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& loc
 std::unique_ptr<CCoinsViewDB> pcoinsdbview;
 std::unique_ptr<CCoinsViewCache> pcoinsTip;
 std::unique_ptr<CBlockTreeDB> pblocktree;
+std::unique_ptr<TxBerkeleyDb> txdatabase;
 
 enum class FlushStateMode {
     NONE,
@@ -1835,6 +1839,19 @@ static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 static int64_t nBlocksTotal = 0;
 
+bool CChainState::AddOpReturnToDb(const CBlock& block, int height)
+{
+    for (unsigned int i = 0; i < block.vtx.size(); i++) {
+        std::vector<char> opReturn;
+        const CTransaction& tx = *(block.vtx[i]);
+        tx.loadOpReturn(opReturn);
+        if (!txdatabase->SaveTxData(height, i, opReturn)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
  *  can fail if those validity checks fail (among other reasons). */
@@ -2137,6 +2154,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
         setDirtyBlockIndex.insert(pindex);
     }
+
+    if (AddOpReturnToDb(block, pindex->nHeight));
 
     assert(pindex->phashBlock);
     // add this block to the view's block chain
