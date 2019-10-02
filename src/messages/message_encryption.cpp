@@ -456,7 +456,7 @@ void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length
     *buffer = (unsigned char*)malloc(decodeLen + 1);
     (*buffer)[decodeLen] = '\0';
 
-    bio = BIO_new_mem_buf(b64message, -1);
+    bio = BIO_new_mem_buf((void*)b64message, -1);
     b64 = BIO_new(BIO_f_base64());
     bio = BIO_push(b64, bio);
 
