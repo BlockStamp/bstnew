@@ -10,7 +10,12 @@ const std::string TxBerkeleyDb::dbName = "tx_wallet.dat";
 namespace {
 
 int Comp(Db *, const Dbt* first, const Dbt* second) {
-    return (*(uint64_t*)first->get_data()) > (*(uint64_t*)second->get_data());
+    uint64_t firstKey = *(uint64_t*)first->get_data();
+    uint64_t secondKey = *(uint64_t*)second->get_data();
+
+    if (firstKey > secondKey) return 1;
+    if (firstKey < secondKey) return -1;
+    return 0;
 }
 
 }
