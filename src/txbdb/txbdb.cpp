@@ -57,6 +57,7 @@ TxBerkeleyDb::~TxBerkeleyDb() {
 
 bool TxBerkeleyDb::SaveTxData(uint32_t height, uint32_t txidx, const std::vector<char> &txdata) {
     uint64_t keyData = (uint64_t)height << 32 | txidx;
+
     Dbt key(&keyData, sizeof(keyData));
     Dbt value((void*)txdata.data(), txdata.size());
 
