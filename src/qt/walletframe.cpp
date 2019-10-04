@@ -187,8 +187,16 @@ void WalletFrame::gotoMessengerPage()
     }
 
     QMap<QString, WalletView*>::const_iterator i;
-    for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
-        i.value()->gotoMessengerPage();
+    for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i) {
+        WalletView* otherView = i.value();
+        WalletModel* otherModel = otherView->getWalletModel();
+        if (otherModel->getMessengerEncryptionStatus() == WalletModel::EncryptionStatus::Locked) {
+            otherView->gotoOverviewPage();
+        }
+        else {
+            otherView->gotoMessengerPage();
+        }
+    }
 }
 
 

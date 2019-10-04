@@ -276,7 +276,7 @@ static UniValue encryptmessenger(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: Failed to encrypt the messenger.");
     }
 
-    return "messenger encrypted; You need to make a new backup.";
+    return "messenger encrypted.";
 }
 
 static UniValue messengerlock(const JSONRPCRequest& request)
