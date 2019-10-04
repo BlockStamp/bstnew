@@ -1,4 +1,6 @@
 #include "txbdb.h"
+#include "logging.h"
+
 #include <memory>
 #include <vector>
 
@@ -35,10 +37,12 @@ TxBerkeleyDb::TxBerkeleyDb(const fs::path dir, const std::string& dbName) {
             DB_BTREE,
             db_flags,
             0);
+
+        isOpen = true;
     }
     catch(const std::exception& e) {
         std::cerr << e.what() << std::endl;
-        //TODO: add logging
+        LogPrintf("Failed to setup Berkeley DB for tx data, error: %s\n", e.what());
     }
 
 }
@@ -55,6 +59,7 @@ TxBerkeleyDb::~TxBerkeleyDb() {
     }
     catch(std::exception& e) {
         std::cerr << e.what() << std::endl;
+        LogPrintf("Failed to close Berkeley DB for tx data, error: %s\n", e.what());
     }
 }
 
@@ -64,9 +69,12 @@ bool TxBerkeleyDb::SaveTxData(uint32_t height, uint32_t txidx, const std::vector
     Dbt key(&keyData, sizeof(keyData));
     Dbt value((void*)txdata.data(), txdata.size());
 
-    if (db) {
+    try {
+        if (!db) return false;
+        if (!isOpen) return false;
         return (db->put(nullptr, &key, &value, 0) == 0);
     }
-
-    return false;
+    catch(const std::exception&) {
+        return false;
+    }
 }

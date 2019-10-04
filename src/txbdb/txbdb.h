@@ -21,6 +21,7 @@ public:
 private:
     std::unique_ptr<DbEnv> env;
     std::unique_ptr<Db> db;
+    bool isOpen = false;
 };
 
 
