@@ -19,7 +19,6 @@ public:
     bool SaveTxData(uint32_t height, uint32_t txid, const std::vector<char>& txdata);
 
 private:
-    const static std::string dbName;
     std::unique_ptr<DbEnv> env;
     std::unique_ptr<Db> db;
 };

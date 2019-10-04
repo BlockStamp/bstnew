@@ -5,8 +5,6 @@
 #include <db_cxx.h>
 
 
-const std::string TxBerkeleyDb::dbName = "tx_wallet.dat";
-
 namespace {
 
 int Comp(Db *, const Dbt* first, const Dbt* second) {
