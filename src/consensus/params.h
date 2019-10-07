@@ -140,6 +140,8 @@ struct Params {
     int GamesVersion2;
     /** bioinfo hardfork due to incorrect getbet verification */
     int GetbetNewVerify;
+    /** bioinfo hardfork - change of block subsidy*/
+    int SubsidyChangeHeight;
 
 
     /**
