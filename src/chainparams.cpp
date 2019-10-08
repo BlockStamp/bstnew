@@ -77,7 +77,7 @@ public:
         consensus.GamesVersion2 = 224940;
         consensus.MakebetFormatVerify = 132015;
         consensus.GetbetNewVerify = 169757;
-        consensus.SubsidyChangeHeight = 700000;
+        consensus.SubsidyChangeHeight = 685385;
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 1 * 60; // one minute
@@ -185,7 +185,7 @@ public:
         consensus.GamesVersion2 = 224940;
         consensus.MakebetFormatVerify = 132015;
         consensus.GetbetNewVerify = 169757;
-        consensus.SubsidyChangeHeight = 700000;
+        consensus.SubsidyChangeHeight = 685385;
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
