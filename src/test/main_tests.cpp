@@ -13,7 +13,7 @@
 
 BOOST_FIXTURE_TEST_SUITE(main_tests, TestingSetup)
 
-static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
+static void TestBlockSubsidyChange(const Consensus::Params& consensusParams)
 {
     const int blockSubsidyChangeHeight = consensusParams.SubsidyChangeHeight;
     const CAmount subsidyBeforeChange = 50 * COIN;
@@ -32,19 +32,19 @@ static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
     BOOST_CHECK_EQUAL(subsidyAfterChange, subsidy);
 }
 
-static void TestBlockSubsidyHalvings(int nSubsidyHalvingInterval)
+static void TestBlockSubsidyChange(int nSubsidyChangeHeight)
 {
     Consensus::Params consensusParams;
-    consensusParams.nSubsidyHalvingInterval = nSubsidyHalvingInterval;
-    TestBlockSubsidyHalvings(consensusParams);
+    consensusParams.SubsidyChangeHeight = nSubsidyChangeHeight;
+    TestBlockSubsidyChange(consensusParams);
 }
 
 BOOST_AUTO_TEST_CASE(block_subsidy_test)
 {
     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
-    TestBlockSubsidyHalvings(chainParams->GetConsensus()); // As in main
-    TestBlockSubsidyHalvings(150); // As in regtest
-    TestBlockSubsidyHalvings(1000); // Just another interval
+    TestBlockSubsidyChange(chainParams->GetConsensus()); // As in main
+    TestBlockSubsidyChange(150); // As in regtest
+    TestBlockSubsidyChange(1000); // Just another interval
 }
 
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
