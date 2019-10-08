@@ -61,7 +61,7 @@ class NameUtxoTest (NameTestFramework):
     amount = data['amount']
     assert_equal (amount['names'], Decimal ('0.0002'))
     assert_equal (amount['total'], amount['names'] + amount['coins'])
-    mined = 1499 * 50 + (height - 1499) * 25
+    mined = height * 50
     assert_equal (amount['total'], mined - Decimal ('0.0001'))
 
 

@@ -287,7 +287,7 @@ public:
         consensus.GamesVersion2 = 0;
         consensus.MakebetFormatVerify = 0;
         consensus.GetbetNewVerify = 0;
-        consensus.SubsidyChangeHeight = 700000;
+        consensus.SubsidyChangeHeight = 20000;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 1 * 60; // one minute
