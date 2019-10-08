@@ -393,7 +393,7 @@ namespace modulo
                 }
             }
 
-            if(inAcc >= ((9*blockSubsidy)/10))
+            if(inAcc >= blockSubsidy)
             {
                 if(payoffAcc>inAcc+blockSubsidy)
                 {
@@ -1457,8 +1457,8 @@ namespace modulo
                 }
             }
 
-            // sum of all bets higher than 90% of block subsidy
-            if(inAcc >= ((9*blockSubsidy)/10))
+            // sum of all bets higher than block subsidy
+            if(inAcc >= blockSubsidy)
             {
                 LogPrintf("%s:ERROR Sum of all bets: %d higher than 90%% of blockSubsidy: %d\n", __func__, inAcc, blockSubsidy);
                 return true;
@@ -1529,8 +1529,8 @@ namespace modulo
                 LogPrintf("%s: ERROR potential:%ld max:%ld\n", __func__, rewardSum, MAX_PAYOFF);
                 return false;
             }
-            // sum of all bets higher than 90% of block subsidy
-            if (betsSum > ((9*blockSubsidy)/10))
+            // sum of all bets higher than block subsidy
+            if (betsSum > blockSubsidy)
             {
                 LogPrintf("%s:ERROR Sum of all bets: %d higher than 90%% of blockSubsidy: %d\n", __func__, betsSum, blockSubsidy);
                 return false;
