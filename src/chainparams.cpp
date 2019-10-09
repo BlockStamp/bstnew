@@ -65,7 +65,6 @@ class CMainParams : public CChainParams {
 public:
     CMainParams() {
         strNetworkID = "main";
-        consensus.nSubsidyHalvingInterval = 1050000; //every 2 years for 1 minute target spacing
 
         consensus.BIP16Exception = uint256S("8000000049a2e26b0185be50b4b8ed58b707c8893762959f0b1673641cae1828");
         consensus.BIP34Height = 1024;
@@ -175,7 +174,6 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
-        consensus.nSubsidyHalvingInterval = 210000;
         consensus.BIP16Exception = uint256S("0x00000000dd30457c001f4095d208cc1296b0eed002427aa599874af7a432b105");
         consensus.BIP34Height = 21111;
         consensus.BIP34Hash = uint256S("0x0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8");
@@ -278,7 +276,6 @@ class CRegTestParams : public CChainParams {
 public:
     CRegTestParams() {
         strNetworkID = "regtest";
-        consensus.nSubsidyHalvingInterval = 1500;
         consensus.BIP16Exception = uint256();
         consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
         consensus.BIP34Hash = uint256();
