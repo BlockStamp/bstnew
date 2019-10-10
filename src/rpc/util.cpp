@@ -2,12 +2,23 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <rpc/server.h>
+#include <rpc/client.h>
 #include <key_io.h>
 #include <keystore.h>
 #include <rpc/protocol.h>
 #include <rpc/util.h>
 #include <tinyformat.h>
 #include <utilstrencodings.h>
+#include <wallet/wallet.h>
+#include <data/retrievedatatxs.h>
+#include <utilmoneystr.h>
+#include <consensus/validation.h>
+#include <validation.h>
+#include <net.h>
+#include <wallet/rpcwallet.h>
+
+#include <boost/algorithm/string.hpp>
 
 // Converts a hex string to a public key if possible
 CPubKey HexToPubKey(const std::string& hex_in)
@@ -125,4 +136,90 @@ public:
 UniValue DescribeAddress(const CTxDestination& dest)
 {
     return boost::apply_visitor(DescribeAddressVisitor(), dest);
+}
+
+UniValue callRPC(std::string args)
+{
+    std::vector<std::string> vArgs;
+    boost::split(vArgs, args, boost::is_any_of(" \t"));
+    std::string strMethod = vArgs[0];
+    vArgs.erase(vArgs.begin());
+    JSONRPCRequest request;
+    request.strMethod = strMethod;
+    request.params = RPCConvertValues(strMethod, vArgs);
+    request.fHelp = false;
+
+    rpcfn_type method = tableRPC[strMethod]->actor;
+    try {
+        UniValue result = (*method)(request);
+        return result;
+    }
+    catch (const UniValue& objError) {
+        throw std::runtime_error(find_value(objError, "message").get_str());
+    }
+}
+
+std::vector<char> getOPreturnData(const std::string& txid, const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* pwallet=nullptr;
+    if(wallet!=nullptr)
+    {
+        pwallet=wallet.get();
+    }
+
+    RetrieveDataTxs retrieveDataTxs(txid, pwallet);
+    return retrieveDataTxs.getTxData();
+}
+
+UniValue setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& coin_control, const JSONRPCRequest& request)
+{
+    UniValue res(UniValue::VARR);
+
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    if(wallet==nullptr)
+    {
+        throw std::runtime_error(std::string("No wallet found"));
+    }
+    CWallet* const pwallet=wallet.get();
+
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    CAmount curBalance = pwallet->GetBalance();
+
+    CRecipient recipient;
+    recipient.scriptPubKey << OP_RETURN << data;
+    recipient.nAmount=0;
+    recipient.fSubtractFeeFromAmount=false;
+
+    std::vector<CRecipient> vecSend;
+    vecSend.push_back(recipient);
+
+    CReserveKey reservekey(pwallet);
+    CAmount nFeeRequired;
+    int nChangePosInOut=1;
+    std::string strFailReason;
+    CTransactionRef tx;
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    if(!pwallet->CreateTransaction(vecSend, nullptr, tx, reservekey, nFeeRequired, nChangePosInOut, strFailReason, coin_control))
+    {
+        if (nFeeRequired > curBalance)
+        {
+            strFailReason = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
+        }
+        throw std::runtime_error(std::string("CreateTransaction failed with reason: ")+strFailReason);
+    }
+
+    CValidationState state;
+    if(!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state))
+    {
+        throw std::runtime_error(std::string("CommitTransaction failed with reason: ")+FormatStateMessage(state));
+    }
+
+    std::string txid=tx->GetHash().GetHex();
+    return UniValue(UniValue::VSTR, txid);
 }

@@ -82,7 +82,7 @@ UniValue makebet(const JSONRPCRequest& request)
         + HelpExampleRpc("makebet", "straight_2@0.1+street_3@0.05")
 	);
 
-    std::shared_ptr<CWallet> wallet = GetWallets()[0];
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if(wallet==nullptr)
     {
         throw std::runtime_error(std::string("No wallet found"));

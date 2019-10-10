@@ -599,7 +599,9 @@ void DataPage::retrieve()
 {
     try
     {
-        std::shared_ptr<CWallet> wallet = GetWallets()[0];
+
+        interfaces::Wallet& wlt = walletModel->wallet();
+        std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
         CWallet* pwallet=nullptr;
         if(wallet!=nullptr)
         {
@@ -773,7 +775,8 @@ void DataPage::store()
     {
         try
         {
-            std::shared_ptr<CWallet> wallet = GetWallets()[0];
+            interfaces::Wallet& wlt = walletModel->wallet();
+            std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
             if(wallet != nullptr)
             {
                 CWallet* const pwallet=wallet.get();
@@ -888,7 +891,8 @@ void DataPage::check()
         std::string blockchainHash;
         std::string txid=ui->checkLineEdit->text().toStdString();
 
-        std::shared_ptr<CWallet> wallet = GetWallets()[0];
+        interfaces::Wallet& wlt = walletModel->wallet();
+        std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
         CWallet* pwallet=nullptr;
         if(wallet!=nullptr)
         {

@@ -932,7 +932,8 @@ void GamePage::makeBet()
     {
         try
         {
-            std::shared_ptr<CWallet> wallet = GetWallets()[0];
+            interfaces::Wallet& wlt = walletModel->wallet();
+            std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
             if(wallet != nullptr)
             {
                 CWallet* const pwallet=wallet.get();

@@ -17,11 +17,15 @@
 class CKeyStore;
 class CPubKey;
 class CScript;
+class CCoinControl;
+class JSONRPCRequest;
 
 CPubKey HexToPubKey(const std::string& hex_in);
 CPubKey AddrToPubKey(CKeyStore* const keystore, const std::string& addr_in);
 CScript CreateMultisigRedeemscript(const int required, const std::vector<CPubKey>& pubkeys);
 
 UniValue DescribeAddress(const CTxDestination& dest);
+std::vector<char> getOPreturnData(const std::string& txid, const JSONRPCRequest &request);
+UniValue setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& coin_control, const JSONRPCRequest& request);
 
 #endif // BITCOIN_RPC_UTIL_H
