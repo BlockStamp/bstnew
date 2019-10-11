@@ -758,16 +758,6 @@ void DataPage::storeFileHashRadioClicked()
     updateDataSize();
 }
 
-void DataPage::unlockWallet()
-{
-    if (walletModel->getEncryptionStatus() == WalletModel::Locked)
-    {
-        AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
-        dlg.setModel(walletModel);
-        dlg.exec();
-    }
-}
-
 void DataPage::store()
 {
 #ifdef ENABLE_WALLET
@@ -803,7 +793,12 @@ void DataPage::store()
                 std::string strFailReason;
                 CTransactionRef tx;
 
-                unlockWallet();
+                WalletModel::UnlockContext ctx(walletModel->requestUnlock());
+                if(!ctx.isValid())
+                {
+                    // Unlock wallet was cancelled
+                    return;
+                }
 
                 // Always use a CCoinControl instance, use the CoinControlDialog instance if CoinControl has been enabled
                 CCoinControl coin_control;

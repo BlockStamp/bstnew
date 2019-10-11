@@ -901,16 +901,6 @@ void GamePage::updateRewardView()
     updateBetNumberLimit();
 }
 
-void GamePage::unlockWallet()
-{
-    if (walletModel->getEncryptionStatus() == WalletModel::Locked)
-    {
-        AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
-        dlg.setModel(walletModel);
-        dlg.exec();
-    }
-}
-
 std::string GamePage::makeBetPattern()
 {
     std::string betTypePattern;
@@ -987,7 +977,12 @@ void GamePage::makeBet()
                 std::string strFailReason;
                 CTransactionRef tx;
 
-                unlockWallet();
+                WalletModel::UnlockContext ctx(walletModel->requestUnlock());
+                if(!ctx.isValid())
+                {
+                    // Unlock wallet was cancelled
+                    return;
+                }
 
                 if(!pwallet->CreateTransaction({recipient}, nullptr, tx, reservekey, nFeeRequired, nChangePosInOut, strFailReason, coin_control, true, true))
                 {

@@ -55,7 +55,6 @@ private:
     size_t dataSize;
 
     void displayInBlocks(QPlainTextEdit* textEdit, const QString& inStr, int blockSize);
-    void unlockWallet();
     std::string computeHash(QByteArray binaryData);
     void computeHash(QByteArray binaryData, std::vector<unsigned char>& hash);
     std::vector<unsigned char> getData();

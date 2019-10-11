@@ -48,7 +48,6 @@ private:
     const PlatformStyle *platformStyle;
 
 private:
-    void unlockWallet();
     void minimizeFeeSection(bool fMinimize);
     void updateFeeMinimizedLabel();
     void updateCoinControlState(CCoinControl& ctrl);

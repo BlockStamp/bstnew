@@ -1315,6 +1315,7 @@ namespace modulo
             }
         }
 
+        // unused
         bool isBetPayoffExceeded(const Consensus::Params& params, const CBlock& block)
         {
             try
