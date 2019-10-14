@@ -33,6 +33,7 @@
 #include <hash.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <games/modulo/moduloverify.h>
 
 #include <assert.h>
 #include <stdint.h>
@@ -136,7 +137,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
         if(txDetails)
         {
             UniValue objTx(UniValue::VOBJ);
-            TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags());
+            TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(), gArgs.IsArgSet("-txfee"));
             txs.push_back(objTx);
         }
         else
@@ -1854,7 +1855,7 @@ static UniValue getblockstats(const JSONRPCRequest& request)
             }
         }
 
-        if (tx->IsCoinBase()) {
+        if (tx->IsCoinBase() || modulo::ver_2::isGetBetTx(*tx)) {
             continue;
         }
 

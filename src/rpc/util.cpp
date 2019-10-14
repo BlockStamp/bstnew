@@ -20,7 +20,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-
 // Converts a hex string to a public key if possible
 CPubKey HexToPubKey(const std::string& hex_in)
 {
@@ -175,6 +174,8 @@ std::vector<char> getOPreturnData(const std::string& txid, const JSONRPCRequest&
 
 UniValue setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& coin_control, const JSONRPCRequest& request)
 {
+    UniValue res(UniValue::VARR);
+
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if(wallet==nullptr)
     {

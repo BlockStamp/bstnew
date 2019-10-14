@@ -1069,6 +1069,15 @@ bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus
 // CBlock and CBlockIndex
 //
 
+static bool WriteBlockToDiskWithoutHeader(const CBlock& block, CDiskBlockPos& pos) {
+    CAutoFile fileout(OpenBlockFile(pos), SER_DISK, CLIENT_VERSION);
+    if (fileout.IsNull())
+        return error("WriteBlockToDiskWithoutHeader: OpenBlockFile failed");
+
+    fileout << block;
+    return true;
+}
+
 static bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart)
 {
     // Open history file to append
@@ -1077,7 +1086,7 @@ static bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMes
         return error("WriteBlockToDisk: OpenBlockFile failed");
 
     // Write index header
-    unsigned int nSize = GetSerializeSize(block, fileout.GetVersion());
+    unsigned int nSize = GetSerializeSizeForDisk(block, fileout.GetVersion());
     fileout << messageStart << nSize;
 
     // Write block
@@ -1130,6 +1139,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
     if (!ReadBlockFromDisk(block, blockPos, consensusParams))
         return false;
+
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                 pindex->ToString(), pindex->GetBlockPos().ToString());
@@ -1184,15 +1194,11 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CBlockIndex* pindex
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
-    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
-    // Force block reward to zero when right shift is undefined.
-    if (halvings >= 64)
-        return 0;
+    if (nHeight < consensusParams.SubsidyChangeHeight) {
+        return 50 * COIN;
+    }
 
-    CAmount nSubsidy = 50 * COIN;
-    // Subsidy is cut in half every 1 050 000 blocks which will occur approximately every 2 years.
-    nSubsidy >>= halvings;
-    return nSubsidy;
+    return 1 * COIN;
 }
 
 bool IsInitialBlockDownload()
@@ -1861,6 +1867,34 @@ bool CChainState::AddOpReturnToDb(const CBlock& block, int height)
     return true;
 }
 
+static bool updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
+    if (!gArgs.IsArgSet("-txfee")) {
+        return true;
+    }
+
+    CDiskBlockPos position = pindex->GetBlockPos();
+    if (position.IsNull()) { // block is not on disk
+        return true;
+    }
+
+    CBlock blockOnDisk;
+    if (!ReadBlockFromDisk(blockOnDisk, pindex, chainparams.GetConsensus())) {
+        return false;
+    }
+
+    assert(!blockOnDisk.IsNull());
+    assert(blockOnDisk.vtx.size() == blockInMemory.vtx.size());
+
+    for (unsigned int i=0; i<blockInMemory.vtx.size(); i++) {
+        const CTransaction& tx = *(blockInMemory.vtx[i]);
+        CTransaction& txOnDisk = const_cast<CTransaction&>(*(blockOnDisk.vtx[i]));
+        assert(tx.GetHash() == txOnDisk.GetHash());
+        txOnDisk.fee = tx.fee;
+    }
+
+    return WriteBlockToDiskWithoutHeader(blockOnDisk, position);
+}
+
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
  *  can fail if those validity checks fail (among other reasons). */
@@ -2059,9 +2093,10 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     blockundo.vtxundo.reserve(block.vtx.size() - 1);
     std::vector<PrecomputedTransactionData> txdata;
     txdata.reserve(block.vtx.size()); // Required so that pointers to individual PrecomputedTransactionData don't get invalidated
+
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
-        const CTransaction &tx = *(block.vtx[i]);
+        CTransaction& tx = const_cast<CTransaction&>(*(block.vtx[i]));
 
         nInputs += tx.vin.size();
 
@@ -2071,7 +2106,10 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             if (!Consensus::CheckTxInputs(tx, state, view, pindex->nHeight, flags, txfee)) {
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
+
             nFees += txfee;
+            tx.fee = gArgs.IsArgSet("-txfee") ? txfee : 0;
+
             if (!MoneyRange(nFees)) {
                 return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
@@ -2125,6 +2163,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             ApplyNameTransaction(tx, pindex->nHeight, view, blockundo);
         }
     }
+
+    if (!updateTxFeesOnDiskIfNeeded(pindex, block, chainparams)) {
+        return error("ConnectBlock(): Failed to update tx fees on disk");
+    }
+
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
@@ -2542,6 +2585,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     // Read block from disk.
     int64_t nTime1 = GetTimeMicros();
     std::shared_ptr<const CBlock> pthisBlock;
+
     if (!pblock) {
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus()))
@@ -3640,7 +3684,7 @@ bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& headers, CValidatio
 
 /** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */
 static CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CChainParams& chainparams, const CDiskBlockPos* dbp) {
-    unsigned int nBlockSize = ::GetSerializeSize(block, CLIENT_VERSION);
+    unsigned int nBlockSize = ::GetSerializeSizeForDisk(block, CLIENT_VERSION);
     CDiskBlockPos blockPos;
     if (dbp != nullptr)
         blockPos = *dbp;
@@ -3740,7 +3784,6 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
     AssertLockNotHeld(cs_main);
-
     {
         CBlockIndex *pindex = nullptr;
         if (fNewBlock) *fNewBlock = false;

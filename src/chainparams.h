@@ -54,6 +54,7 @@ public:
         SECRET_KEY,
         EXT_PUBLIC_KEY,
         EXT_SECRET_KEY,
+        PUBKEY_ADDRESS_VER2,
 
         MAX_BASE58_TYPES
     };

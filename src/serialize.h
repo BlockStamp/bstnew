@@ -902,8 +902,9 @@ protected:
     size_t nSize;
 
     const int nVersion;
+    const int ntype;
 public:
-    explicit CSizeComputer(int nVersionIn) : nSize(0), nVersion(nVersionIn) {}
+    explicit CSizeComputer(int nVersionIn, int nTypeIn=0) : nSize(0), nVersion(nVersionIn), ntype(nTypeIn) {}
 
     void write(const char *psz, size_t _nSize)
     {
@@ -928,6 +929,7 @@ public:
     }
 
     int GetVersion() const { return nVersion; }
+    int GetType() const { return ntype; }
 };
 
 template<typename Stream>
@@ -981,6 +983,12 @@ template <typename T>
 size_t GetSerializeSize(const T& t, int nVersion = 0)
 {
     return (CSizeComputer(nVersion) << t).size();
+}
+
+template <typename T>
+size_t GetSerializeSizeForDisk(const T& t, int nVersion = 0)
+{
+    return (CSizeComputer(nVersion, SER_DISK) << t).size();
 }
 
 template <typename... T>
