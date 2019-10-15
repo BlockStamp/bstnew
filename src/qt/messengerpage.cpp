@@ -508,26 +508,6 @@ void MessengerPage::coinControlUpdateLabels()
     }
 }
 
-void MessengerPage::unlockWallet()
-{
-    if (walletModel->getEncryptionStatus() == WalletModel::Locked)
-    {
-        AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
-        dlg.setModel(walletModel);
-        dlg.exec();
-    }
-}
-
-void MessengerPage::unlockMessenger()
-{
-    if (walletModel->getMessengerEncryptionStatus() == WalletModel::Locked)
-    {
-        AskMessengerPassphraseDialog dlg(AskMessengerPassphraseDialog::Unlock, this);
-        dlg.setModel(walletModel);
-        dlg.exec();
-    }
-}
-
 void MessengerPage::on_transactionsTableCellSelected(int row, int col)
 {
     ui->transactionTable->selectRow(row);
@@ -641,8 +621,8 @@ void MessengerPage::send()
 
                 CAmount curBalance = pwallet->GetBalance();
 
-                WalletModel::MessengerUnlockContext ctx(walletModel->requestMessengerUnlock());
-                if (!ctx.isValid())
+                WalletModel::MessengerUnlockContext msgCtx(walletModel->requestMessengerUnlock());
+                if (!msgCtx.isValid())
                 {
                     return;
                 }
@@ -680,7 +660,12 @@ void MessengerPage::send()
                 std::string strFailReason;
                 CTransactionRef tx;
 
-                unlockWallet();
+                WalletModel::UnlockContext wallCtx(walletModel->requestUnlock());
+                if(!wallCtx.isValid())
+                {
+                    // Unlock wallet was cancelled
+                    return;
+                }
 
                 // Always use a CCoinControl instance, use the CoinControlDialog instance if CoinControl has been enabled
                 CCoinControl coin_control;

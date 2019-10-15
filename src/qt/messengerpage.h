@@ -68,8 +68,6 @@ private:
     QButtonGroup *groupFee;
     const PlatformStyle *platformStyle;
 
-    void unlockWallet();
-    void unlockMessenger();
     void minimizeFeeSection(bool fMinimize);
     void updateFeeMinimizedLabel();
     void updateCoinControlState(CCoinControl& ctrl);
