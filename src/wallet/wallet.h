@@ -611,6 +611,35 @@ struct TransactionValue {
 };
 typedef std::map<uint256, TransactionValue> TransactionsMap;
 
+struct HistoryTransactionValue {
+    std::string addr;
+    std::string subject;
+    std::vector<unsigned char> data;
+    int64_t time;
+
+    HistoryTransactionValue(
+        const std::string& addr_,
+        const std::string& subject_,
+        const std::vector<unsigned char>& data_,
+        int64_t time_) :
+        addr(addr_),
+        subject(subject_),
+        data(data_),
+        time(time_)
+    {
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(addr);
+        READWRITE(subject);
+        READWRITE(data);
+        READWRITE(time);
+    }
+};
+typedef std::map<uint256, HistoryTransactionValue> HistoryTransactionsMap;
 
 class WalletRescanReserver; //forward declarations for ScanForWalletTransactions/RescanFromTime
 class MessengerRescanReserver;
@@ -807,7 +836,7 @@ public:
 
     std::map<uint256, CWalletTx> mapWallet;
     TransactionsMap encrMsgMapWallet;
-
+    HistoryTransactionsMap encrMsgHistory;
 
     typedef std::multimap<int64_t, CWalletTx*> TxItems;
     TxItems wtxOrdered;
@@ -943,6 +972,8 @@ public:
     bool AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose=true);
     void LoadToWallet(const CWalletTx& wtxIn);
     void LoadEncrMsgToWallet(const std::string& from, const std::string& subject, const CWalletTx& wtxIn);
+    void LoadMsgToHistory(const uint256& hash, const std::string& addr, const std::string& subject, const std::vector<unsigned char>& data, int64_t time);
+    bool SaveMsgToHistory(const uint256& hash, const std::string& subject, const std::string& msg, const std::string& fromAddress, const std::string& toAddress);
     void TransactionAddedToMempool(const CTransactionRef& tx) override;
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindex, const std::vector<CTransactionRef>& vtxConflicted, const std::vector<CTransactionRef>& vNameConflicts) override;
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex *pindexDelete, const std::vector<CTransactionRef>& vNameConflicts) override;

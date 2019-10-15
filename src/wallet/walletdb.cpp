@@ -62,6 +62,16 @@ bool WalletBatch::EraseEncrMsgTx(uint256 hash)
     return EraseIC(std::make_pair(std::string("msg_tx"), hash));
 }
 
+bool WalletBatch::WriteMsgTxToHistory(
+    const uint256& hash,
+    const std::string& to,
+    const std::string& subject,
+    const std::vector<unsigned char>& data,
+    int64_t time)
+{
+    return WriteIC(std::make_pair(std::string("msg_hist"), hash), HistoryTransactionValue{to, subject, data, time});
+}
+
 bool WalletBatch::WriteMsgAddress(const std::string& address, const std::string& label)
 {
     return WriteIC(std::make_pair(std::string("msg_address"), address), label);
@@ -303,7 +313,8 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
 
             pwallet->LoadToWallet(wtx);
         }
-        else if (strType == "msg_tx") {
+        else if (strType == "msg_tx")
+        {
             uint256 hash;
             ssKey >> hash;
 
@@ -323,6 +334,25 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                 return false;
 
             pwallet->LoadEncrMsgToWallet(from, subject, wtx);
+        }
+        else if (strType == "msg_hist")
+        {
+            uint256 hash;
+            ssKey >> hash;
+
+            std::string addr;
+            ssValue >> addr;
+
+            std::string subject;
+            ssValue >> subject;
+
+            std::vector<unsigned char> data;
+            ssValue >> data;
+
+            int64_t time;
+            ssValue >> time;
+
+            pwallet->LoadMsgToHistory(hash, addr, subject, data, time);
         }
         else if (strType == "watchs")
         {

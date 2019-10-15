@@ -93,23 +93,28 @@ UniValue sendmessage(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
     }
 
-    char* signature = signMessage(rsaPrivateKey.toString(), rsaPublicKey.toString());
+    const std::string fromAddress = rsaPublicKey.toString();
+    const std::string subject = request.params[0].get_str();
+    const std::string message = request.params[1].get_str();
+    const std::string toAddress = request.params[2].get_str();
+
+    char* signature = signMessage(rsaPrivateKey.toString(), fromAddress);
 
     std::string msg=MSG_RECOGNIZE_TAG
             + signature
             + MSG_DELIMITER
-            + rsaPublicKey.toString()
+            + fromAddress
             + MSG_DELIMITER
-            + request.params[0].get_str()
+            + subject
             + MSG_DELIMITER
-            + request.params[1].get_str();
+            + message;
 
     if(msg.length()>maxDataSize)
     {
         throw std::runtime_error(strprintf("data size is grater than %d bytes", maxDataSize));
     }
 
-    CMessengerKey public_key(request.params[2].get_str(), CMessengerKey::PUBLIC_KEY);
+    CMessengerKey public_key(toAddress, CMessengerKey::PUBLIC_KEY);
 
     CCoinControl coin_control;
     if (!request.params[3].isNull())
@@ -130,11 +135,18 @@ UniValue sendmessage(const JSONRPCRequest& request)
     }
 
     std::vector<unsigned char> data = createEncryptedMessage(
-    reinterpret_cast<const unsigned char*>(msg.c_str()),
-    msg.length(),
-    public_key.toString().c_str());
+        reinterpret_cast<const unsigned char*>(msg.c_str()),
+        msg.length(),
+        public_key.toString().c_str());
 
-    return setOPreturnData(data, coin_control, request);
+    UniValue txid = setOPreturnData(data, coin_control, request);
+
+    if (!pwallet->SaveMsgToHistory(uint256S(txid.get_str()), subject, message, fromAddress, toAddress))
+    {
+        LogPrintf("Error while saving history\n");
+    }
+
+    return txid;
 }
 
 UniValue readmessage(const JSONRPCRequest& request)

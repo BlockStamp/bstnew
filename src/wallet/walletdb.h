@@ -181,6 +181,13 @@ public:
     bool WriteEncrMsgTx(const std::string& from, const std::string& subject, const CWalletTx& wtx);
     bool EraseEncrMsgTx(uint256 hash);
 
+    bool WriteMsgTxToHistory(
+        const uint256& hash,
+        const std::string& to,
+        const std::string& subject,
+        const std::vector<unsigned char>& data,
+        int64_t time);
+
     bool WriteMsgAddress(const std::string& address, const std::string& label);
     bool EraseMsgAddress(const std::string& address);
 

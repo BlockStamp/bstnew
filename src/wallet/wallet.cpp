@@ -1201,6 +1201,19 @@ void CWallet::LoadEncrMsgToWallet(const std::string& from, const std::string& su
     encrMsgMapWallet.emplace(hash, TransactionValue{from, subject, wtxIn});
 }
 
+void CWallet::LoadMsgToHistory(
+    const uint256& hash,
+    const std::string& addr,
+    const std::string& subject,
+    const std::vector<unsigned char>& data,
+    int64_t time)
+{
+    encrMsgHistory.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(hash),
+        std::forward_as_tuple(addr, subject, data, time));
+}
+
 void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& subject, CWalletTx& wtxIn, const CBlockIndex* pIndex, int posInBlock) {
     uint256 hash = wtxIn.GetHash();
 
@@ -1279,6 +1292,40 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
     catch(...) {
         //Is encrypted message, but failed to decrypt
     }
+}
+
+bool CWallet::SaveMsgToHistory(
+    const uint256& hash,
+    const std::string& subject,
+    const std::string& msg,
+    const std::string& fromAddress,
+    const std::string& toAddress)
+{
+    const int64_t time = GetTime();
+    std::vector<unsigned char> encrypted;
+
+    try {
+        encrypted = createEncryptedMessage(
+            reinterpret_cast<const unsigned char*>(msg.c_str()),
+            msg.length(),
+            fromAddress.c_str());
+        }
+    catch(...) {
+        LogPrintf("Failed to encrypted message\n");
+        return false;
+    }
+
+    if (!WalletBatch(*msgDatabase).WriteMsgTxToHistory(hash, toAddress, subject, encrypted, time)) {
+        LogPrintf("Failed to wrtie encrypted message to db\n");
+        return false;
+    }
+
+    encrMsgHistory.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(hash),
+        std::forward_as_tuple(toAddress, subject, encrypted, time));
+
+    return true;
 }
 
 bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockIndex* pIndex, int posInBlock, bool fUpdate)

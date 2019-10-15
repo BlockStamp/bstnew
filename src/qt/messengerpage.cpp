@@ -653,8 +653,18 @@ void MessengerPage::send()
                     return;
                 }
 
-                char* signature = signMessage(privateRsaKey.toString(), publicRsaKey.toString());
-                std::vector<unsigned char> data = getData(publicRsaKey.toString(), signature);
+                const std::string fromAddress = publicRsaKey.toString();
+                const std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
+                const std::string subject = ui->subjectEdit->text().toUtf8().constData();
+                const std::string message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+
+                char* signature = signMessage(privateRsaKey.toString(), fromAddress);
+                std::vector<unsigned char> data = createData(
+                fromAddress,
+                toAddress,
+                subject,
+                message,
+                signature);
 
                 CRecipient recipient;
                 recipient.scriptPubKey << OP_RETURN << data;
@@ -702,6 +712,10 @@ void MessengerPage::send()
                 dlg->setAttribute(Qt::WA_DeleteOnClose);
                 dlg->show();
 
+                if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))
+                {
+                    LogPrintf("Error while saving history\n");
+                }
             }
             else
             {
@@ -724,29 +738,33 @@ void MessengerPage::send()
 #endif
 }
 
-std::vector<unsigned char> MessengerPage::getData(const std::string& fromAddress, char* signature)
+std::vector<unsigned char> MessengerPage::createData(
+    const std::string& fromAddress,
+    const std::string& toAddress,
+    const std::string& subject,
+    const std::string& message,
+    const char* signature)
 {
     std::string msg = MSG_RECOGNIZE_TAG
             + signature
             + MSG_DELIMITER
             + fromAddress
             + MSG_DELIMITER
-            + ui->subjectEdit->text().toUtf8().constData()
+            + subject
             + MSG_DELIMITER
-            + ui->messageStoreEdit->toPlainText().toUtf8().constData();
+            + message;
 
     if (msg.length()>maxDataSize)
     {
         throw std::runtime_error(strprintf("Data size is greater than %d bytes", maxDataSize));
     }
 
-    std::string publicKey = ui->addressEdit->toPlainText().toUtf8().constData();
-    if (publicKey.empty())
+    if (toAddress.empty())
     {
         throw std::runtime_error("Missing receiver public key, message can't be encrypted");
     }
 
-    CMessengerKey receiverPublicKey(publicKey, CMessengerKey::PUBLIC_KEY);
+    CMessengerKey receiverPublicKey(toAddress, CMessengerKey::PUBLIC_KEY);
 
     std::vector<unsigned char> retData = createEncryptedMessage(
         reinterpret_cast<const unsigned char*>(msg.c_str()),

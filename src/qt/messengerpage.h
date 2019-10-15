@@ -75,7 +75,12 @@ private:
     void updateCoinControlState(CCoinControl& ctrl);
 
 
-    std::vector<unsigned char> getData(const std::string &fromAddress, char *signature);
+    std::vector<unsigned char> createData(
+        const std::string& fromAddress,
+        const std::string& toAddress,
+        const std::string& subject,
+        const std::string& message,
+        const char* signature);
 
 protected:
     virtual void showEvent(QShowEvent * event);
