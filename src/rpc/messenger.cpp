@@ -370,12 +370,15 @@ UniValue importmsgkey(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
     throw std::runtime_error(
         "importmsgkey \n"
-        "\nImport pair of keys to use in messenger from source path.\n"
+        "\nImport a pair of RSA keys to use in messenger from source path.\n"
+        "\nThe keys must be in clear text base64-encoded in OpenSSL format, e.g. contain headers BEGIN PUBLIC KEY/END PUBLIC KEY\n"
+        "and BEGIN RSA PRIVATE KEY/END RSA PRIVATE KEY\n"
 
         "\nArguments:\n"
         "1. \"source_path\"                        (string, required) The source file path.\n"
-        "2. rescan                                 (boolean, optional, default=false) Rescan the wallet for messenger transactions\n"
-        "\nNote: This call can take a long time to complete if rescan is true, during that time, other rpc calls may not work correctly\n"
+        "2. rescan                               (boolean, optional, default=false) Rescan the wallet for messenger transactions that can be decoded with these keys\n"
+        "\nNote: This call can take a long time to complete if rescan is true, during that time, other rpc calls may not work correctly"
+        "\nImporting new messenger keys will clear outgoing messages history, e.g. all sent messages will be removed\n"
         "\nExamples:\n"
         + HelpExampleCli("importmsgkey", "\"source_path\"")
         + HelpExampleRpc("importmsgkey", "\"source_path\"")
@@ -423,10 +426,14 @@ UniValue importmsgkey(const JSONRPCRequest& request)
 
         {
             WalletBatch walletBatch(pwallet->GetMsgDBHandle());
+
             for (const auto& tx : pwallet->encrMsgMapWallet)
                 walletBatch.EraseEncrMsgTx(tx.first);
-
             pwallet->encrMsgMapWallet.clear();
+
+            for (const auto& tx : pwallet->encrMsgHistory)
+                walletBatch.EraseMsgTxToHistory(tx.first);
+            pwallet->encrMsgHistory.clear();
 
             if (!pwallet->IsMsgCrypted())
             {

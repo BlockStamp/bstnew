@@ -72,6 +72,11 @@ bool WalletBatch::WriteMsgTxToHistory(
     return WriteIC(std::make_pair(std::string("msg_hist"), hash), HistoryTransactionValue{to, subject, data, time});
 }
 
+bool WalletBatch::EraseMsgTxToHistory(const uint256& hash)
+{
+    return EraseIC(std::make_pair(std::string("msg_hist"), hash));
+}
+
 bool WalletBatch::WriteMsgAddress(const std::string& address, const std::string& label)
 {
     return WriteIC(std::make_pair(std::string("msg_address"), address), label);

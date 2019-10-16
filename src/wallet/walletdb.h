@@ -187,6 +187,7 @@ public:
         const std::string& subject,
         const std::vector<unsigned char>& data,
         int64_t time);
+    bool EraseMsgTxToHistory(const uint256& hash);
 
     bool WriteMsgAddress(const std::string& address, const std::string& label);
     bool EraseMsgAddress(const std::string& address);
