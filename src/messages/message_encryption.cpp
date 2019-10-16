@@ -12,6 +12,7 @@ const int ENCR_MARKER_SIZE = 8;
 const std::string ENCR_MARKER = "MESSAGE:";
 const std::string MSG_RECOGNIZE_TAG = "MSG"; //< message prefix to recognize after decode
 const char MSG_DELIMITER = '\0';
+const char KEY_SEPARATOR = '\n';
 const char* const MY_ADDRESS_LABEL = ".::my address::.";
 
 namespace {
@@ -311,14 +312,14 @@ bool generateKeysPair(std::string& publicRsaKey, std::string& privateRsaKey)
 
 }
 
-RSA* createPrivateRSA(std::string key) {
-    RSA *rsa = NULL;
-    const char* c_string = key.c_str();
-    BIO * keybio = BIO_new_mem_buf((void*)c_string, -1);
-    if (keybio==NULL) {
-      return 0;
+RSA* createPrivateRSA(const std::string& key) {
+    BIO * keybio = BIO_new_mem_buf(key.c_str(), -1);
+    if (keybio==nullptr) {
+        return nullptr;
     }
-    rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+
+    RSA *rsa = nullptr;
+    rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa, nullptr, nullptr);
     return rsa;
 }
 
@@ -338,11 +339,10 @@ RSA* createPublicRSA(std::string key) {
 bool matchRSAKeys(const std::string& publicKey, const std::string& privateKey)
 {
     bool rv = false;
-
     RSA *private_key = createPrivateRSA(privateKey);
     RSA *public_key = createPublicRSA(publicKey);
 
-    if (!BN_cmp(public_key->n, private_key->n))
+    if (private_key && public_key && !BN_cmp(public_key->n, private_key->n))
     {
         rv = true;
     }

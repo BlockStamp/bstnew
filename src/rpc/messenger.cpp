@@ -360,7 +360,7 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
     }
 
     std::ofstream file(request.params[0].get_str().c_str(), std::ofstream::trunc);
-    file << publicRsaKey.toString() << MSG_DELIMITER << privateRsaKey.toString();
+    file << publicRsaKey.toString() << KEY_SEPARATOR << privateRsaKey.toString();
 
     return UniValue(UniValue::VSTR, std::string("Keys exported successful."));
 }
@@ -381,17 +381,8 @@ UniValue importmsgkey(const JSONRPCRequest& request)
         + HelpExampleRpc("importmsgkey", "\"source_path\"")
     );
 
-    std::ifstream file(request.params[0].get_str().c_str(), std::ifstream::in);
-    if (!file.is_open())
-    {
-        return UniValue(UniValue::VSTR, std::string("Import failed. File open error."));
-    }
-
-    std::string tmp;
-    std::getline(file, tmp, MSG_DELIMITER);
-    CMessengerKey publicRsaKey(tmp, CMessengerKey::PUBLIC_KEY);
-    std::getline(file, tmp, MSG_DELIMITER);
-    CMessengerKey privateRsaKey(tmp, CMessengerKey::PRIVATE_KEY);
+    CMessengerKey privateRsaKey, publicRsaKey;
+    loadMsgKeysFromFile(request.params[0].get_str(), privateRsaKey, publicRsaKey);
 
     ///TODO: this can be removed, already check in CMessengerKey cstr
     if (!checkRSApublicKey(publicRsaKey.toString())

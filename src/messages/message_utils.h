@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <key.h>
 
 bool checkRSApublicKey(const std::string& rsaPublicKey);
 
@@ -13,5 +14,7 @@ void decryptMessageAndSplit(std::vector<char>& opReturnData,
                             std::string& from,
                             std::string& subject,
                             std::string& body);
+
+void loadMsgKeysFromFile(const std::string& filename, CMessengerKey& privateRsaKey, CMessengerKey& publicRsaKey);
 
 #endif

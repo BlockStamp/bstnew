@@ -123,3 +123,45 @@ void decryptMessageAndSplit(std::vector<char> &opReturnData,
     if (from.empty() || subject.empty() || body.empty())
         throw std::runtime_error("Incorrect message format");
 }
+
+void loadMsgKeysFromFile(const std::string& filename, CMessengerKey& privateRsaKey, CMessengerKey& publicRsaKey)
+{
+    std::ifstream file(filename, std::ifstream::in);
+    if (!file.is_open()) {
+        throw std::runtime_error("Importing failed. File opening error");
+    }
+
+    const std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    const std::string pubBeg = "-----BEGIN PUBLIC KEY-----";
+    const std::string pubEnd = "-----END PUBLIC KEY-----";
+
+    std::size_t begPos = content.find(pubBeg);
+    if (begPos == std::string::npos) {
+        throw std::runtime_error("Could not find public key in file");
+    }
+
+    std::size_t endPos = content.find(pubEnd, begPos+pubBeg.size());
+    if (endPos == std::string::npos) {
+        throw std::runtime_error("Could not find public key in file");
+    }
+
+    std::string publicKey = content.substr(begPos, endPos+pubEnd.size()-begPos);
+    publicRsaKey = CMessengerKey(publicKey, CMessengerKey::Type::PUBLIC_KEY);
+
+    const std::string privBeg = "-----BEGIN RSA PRIVATE KEY-----";
+    const std::string privEnd = "-----END RSA PRIVATE KEY-----";
+
+    begPos = content.find(privBeg);
+    if (begPos == std::string::npos) {
+        throw std::runtime_error("Could not find private key in file");
+    }
+
+    endPos = content.find(privEnd, begPos+privBeg.size());
+    if (endPos == std::string::npos) {
+        throw std::runtime_error("Could not find private key in file");
+    }
+
+    std::string privateKey = content.substr(begPos, endPos+privEnd.size()-begPos);
+    privateRsaKey = CMessengerKey(privateKey, CMessengerKey::Type::PRIVATE_KEY);
+}
