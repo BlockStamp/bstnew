@@ -28,6 +28,7 @@
 #include <qt/askmessengerpassphrasedialog.h>
 #include <qt/storetxdialog.h>
 #include <qt/sendcoinsdialog.h>
+#include <qt/messengersendhistory.h>
 
 #include <chainparams.h>
 #include <key_io.h>
@@ -51,8 +52,6 @@
 #include <QButtonGroup>
 #include <array>
 #include <vector>
-
-const char* UNKNOWN_SENDER = "";
 
 static const std::array<int, 9> confTargets = { {2, 4, 6, 12, 24, 48, 144, 504, 1008} };
 extern int getConfTargetForIndex(int index);
@@ -150,6 +149,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
     connect(ui->transactionTable, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(on_transactionTableContextMenuRequest(QPoint)));
     connect(ui->transactionTable, SIGNAL(itemActivated(QTableWidgetItem*)), this, SLOT(on_itemActivated(QTableWidgetItem*)));
+    connect(ui->sendHistoryButton, SIGNAL(clicked()), this, SLOT(on_sendHistoryBtn_clicked()));
 
     connect(ui->addressBookButton, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
     connect(ui->addressBookButton_read, SIGNAL(clicked()), this, SLOT(on_addressBookPressed()));
@@ -916,4 +916,10 @@ void MessengerPage::on_itemActivated(QTableWidgetItem* selecteditem)
     QTableWidgetItem* item = ui->transactionTable->item(selecteditem->row(), TransactionsTableColumn::DATE);
     QString txnId = item->data(Qt::UserRole).toString();
     read(txnId.toUtf8().constData());
+}
+
+void MessengerPage::on_sendHistoryBtn_clicked()
+{
+    MessengerSendHistory dlg(platformStyle, walletModel, clientModel, this);
+    dlg.exec();
 }

@@ -125,6 +125,7 @@ private Q_SLOTS:
     void addToAddressBook();
 
     void on_searchTxnEdited(const QString& text);
+    void on_sendHistoryBtn_clicked();
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H

@@ -5,6 +5,8 @@
 #include <vector>
 #include <key.h>
 
+const char* const UNKNOWN_SENDER = "";
+
 bool checkRSApublicKey(const std::string& rsaPublicKey);
 
 bool checkRSAprivateKey(const std::string& rsaPrivateKey);

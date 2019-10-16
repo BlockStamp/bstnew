@@ -1304,10 +1304,11 @@ bool CWallet::SaveMsgToHistory(
     const int64_t time = GetTime();
     std::vector<unsigned char> encrypted;
 
+    std::string message = MSG_RECOGNIZE_TAG + msg;
     try {
         encrypted = createEncryptedMessage(
-            reinterpret_cast<const unsigned char*>(msg.c_str()),
-            msg.length(),
+            reinterpret_cast<const unsigned char*>(message.c_str()),
+            message.length(),
             fromAddress.c_str());
         }
     catch(...) {

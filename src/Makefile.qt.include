@@ -111,6 +111,7 @@ QT_FORMS_UI = \
   qt/forms/datapage.ui \
   qt/forms/gamepage.ui \
   qt/forms/messengerpage.ui \
+  qt/forms/messengersendhistory.ui \
   qt/forms/debugwindow.ui \
   qt/forms/sendcoinsdialog.ui \
   qt/forms/sendcoinsentry.ui \
@@ -156,6 +157,7 @@ QT_MOC_CPP = \
   qt/moc_messengerpage.cpp \
   qt/moc_messengeraddressbook.cpp \
   qt/moc_messengerbookmodel.cpp \
+  qt/moc_messengersendhistory.cpp \
   qt/moc_gametxdialog.cpp \
   qt/moc_rpcconsole.cpp \
   qt/moc_sendcoinsdialog.cpp \
@@ -239,6 +241,7 @@ BITCOIN_QT_H = \
   qt/messengerpage.h \
   qt/messengeraddressbook.h \
   qt/messengerbookmodel.h \
+  qt/messengersendhistory.h \
   qt/rpcconsole.h \
   qt/sendcoinsdialog.h \
   qt/sendcoinsentry.h \
@@ -360,6 +363,7 @@ BITCOIN_QT_WALLET_CPP = \
   qt/messengerpage.cpp \
   qt/messengeraddressbook.cpp \
   qt/messengerbookmodel.cpp \
+  qt/messengersendhistory.cpp \
   qt/gametxdialog.cpp \
   qt/editaddressdialog.cpp \
   qt/editmsgaddressdialog.cpp \

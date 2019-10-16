@@ -1221,6 +1221,13 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="sendHistoryButton">
+           <property name="text">
+            <string>History</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="horizontalSpacer_2">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
