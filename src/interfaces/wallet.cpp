@@ -547,6 +547,10 @@ public:
     {
         return MakeHandler(m_wallet.NotifyEncrMsgTransactionChanged.connect([fn](CWallet*) { fn(); }));
     }
+    std::unique_ptr<Handler> handleMsgTransactionSent(MsgTransactionSentFn fn) override
+    {
+        return MakeHandler(m_wallet.NotifyMsgSent.connect([fn](CWallet*) { fn(); }));
+    }
     std::unique_ptr<Handler> handleWatchOnlyChanged(WatchOnlyChangedFn fn) override
     {
         return MakeHandler(m_wallet.NotifyWatchonlyChanged.connect(fn));

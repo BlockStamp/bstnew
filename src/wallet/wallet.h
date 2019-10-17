@@ -1181,6 +1181,11 @@ public:
      */
     boost::signals2::signal<void (CWallet* wallet)> NotifyEncrMsgTransactionChanged;
 
+    /**
+     * Wallet msg transaction sent for update user history.
+     */
+    boost::signals2::signal<void (CWallet* wallet)> NotifyMsgSent;
+
     /** Show progress e.g. for rescan */
     boost::signals2::signal<void (const std::string &title, int nProgress)> ShowProgress;
 

@@ -65,6 +65,7 @@ MessengerSendHistory::MessengerSendHistory(const PlatformStyle *_platformStyle, 
     connect(ui->transactionsTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
     connect(ui->transactionsTable, SIGNAL(itemActivated(QTableWidgetItem*)), this, SLOT(on_itemActivated(QTableWidgetItem*)));
     connect(ui->closeButton, SIGNAL(clicked()), this, SLOT(close()));
+    connect(walletModel, &WalletModel::updateSentHistory, this, &MessengerSendHistory::fillUpSentTable);
 
     fillUpSentTable();
 }

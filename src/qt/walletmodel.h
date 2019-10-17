@@ -249,6 +249,7 @@ private:
     std::unique_ptr<interfaces::Handler> m_handler_messenger_address_book_changed;
     std::unique_ptr<interfaces::Handler> m_handler_transaction_changed;
     std::unique_ptr<interfaces::Handler> m_handler_encr_msg_transaction_changed;
+    std::unique_ptr<interfaces::Handler> m_handler_msg_transaction_send;
     std::unique_ptr<interfaces::Handler> m_handler_show_progress;
     std::unique_ptr<interfaces::Handler> m_handler_watch_only_changed;
     interfaces::Node& m_node;
@@ -315,6 +316,9 @@ Q_SIGNALS:
     // Update list of messages on messenger page
     void updateMsgs();
 
+    // update messages sent history
+    void updateSentHistory();
+
 public Q_SLOTS:
     /* Wallet status might have changed */
     void updateStatus();
@@ -332,6 +336,8 @@ public Q_SLOTS:
     void pollBalanceChanged();
     /* Update message transactions on Messenger Page */
     void updateEncrMsgTransactions();
+    /* Update history of sent messages */
+    void updateMsgSentHistory();
 };
 
 #endif // BITCOIN_QT_WALLETMODEL_H

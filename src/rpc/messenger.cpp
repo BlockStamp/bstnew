@@ -146,6 +146,8 @@ UniValue sendmessage(const JSONRPCRequest& request)
         LogPrintf("Error while saving history\n");
     }
 
+    pwallet->NotifyMsgSent(pwallet);
+
     return txid;
 }
 

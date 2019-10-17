@@ -322,6 +322,10 @@ public:
     using MsgTransactionChangedFn = std::function<void()>;
     virtual std::unique_ptr<Handler> handleMsgTransactionChanged(MsgTransactionChangedFn fn) = 0;
 
+    //! Register handler for messenger transaction send.
+    using MsgTransactionSentFn = std::function<void()>;
+    virtual std::unique_ptr<Handler> handleMsgTransactionSent(MsgTransactionSentFn fn) = 0;
+
     //! Register handler for watchonly changed messages.
     using WatchOnlyChangedFn = std::function<void(bool have_watch_only)>;
     virtual std::unique_ptr<Handler> handleWatchOnlyChanged(WatchOnlyChangedFn fn) = 0;

@@ -104,6 +104,11 @@ void WalletModel::updateEncrMsgTransactions() {
     Q_EMIT updateMsgs();
 }
 
+void WalletModel::updateMsgSentHistory()
+{
+    Q_EMIT updateSentHistory();
+}
+
 void WalletModel::checkBalanceChanged(const interfaces::WalletBalances& new_balances)
 {
     if(new_balances.balanceChanged(m_cached_balances)) {
@@ -501,6 +506,11 @@ static void NotifyEncrMsgTransactionChanged(WalletModel *walletmodel)
     QMetaObject::invokeMethod(walletmodel, "updateEncrMsgTransactions", Qt::QueuedConnection);
 }
 
+static void NotifyMsgSent(WalletModel *walletmodel)
+{
+    QMetaObject::invokeMethod(walletmodel, "updateMsgSentHistory", Qt::QueuedConnection);
+}
+
 static void ShowProgress(WalletModel *walletmodel, const std::string &title, int nProgress)
 {
     // emits signal "showProgress"
@@ -525,6 +535,7 @@ void WalletModel::subscribeToCoreSignals()
     m_handler_messenger_address_book_changed = m_wallet->handleMessengerAddressBookChanged(boost::bind(NotifyMessengerAddressBookChanged, this, _1, _2, _3));
     m_handler_transaction_changed = m_wallet->handleTransactionChanged(boost::bind(NotifyTransactionChanged, this, _1, _2));
     m_handler_encr_msg_transaction_changed = m_wallet->handleMsgTransactionChanged(boost::bind(NotifyEncrMsgTransactionChanged, this));
+    m_handler_msg_transaction_send = m_wallet->handleMsgTransactionSent(boost::bind(NotifyMsgSent, this));
     m_handler_show_progress = m_wallet->handleShowProgress(boost::bind(ShowProgress, this, _1, _2));
     m_handler_watch_only_changed = m_wallet->handleWatchOnlyChanged(boost::bind(NotifyWatchonlyChanged, this, _1));
 }

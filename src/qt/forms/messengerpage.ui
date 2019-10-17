@@ -1222,9 +1222,22 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
          </item>
          <item>
           <widget class="QPushButton" name="sendHistoryButton">
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Display history of sent messages.</string>
+           </property>
            <property name="text">
             <string>History</string>
            </property>
+	   <property name="icon">
+	    <iconset>
+	     <normaloff>:/icons/history</normaloff>:/icons/history</iconset>
+	   </property>
           </widget>
          </item>
          <item>
