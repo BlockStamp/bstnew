@@ -569,9 +569,8 @@ void MessengerPage::read(const std::string& txnId)
                 throw std::runtime_error("Message not found");
             }
 
-            std::vector<char> OPreturnData;
             const CWalletTx& wtx = it->second.wltTx;
-            wtx.tx->loadOpReturn(OPreturnData);
+            std::vector<char> OPreturnData = wtx.tx->loadOpReturn();
 
             std::string from, subject, body;
             decryptMessageAndSplit(OPreturnData, privateRsaKey.toString(), from, subject, body);

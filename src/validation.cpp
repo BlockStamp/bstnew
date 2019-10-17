@@ -1852,8 +1852,7 @@ bool CChainState::AddOpReturnToDb(const CBlock& block, int height)
     for (unsigned int i = 0; i < block.vtx.size(); i++) {
         const CTransaction& tx = *(block.vtx[i]);
 
-        std::vector<char> opReturn;
-        tx.loadOpReturn(opReturn);
+        std::vector<char> opReturn = tx.loadOpReturn();
 
         //TODO: Check why op return is empty sometimes
         if (opReturn.empty()) {

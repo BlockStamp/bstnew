@@ -1270,8 +1270,7 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
     AssertLockHeld(cs_wallet);
 
     const CTransaction& tx = *ptx;
-    std::vector<char> opReturn;
-    tx.loadOpReturn(opReturn);
+    std::vector<char> opReturn = tx.loadOpReturn();
 
     if (!IsEnrcyptedMsg(opReturn)) {
         return;

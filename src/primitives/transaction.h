@@ -389,32 +389,56 @@ public:
         return size;
     }
 
-    void loadOpReturn(std::vector<char>& retHex) const {
+    std::vector<char> loadOpReturn() const
+    {
         for(size_t i=0;i<vout.size();++i)
         {
             CScript::const_iterator it_beg=vout[i].scriptPubKey.begin();
             CScript::const_iterator it_end=vout[i].scriptPubKey.end();
-            int order = *(it_beg+1);
-            if(*it_beg==OP_RETURN)
+
+            const int dist = std::distance(it_beg, it_end);
+            if (dist <= 0) {
+                continue;
+            }
+
+            if (*it_beg==OP_RETURN)
             {
-                if(order<=0x4b)
-                {
-                    retHex=std::vector<char>(it_beg+2, it_end);
+                if (dist < 2) {
+                    return std::vector<char>{};
                 }
-                else if(order==0x4c)
+
+                int order = *(it_beg+1);
+
+                if (order<=0x4b)
                 {
-                    retHex=std::vector<char>(it_beg+3, it_end);
+                    return (dist < 3) ? std::vector<char>{} :
+                                        std::vector<char>(it_beg+2, it_end);
                 }
-                else if(order==0x4d)
+
+                if(order==0x4c)
                 {
-                    retHex=std::vector<char>(it_beg+4, it_end);
+                    return (dist < 4) ? std::vector<char>{} :
+                                        std::vector<char>(it_beg+3, it_end);
+
                 }
-                else if(order==0x4e)
+
+                if(order==0x4d)
                 {
-                    retHex=std::vector<char>(it_beg+6, it_end);
+                    return (dist < 5) ? std::vector<char>{} :
+                                        std::vector<char>(it_beg+4, it_end);
                 }
+
+                if(order==0x4e)
+                {
+                    return (dist < 7) ? std::vector<char>{} :
+                                        std::vector<char>(it_beg+6, it_end);
+                }
+
+                return std::vector<char>{};
             }
         }
+
+        return std::vector<char>{};
     }
 };
 
