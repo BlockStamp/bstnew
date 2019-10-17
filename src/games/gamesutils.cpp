@@ -103,28 +103,56 @@ std::string getBetType(const CTransaction& tx, size_t& idx)
     {
         CScript::const_iterator it_beg=tx.vout[i].scriptPubKey.begin();
         CScript::const_iterator it_end=tx.vout[i].scriptPubKey.end();
+
+        const int dist = std::distance(it_beg, it_end);
+        if (dist <= 0) {
+            continue;
+        }
+
         std::string hexStr;
-        int order = *(it_beg+1);
         unsigned int length = 0;
+
         if(*it_beg==OP_RETURN)
         {
+            if (dist < 2) {
+                return std::string("");
+            }
+
+            int order = *(it_beg+1);
+
             if(order<=0x4b)
             {
+                if (dist < 3) {
+                    return std::string("");
+                }
+
                 hexStr=std::string(it_beg+2, it_end);
                 memcpy((char*)&length, std::string(it_beg+1, it_beg+2).c_str(), 1);
             }
             else if(order==0x4c)
             {
+                if (dist < 4) {
+                    return std::string("");
+                }
+
                 hexStr=std::string(it_beg+3, it_end);
                 memcpy((char*)&length, std::string(it_beg+2, it_beg+3).c_str(), 1);
             }
             else if(order==0x4d)
             {
+                if (dist < 5) {
+                    return std::string("");
+                }
+
                 hexStr=std::string(it_beg+4, it_end);
                 memcpy((char*)&length, std::string(it_beg+2, it_beg+4).c_str(), 2);
             }
             else if(order==0x4e)
             {
+                if (dist < 7) {
+                    return std::string("");
+                }
+
                 hexStr=std::string(it_beg+6, it_end);
                 memcpy((char*)&length, std::string(it_beg+2, it_beg+6).c_str(), 4);
             }
@@ -133,7 +161,7 @@ std::string getBetType(const CTransaction& tx, size_t& idx)
                 LogPrintf("getBetType length is too-large\n");
                 return std::string("");
             }
-            //LogPrintf("getBetType: %s\n", hexStr);
+
             idx=i;
             if (hexStr.length() != length)
             {
@@ -143,6 +171,7 @@ std::string getBetType(const CTransaction& tx, size_t& idx)
             return hexStr;
         }
     }
+
     LogPrintf("getBetType no op-return\n");
     return std::string("");
 }
