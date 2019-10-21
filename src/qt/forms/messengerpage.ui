@@ -1234,10 +1234,10 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
            <property name="text">
             <string>History</string>
            </property>
-	   <property name="icon">
-	    <iconset>
-	     <normaloff>:/icons/history</normaloff>:/icons/history</iconset>
-	   </property>
+           <property name="icon">
+            <iconset>
+             <normaloff>:/icons/history</normaloff>:/icons/history</iconset>
+           </property>
           </widget>
          </item>
          <item>
@@ -1411,7 +1411,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
               <item>
                <widget class="QToolButton" name="addressBookButton_read">
                 <property name="toolTip">
-                 <string>Add recipient to address book.</string>
+                 <string>Add sender to address book.</string>
                 </property>
                 <property name="text">
                  <string>...</string>

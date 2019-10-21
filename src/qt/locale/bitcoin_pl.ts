@@ -22,6 +22,14 @@
         <translation>&amp;Kopiuj</translation>
     </message>
     <message>
+        <source>Import address book from file.</source>
+        <translation>Importuj książkę adresową z pliku.</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Importuj</translation>
+    </message>
+    <message>
         <source>C&amp;lose</source>
         <translation>Z&amp;amknij</translation>
     </message>
@@ -35,7 +43,7 @@
     </message>
     <message>
         <source>Export the data in the current tab to a file</source>
-        <translation>Eksportuj dane z aktywnej karty do pliku</translation>
+        <translation>Eksportuj książkę adresową do pliku</translation>
     </message>
     <message>
         <source>&amp;Export</source>
@@ -115,6 +123,94 @@
     <message>
         <source>(no label)</source>
         <translation>(brak etykiety)</translation>
+    </message>
+</context>
+<context>
+    <name>AskMessengerPassphraseDialog</name>
+    <message>
+        <location filename="../askmessengerpassphrasedialog.cpp" line="+48"/>
+        <source>Enter the new passphrase to the messenger.&lt;br/&gt;Please use a passphrase of &lt;b&gt;ten or more random characters&lt;/b&gt;, or &lt;b&gt;eight or more words&lt;/b&gt;.</source>
+        <translation>Wprowadź nowe hasło dostępu do komunikatora.&lt;br/&gt;Użyj hasła składającego się z &lt;b&gt;minimum 10 losowych znaków&lt;/b&gt; lub &lt;b&gt;minimum 8 słów&lt;/b&gt;.</translation>
+    </message>
+    <message>
+        <source>Encrypt messenger</source>
+        <translation>Zaszyfruj komunikator</translation>
+    </message>
+    <message>
+        <source>This operation needs your messenger passphrase to unlock the messenger.</source>
+        <translation>Ta operacja wymaga użycia hasła by odblokować komunikator.</translation>
+    </message>
+    <message>
+        <source>Unlock messenger</source>
+        <translation>Odblokuj komunikator</translation>
+    </message>
+    <message>
+        <source>This operation needs your messenger passphrase to decrypt the messenger.</source>
+        <translation>Ta operacja wymaga użycia hasła by odszyfrować komunikator</translation>
+    </message>
+    <message>
+        <source>Decrypt messenger</source>
+        <translation>Odszyfruj komunikator</translation>
+    </message>
+    <message>
+         <source>Change passphrase</source>
+        <translation>Zmień hasło</translation>
+    </message>
+    <message>
+        <source>Enter the old passphrase and new passphrase to the messenger.</source>
+        <translation>Wpisz stare i nowe hasło do komunikatora.</translation>
+    </message>
+    <message>
+        <source>Confirm messenger encryption</source>
+        <translation>Potwierdź szyfrowanie komunikatora</translation>
+    </message>
+    <message>
+        <source>Warning: If you encrypt the messenger and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR MESSENGER COMMUNICATION&lt;/b&gt;!</source>
+        <translation >Uwaga: jeśli zaszyfrujesz komunikator i zgubisz hasło &lt;b&gt;STRACISZ DOSTĘP DO WSZYSTKICH SWOJICH WIADOMOŚCI&lt;/b&gt;!</translation>
+    </message>
+    <message>
+        <source>Are you sure you wish to encrypt the messenger?</source>
+        <translation>Jesteś pewien, że chcesz zaszyfrować komunikator?</translation>
+    </message>
+    <message>
+        <source>Messenger encrypted</source>
+        <translation>Komunikator zaszyfrowany</translation>
+    </message>
+    <message>
+        <source>IMPORTANT: Any previous backups you have made of your messenger wallet file should be replaced with the newly generated, encrypted messenger wallet file. For security reasons, previous backups of the unencrypted messenger walet file will become useless as soon as you start using the new, encrypted messenger wallet.</source>
+        <translation>WAŻNE: Wszystkie wykonane wcześniej kopie pliku komunikatora powinny być zamienione na nowe, szyfrowane pliki. Z powodów bezpieczeństwa, poprzednie kopie nieszyfrowanych plików komunikatora staną się bezużyteczne jak tylko zaczniesz korzystać z nowego, szyfrowanego komunikatora.</translation>
+    </message>
+    <message>
+        <source>Messenger encryption failed</source>
+        <translation>Szyfrowanie komunikatora nie powiodło się</translation>
+    </message>
+    <message>
+        <source>Messenger encryption failed due to an internal error. The messenger was not encrypted.</source>
+        <translation>Szyfrowanie komunikatora nie powiodło się z powodu wewnętrznego błędu. Twój komunikator nie został zaszyfrowany.</translation>
+    </message>
+    <message>
+        <source>The supplied passphrases do not match.</source>
+        <translation>Podane hasła nie są takie same.</translation>
+    </message>
+    <message>
+        <source>Messenger unlock failed</source>
+        <translation>Odblokowanie komunikatora nie powiodło się</translation>
+    </message>
+    <message>
+        <source>The passphrase entered for the messenger decryption was incorrect.</source>
+        <translation>Wprowadzone hasło do odszyfrowania komunikatora jest niepoprawne.</translation>
+    </message>
+    <message>
+        <source>Messenger decryption failed</source>
+        <translation>Odszyfrowanie komunikatora nie powiodło się</translation>
+    </message>
+    <message>
+        <source>Messenger passphrase was successfully changed.</source>
+        <translation>Hasło komunikatora zostało pomyślnie zmienione</translation>
+    </message>
+    <message>
+        <source>Warning: The Caps Lock key is on!</source>
+        <translation>Ostrzeżenie: Caps Lock jest włączony!</translation>
     </message>
 </context>
 <context>
@@ -262,12 +358,44 @@
         <translation>Pokazuje ogólny widok portfela</translation>
     </message>
     <message>
+        <source>Send coins to a BST address</source>
+        <translation>Wyślij BST na adres</translation>
+    </message>
+    <message>
+        <source>Request payments (generates QR codes and BST: URIs)</source>
+        <translation>Żądanie płatności (generuje QR kod oraz BST URI) </translation>
+    </message>
+    <message>
         <source>&amp;Transactions</source>
         <translation>&amp;Transakcje</translation>
     </message>
     <message>
         <source>Browse transaction history</source>
         <translation>Przeglądaj historię transakcji</translation>
+    </message>
+    <message>
+        <source>&amp;BlockStamp</source>
+        <translation>&amp;Blockstamp</translation>
+    </message>
+    <message>
+        <source>Retrieve or store an user data or message</source>
+        <translation>Wysyłaj i odbieraj dokumenty lub wiadomości</translation>
+    </message>
+    <message>
+        <source>&amp;Games</source>
+        <translation>&amp;Gry</translation>
+    </message>
+    <message>
+        <source>Make bet to play game</source>
+        <translation>Postaw zakład aby zagrać w grę</translation>
+    </message>
+    <message>
+        <source>&amp;Messenger</source>
+        <translation>&amp;Komunikator</translation>
+    </message>
+    <message>
+        <source>Send encypted message to other blockstamp user</source>
+        <translation>Wymieniaj szyfrowane wiadomości z innymi użytkownikami</translation>
     </message>
     <message>
         <source>E&amp;xit</source>
@@ -303,7 +431,15 @@
     </message>
     <message>
         <source>&amp;Encrypt Wallet...</source>
-        <translation>Zaszyfruj Portf&amp;el</translation>
+        <translation>Zaszyfruj portf&amp;el...</translation>
+    </message>
+    <message>
+        <source>Encrypt Messenger...</source>
+        <translation>Zaszyfruj komunikator...</translation>
+    </message>
+    <message>
+        <source>Encrypt the private RSA key used by messenger</source>
+        <translation>Zaszyfruj prwatny klucz RSA używany przez komunikator</translation>
     </message>
     <message>
         <source>&amp;Backup Wallet...</source>
@@ -312,6 +448,14 @@
     <message>
         <source>&amp;Change Passphrase...</source>
         <translation>&amp;Zmień hasło...</translation>
+    </message>
+    <message>
+        <source>Change Messenger Passphrase...</source>
+        <translation>Zmień hasło komunikatora...</translation>
+    </message>
+    <message>
+        <source>Change the passphrase used for messenger encryption</source>
+        <translation>Zmień hasło użyte do szyfrowania komunikatora</translation>
     </message>
     <message>
         <source>&amp;Sending addresses...</source>
@@ -730,6 +874,367 @@
     </message>
 </context>
 <context>
+    <name>DataPage</name>
+    <message>
+        <location filename="../forms/datapage.ui" line="+14"/>
+        <source>Form</source>
+        <translation type="unfinished">BST Core - Wallet</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <location line="+1242"/>
+        <source>Store</source>
+        <translation type="unfinished">Wyślij</translation>
+    </message>
+    <message>
+        <location line="-1169"/>
+        <source>Coin Control Features</source>
+        <translation type="unfinished">Funkcje kontroli monet</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Inputs...</source>
+        <translation type="unfinished">Wejścia...</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>automatically selected</source>
+        <translation type="unfinished">zaznaczone automatycznie</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Insufficient funds!</source>
+        <translation type="unfinished">Niewystarczające środki!</translation>
+    </message>
+    <message>
+        <location line="+89"/>
+        <source>Quantity:</source>
+        <translation type="unfinished">Ilość:</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>Bytes:</source>
+        <translation type="unfinished">Bajtów:</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Amount:</source>
+        <translation type="unfinished">Kwota:</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Dust:</source>
+        <translation type="unfinished">Pył:</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Fee:</source>
+        <translation type="unfinished">Opłata:</translation>
+    </message>
+    <message>
+        <location line="+51"/>
+        <source>After Fee:</source>
+        <translation type="unfinished">Po opłacie:</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Change:</source>
+        <translation type="unfinished">Reszta:</translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <source>If this is activated, but the change address is empty or invalid, change will be sent to a newly generated address.</source>
+        <translation type="unfinished">Kiedy ta opcja jest wybrana, to jeżeli adres reszty jest pusty lub nieprawidłowy, to reszta będzie wysyłana na nowo wygenerowany adres.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Custom change address</source>
+        <translation type="unfinished">Niestandardowy adres reszty</translation>
+    </message>
+    <message>
+        <location line="+77"/>
+        <location line="+930"/>
+        <source>Data source:</source>
+        <translation type="unfinished">Typ:</translation>
+    </message>
+    <message>
+        <location line="-924"/>
+        <source>Store Message</source>
+        <translation type="unfinished">Wyślij wiadomość</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Store File</source>
+        <translation type="unfinished">Wyślij plik</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Store File Signature</source>
+        <translation type="unfinished">Wyślij podpis pliku</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <location line="+763"/>
+        <location line="+177"/>
+        <source>File</source>
+        <translation type="unfinished">Wczytaj plik</translation>
+    </message>
+    <message>
+        <location line="-923"/>
+        <location line="+763"/>
+        <location line="+177"/>
+        <source>File:</source>
+        <translation type="unfinished">Plik:</translation>
+    </message>
+    <message>
+        <location line="-912"/>
+        <source>Data Size: </source>
+        <translation type="unfinished">Rozmiar:</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>0</source>
+        <translation type="unfinished">0</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>bytes</source>
+        <translation type="unfinished">bajtów</translation>
+    </message>
+    <message>
+        <location line="+120"/>
+        <source>Transaction Fee:</source>
+        <translation type="unfinished">Opłata transakcyjna</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Choose...</source>
+        <translation type="unfinished">Wybierz...</translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>Using the fallbackfee can result in sending a transaction that will take several hours or days (or never) to confirm. Consider choosing your fee manually or wait until you have validated the complete chain.</source>
+        <translation type="unfinished">Korzystanie z opłaty domyślnej może skutkować wysłaniem transakcji, która potwierdzi się w kilka godzin lub dni (lub nigdy). Rozważ wybranie opłaty ręcznie lub poczekaj, aż sprawdzisz poprawność całego łańcucha.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Warning: Fee estimation is currently not possible.</source>
+        <translation type="unfinished">Uwaga: Oszacowanie opłaty za transakcje jest aktualnie niemożliwe.</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>collapse fee-settings</source>
+        <translation type="unfinished">zwiń opcje opłaty</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Hide</source>
+        <translation type="unfinished">Ukryj</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Specify a custom fee per kB (1,000 bytes) of the transaction&apos;s virtual size.
+
+Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satoshis per kB&quot; for a transaction size of 500 bytes (half of 1 kB) would ultimately yield a fee of only 50 satoshis.</source>
+        <translation type="unfinished">Określ niestandardową opłatę za kB (1000 bajtów) wirtualnego rozmiaru transakcji.
+
+Uwaga: Ponieważ opłata jest naliczana za każdy bajt, opłata "100 satoshi za kB" w przypadku transakcji o wielkości 500 bajtów (połowa 1 kB) ostatecznie da opłatę w wysokości tylko 50 satoshi.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>per kilobyte</source>
+        <translation type="unfinished">za kilobajt</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <location line="+13"/>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <translation type="unfinished">Zapłacenie tylko minimalnej opłaty jest nadal wystarczające, dopóki jest mniejszy wolumen transakcji niż miejsca w blokach. Należy jednak mieć świadomość, że może skończyć się to niezatwierdzeniem nigdy transakcji, gdy jest większe zapotrzebowanie na transakcje bitcoina niż sieć może przetworzyć.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>(read the tooltip)</source>
+        <translation type="unfinished">(przeczytaj podpowiedź)</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Recommended:</source>
+        <translation type="unfinished">Zalecane:</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>Custom:</source>
+        <translation type="unfinished">Własna:</translation>
+    </message>
+    <message>
+        <location line="+49"/>
+        <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>
+        <translation type="unfinished">(Sprytne opłaty nie są jeszcze zainicjowane. Trwa to zwykle kilka bloków...)</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Confirmation time target:</source>
+        <translation type="unfinished">Docelowy czas potwierdzenia:</translation>
+    </message>
+    <message>
+        <location line="+74"/>
+        <source>With Replace-By-Fee (BIP-125) you can increase a transaction&apos;s fee after it is sent. Without this, a higher fee may be recommended to compensate for increased transaction delay risk.</source>
+        <translation type="unfinished">Dzięki podmień-przez-opłatę (RBF, BIP-125) możesz podnieść opłatę transakcyjną już wysłanej transakcji. Bez tego, może być rekomendowana większa opłata aby zmniejszyć ryzyko opóźnienia zatwierdzenia transakcji.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Enable Replace-By-Fee</source>
+        <translation type="unfinished">Włącz RBF (podmiana transakcji przez podniesienie opłaty)</translation>
+    </message>
+    <message>
+        <location line="+79"/>
+        <source>Balance:</source>
+        <translation type="unfinished">Saldo:</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <location line="+150"/>
+        <source>Retrieve</source>
+        <translation type="unfinished">Odbierz</translation>
+    </message>
+    <message>
+        <location line="-133"/>
+        <location line="+177"/>
+        <source>Transaction ID:</source>
+        <translation type="unfinished">ID transakcji:</translation>
+    </message>
+    <message>
+        <location line="-163"/>
+        <source>View type:</source>
+        <translation type="unfinished">Wyświetl jako:</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>String</source>
+        <translation type="unfinished">Tekst</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Hex</source>
+        <translation type="unfinished">Hex</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Safe to file</source>
+        <translation type="unfinished">Zapisz do pliku</translation>
+    </message>
+    <message>
+        <location line="+101"/>
+        <location line="+150"/>
+        <source>Check</source>
+        <translation type="unfinished">Sprawdź</translation>
+    </message>
+    <message>
+        <location line="-111"/>
+        <source>Check Message</source>
+        <translation type="unfinished">Sprawdź wiadomość</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Check File</source>
+        <translation type="unfinished">Sprawdź plik</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Check File Signature</source>
+        <translation type="unfinished">Sprawdź sygnature pliku</translation>
+    </message>
+    <message>
+        <location filename="../datapage.cpp" line="+70"/>
+        <source>Copy quantity</source>
+        <translation type="unfinished">Skopiuj ilość</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy amount</source>
+        <translation type="unfinished">Kopiuj kwotę</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy fee</source>
+        <translation type="unfinished">Skopiuj prowizję</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy after fee</source>
+        <translation type="unfinished">Skopiuj ilość po opłacie</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy bytes</source>
+        <translation type="unfinished">Skopiuj ilość bajtów</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy dust</source>
+        <translation type="unfinished">Kopiuj pył</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy change</source>
+        <translation type="unfinished">Skopiuj resztę</translation>
+    </message>
+    <message>
+        <location line="+133"/>
+        <source>Pay only the required fee of %1</source>
+        <translation type="unfinished">Zapłać tylko wymaganą opłatę w wysokości %1</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+43"/>
+        <source>Estimated to begin confirmation within %n block(s).</source>
+        <translation><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n blok.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloki.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloków.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloków.</numerusform></translation>
+    </message>
+    <message>
+        <location line="+60"/>
+        <source>%1 (%2 blocks)</source>
+        <translation type="unfinished">%1 (%2 bloków)</translation>
+    </message>
+    <message>
+        <location line="+164"/>
+        <source>Warning: Invalid BST address</source>
+        <translation type="unfinished">Ostrzeżenie: nieprawidłowy adres BST</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Warning: Unknown change address</source>
+        <translation type="unfinished">Ostrzeżenie: Nieznany adres reszty</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Confirm custom change address</source>
+        <translation type="unfinished">Potwierdź zmianę własnego adresu reszty</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>The address you selected for change is not part of this wallet. Any or all funds in your wallet may be sent to this address. Are you sure?</source>
+        <translation type="unfinished">Wybrany adres reszty nie jest częścią tego portfela. Dowolne lub wszystkie środki w twoim portfelu mogą być wysyłane na ten adres. Jesteś pewny?</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>(no label)</source>
+        <translation type="unfinished">(brak etykiety)</translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <location line="+107"/>
+        <location line="+296"/>
+        <source>Open File</source>
+        <translation type="unfinished">Otwórz plik</translation>
+    </message>
+    <message>
+        <location line="-403"/>
+        <location line="+107"/>
+        <location line="+296"/>
+        <source>Files (*.*)</source>
+        <translation type="unfinished">Pliki (*.*)</translation>
+    </message>
+</context>
+<context>
     <name>EditAddressDialog</name>
     <message>
         <source>Edit Address</source>
@@ -805,6 +1310,332 @@
     <message>
         <source>Cannot create data directory here.</source>
         <translation>Nie można było tutaj utworzyć folderu.</translation>
+    </message>
+</context>
+<context>
+    <name>GamePage</name>
+    <message>
+        <location filename="../forms/gamepage.ui" line="+14"/>
+        <source>Form</source>
+        <translation type="unfinished">Form</translation>
+    </message>
+    <message>
+        <location line="+73"/>
+        <source>Coin Control Features</source>
+        <translation type="unfinished">Funkcje kontroli monet</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Inputs...</source>
+        <translation type="unfinished">Wejścia...</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>automatically selected</source>
+        <translation type="unfinished">zaznaczone automatycznie</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Insufficient funds!</source>
+        <translation type="unfinished">Niewystarczające środki!</translation>
+    </message>
+    <message>
+        <location line="+89"/>
+        <source>Quantity:</source>
+        <translation type="unfinished">Ilość:</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>Bytes:</source>
+        <translation type="unfinished">Bajtów:</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Amount:</source>
+        <translation type="unfinished">Kwota:</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Dust:</source>
+        <translation type="unfinished">Pył:</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Fee:</source>
+        <translation type="unfinished">Opłata:</translation>
+    </message>
+    <message>
+        <location line="+51"/>
+        <source>After Fee:</source>
+        <translation type="unfinished">Po opłacie:</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Change:</source>
+        <translation type="unfinished">Reszta:</translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <source>If this is activated, but the change address is empty or invalid, change will be sent to a newly generated address.</source>
+        <translation type="unfinished">Kiedy ta opcja jest wybrana, to jeżeli adres reszty jest pusty lub nieprawidłowy, to reszta będzie wysyłana na nowo wygenerowany adres.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Custom change address</source>
+        <translation type="unfinished">Niestandardowy adres reszty</translation>
+    </message>
+    <message>
+        <location line="+75"/>
+        <source>Game type:      </source>
+        <translation type="unfinished">Typ gry:      </translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Bet type:          </source>
+        <translation type="unfinished">Typ zakładu:       </translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Reward ratio:  </source>
+        <translation type="unfinished">Współczynnik wygranej:</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Bet number:    </source>
+        <translation type="unfinished">Obstawiany numer:</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Bet definition:</source>
+        <translation type="unfinished">Definicja obstawienia:</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Amount [BST]:</source>
+        <translation type="unfinished">Kwota [BST]:</translation>
+    </message>
+    <message>
+        <location line="+92"/>
+        <source>Add Bet</source>
+        <translation type="unfinished">Dodaj zakład</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Delete Bet</source>
+        <translation type="unfinished">Usuń zakład</translation>
+    </message>
+    <message>
+        <location line="+49"/>
+        <source>Make Bet</source>
+        <translation type="unfinished">Zatwierdź zakład(y)</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Potential reward: </source>
+        <translation type="unfinished">Potencjalna wygrana: </translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>123.456 BST</source>
+        <translation type="unfinished">123.456 BST</translation>
+    </message>
+    <message>
+        <location line="+105"/>
+        <source>Transaction Fee:</source>
+        <translation type="unfinished">Opłata transakcyjna</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Choose...</source>
+        <translation type="unfinished">Wybierz...</translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>Using the fallbackfee can result in sending a transaction that will take several hours or days (or never) to confirm. Consider choosing your fee manually or wait until you have validated the complete chain.</source>
+        <translation type="unfinished">Korzystanie z opłaty domyślnej może skutkować wysłaniem transakcji, która potwierdzi się w kilka godzin lub dni (lub nigdy). Rozważ wybranie opłaty ręcznie lub poczekaj, aż sprawdzisz poprawność całego łańcucha.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Warning: Fee estimation is currently not possible.</source>
+        <translation type="unfinished">Uwaga: Oszacowanie opłaty za transakcje jest aktualnie niemożliwe.</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>collapse fee-settings</source>
+        <translation type="unfinished">zwiń opcje opłaty</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Hide</source>
+        <translation type="unfinished">Ukryj</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Specify a custom fee per kB (1,000 bytes) of the transaction&apos;s virtual size.
+
+Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satoshis per kB&quot; for a transaction size of 500 bytes (half of 1 kB) would ultimately yield a fee of only 50 satoshis.</source>
+        <translation type="unfinished">Określ niestandardową opłatę za kB (1000 bajtów) wirtualnego rozmiaru transakcji.
+
+Uwaga: Ponieważ opłata jest naliczana za każdy bajt, opłata "100 satoshi za kB" w przypadku transakcji o wielkości 500 bajtów (połowa 1 kB) ostatecznie da opłatę w wysokości tylko 50 satoshi.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>per kilobyte</source>
+        <translation type="unfinished">za kilobajt</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <location line="+13"/>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <translation type="unfinished">Zapłacenie tylko minimalnej opłaty jest nadal wystarczające, dopóki jest mniejszy wolumen transakcji niż miejsca w blokach. Należy jednak mieć świadomość, że może skończyć się to niezatwierdzeniem nigdy transakcji, gdy jest większe zapotrzebowanie na transakcje bitcoina niż sieć może przetworzyć.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>(read the tooltip)</source>
+        <translation type="unfinished">(przeczytaj podpowiedź)</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Recommended:</source>
+        <translation type="unfinished">Zalecane:</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>Custom:</source>
+        <translation type="unfinished">Własna:</translation>
+    </message>
+    <message>
+        <location line="+49"/>
+        <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>
+        <translation type="unfinished">(Sprytne opłaty nie są jeszcze zainicjowane. Trwa to zwykle kilka bloków...)</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Confirmation time target:</source>
+        <translation type="unfinished">Docelowy czas potwierdzenia:</translation>
+    </message>
+    <message>
+        <location line="+74"/>
+        <source>With Replace-By-Fee (BIP-125) you can increase a transaction&apos;s fee after it is sent. Without this, a higher fee may be recommended to compensate for increased transaction delay risk.</source>
+        <translation type="unfinished">Dzięki podmień-przez-opłatę (RBF, BIP-125) możesz podnieść opłatę transakcyjną już wysłanej transakcji. Bez tego, może być rekomendowana większa opłata aby zmniejszyć ryzyko opóźnienia zatwierdzenia transakcji.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Enable Replace-By-Fee</source>
+        <translation type="unfinished">Włącz RBF (podmiana transakcji przez podniesienie opłaty)</translation>
+    </message>
+    <message>
+        <location line="+62"/>
+        <source>Balance:</source>
+        <translation type="unfinished">Saldo:</translation>
+    </message>
+    <message>
+        <location filename="../gamepage.cpp" line="+86"/>
+        <source>Copy quantity</source>
+        <translation type="unfinished">Skopiuj ilość</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy amount</source>
+        <translation type="unfinished">Kopiuj kwotę</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy fee</source>
+        <translation type="unfinished">Skopiuj prowizję</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy after fee</source>
+        <translation type="unfinished">Skopiuj ilość po opłacie</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy bytes</source>
+        <translation type="unfinished">Skopiuj ilość bajtów</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy dust</source>
+        <translation type="unfinished">Kopiuj pył</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy change</source>
+        <translation type="unfinished">Skopiuj resztę</translation>
+    </message>
+    <message>
+        <location line="+88"/>
+        <source>Pay only the required fee of %1</source>
+        <translation type="unfinished">Zapłać tylko wymaganą opłatę w wysokości %1</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+43"/>
+        <source>Estimated to begin confirmation within %n block(s).</source>
+        <translation><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n blok.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloki.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloków.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloków.</numerusform></translation>
+    </message>
+    <message>
+        <location line="+61"/>
+        <source>%1 (%2 blocks)</source>
+        <translation type="unfinished">%1 (%2 bloków)</translation>
+    </message>
+    <message>
+        <location line="+162"/>
+        <source>Warning: Invalid BST address</source>
+        <translation type="unfinished">Ostrzeżenie: nieprawidłowy adres BST</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Warning: Unknown change address</source>
+        <translation type="unfinished">Ostrzeżenie: Nieznany adres reszty</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Confirm custom change address</source>
+        <translation type="unfinished">Potwierdź zmianę własnego adresu reszty</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>The address you selected for change is not part of this wallet. Any or all funds in your wallet may be sent to this address. Are you sure?</source>
+        <translation type="unfinished">Wybrany adres reszty nie jest częścią tego portfela. Dowolne lub wszystkie środki w twoim portfelu mogą być wysyłane na ten adres. Jesteś pewny?</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>(no label)</source>
+        <translation type="unfinished">(brak etykiety)</translation>
+    </message>
+</context>
+<context>
+    <name>GameTxDialog</name>
+    <message>
+        <location filename="../gametxdialog.cpp" line="+16"/>
+        <source>Game has been sent</source>
+        <translation type="unfinished">Gra została wysłana</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Transaction ID</source>
+        <translation type="unfinished">ID transakcji</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Transaction fee</source>
+        <translation type="unfinished">Opłata transakcyjna</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Game</source>
+        <translation type="unfinished">Gra</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Reward ratio</source>
+        <translation type="unfinished">Współczynnik wygranej</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Bet</source>
+        <translation type="unfinished">Zakład</translation>
     </message>
 </context>
 <context>
@@ -895,6 +1726,486 @@
     <message numerus="yes">
         <source>(of %n GB needed)</source>
         <translation><numerusform>(z %n GB potrzebnych)</numerusform><numerusform>(z %n GB potrzebnych)</numerusform><numerusform>(z %n GB potrzebnych)</numerusform><numerusform>(z %n GB potrzebnych)</numerusform></translation>
+    </message>
+</context>
+<context>
+    <name>MessengerAddressBook</name>
+    <message>
+        <location filename="../messengeraddressbook.cpp" line="+74"/>
+        <source>Choose the address to send message</source>
+        <translation type="unfinished">Wybierz adres odbiorcy</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>C&amp;hoose</source>
+        <translation type="unfinished">Wybierz</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>These are addresses for use in messenger</source>
+        <translation type="unfinished">Adresy używane do wysyłania wiadomości</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>&amp;Copy Address</source>
+        <translation type="unfinished">Kopiuj adres</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy &amp;Label</source>
+        <translation type="unfinished">Skopiuj nazwę</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>&amp;Edit</source>
+        <translation type="unfinished">Edytuj</translation>
+    </message>
+    <message>
+        <location line="+215"/>
+        <source>Export Address List</source>
+        <translation type="unfinished">Eksportuj książkę adresową</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <location line="+22"/>
+        <source>Comma separated file (*.csv)</source>
+        <translation type="unfinished">Średnik jako separator (*.csv)</translation>
+    </message>
+    <message>
+        <location line="-9"/>
+        <source>Exporting Failed</source>
+        <translation type="unfinished">Błąd eksportu książki adresowej</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>There was an error trying to save the address list to %1. Please try again.</source>
+        <translation type="unfinished">Wystąpił błąd podczas zapisu książki adresowej do %1. Proszę sprobować ponownie.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Import Address List</source>
+        <translation type="unfinished">Importuj książkę adresową</translation>
+    </message>
+</context>
+<context>
+    <name>MessengerBookModel</name>
+    <message>
+        <location filename="../messengerbookmodel.cpp" line="+141"/>
+        <source>Label</source>
+        <translation type="unfinished">Nazwa</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Address</source>
+        <translation type="unfinished">Adres</translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>(no label)</source>
+        <translation type="unfinished">(brak etykiety)</translation>
+    </message>
+</context>
+<context>
+    <name>MessengerPage</name>
+    <message>
+        <location filename="../forms/messengerpage.ui" line="+14"/>
+        <source>Form</source>
+        <translation type="unfinished">Form</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <location line="+1185"/>
+        <source>Send</source>
+        <translation type="unfinished">Wysyłanie</translation>
+    </message>
+    <message>
+        <location line="-1112"/>
+        <source>Coin Control Features</source>
+        <translation type="unfinished">Funkcje kontroli monet</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Inputs...</source>
+        <translation type="unfinished">Wejścia...</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>automatically selected</source>
+        <translation type="unfinished">zaznaczone automatycznie</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Insufficient funds!</source>
+        <translation type="unfinished">Niewystarczające środki!</translation>
+    </message>
+    <message>
+        <location line="+89"/>
+        <source>Quantity:</source>
+        <translation type="unfinished">Ilość:</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>Bytes:</source>
+        <translation type="unfinished">Bajtów:</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Amount:</source>
+        <translation type="unfinished">Kwota:</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Dust:</source>
+        <translation type="unfinished">Pył:</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Fee:</source>
+        <translation type="unfinished">Opłata:</translation>
+    </message>
+    <message>
+        <location line="+51"/>
+        <source>After Fee:</source>
+        <translation type="unfinished">Po opłacie:</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Change:</source>
+        <translation type="unfinished">Reszta:</translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <source>If this is activated, but the change address is empty or invalid, change will be sent to a newly generated address.</source>
+        <translation type="unfinished">Kiedy ta opcja jest wybrana, to jeżeli adres reszty jest pusty lub nieprawidłowy, to reszta będzie wysyłana na nowo wygenerowany adres.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Custom change address</source>
+        <translation type="unfinished">Niestandardowy adres reszty</translation>
+    </message>
+    <message>
+        <location line="+75"/>
+        <source>Receiver Public Key:</source>
+        <translation type="unfinished">Klucz publiczny adresata:</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Choose recipient from address book.</source>
+        <translation type="unfinished">Wybierz adresata z książki adresowej.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <location line="+798"/>
+        <source>...</source>
+        <translation type="unfinished">...</translation>
+    </message>
+    <message>
+        <location line="-773"/>
+        <source>Enter recipient public key.</source>
+        <translation type="unfinished">Wprowadź klucz publiczny adresata.</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Subject:</source>
+        <translation type="unfinished">Temat:</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Enter subject of a message.</source>
+        <translation type="unfinished">Wprowadź temat wiadomości</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Message:</source>
+        <translation type="unfinished">Treść wiadomości:</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Enter message body.</source>
+        <translation type="unfinished">Wprowadź treść wiadomości.</translation>
+    </message>
+    <message>
+        <location line="+108"/>
+        <source>Transaction Fee:</source>
+        <translation type="unfinished">Opłata transakcyjna:</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Choose...</source>
+        <translation type="unfinished">Wybierz...</translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>Using the fallbackfee can result in sending a transaction that will take several hours or days (or never) to confirm. Consider choosing your fee manually or wait until you have validated the complete chain.</source>
+        <translation type="unfinished">Korzystanie z opłaty domyślnej może skutkować wysłaniem transakcji, która potwierdzi się w kilka godzin lub dni (lub nigdy). Rozważ wybranie opłaty ręcznie lub poczekaj, aż sprawdzisz poprawność całego łańcucha.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Warning: Fee estimation is currently not possible.</source>
+        <translation type="unfinished">Uwaga: Oszacowanie opłaty za transakcje jest aktualnie niemożliwe.</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>collapse fee-settings</source>
+        <translation type="unfinished">zwiń opcje opłaty</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Hide</source>
+        <translation type="unfinished">Ukryj</translation>
+    </message>
+    <message>
+        <location line="+48"/>
+        <source>Specify a custom fee per kB (1,000 bytes) of the transaction&apos;s virtual size.
+
+Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satoshis per kB&quot; for a transaction size of 500 bytes (half of 1 kB) would ultimately yield a fee of only 50 satoshis.</source>
+        <translation type="unfinished">Określ niestandardową opłatę za kB (1000 bajtów) wirtualnego rozmiaru transakcji.
+
+Uwaga: Ponieważ opłata jest naliczana za każdy bajt, opłata "100 satoshi za kB" w przypadku transakcji o wielkości 500 bajtów (połowa 1 kB) ostatecznie da opłatę w wysokości tylko 50 satoshi.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>per kilobyte</source>
+        <translation type="unfinished">za kilobajt</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <location line="+13"/>
+        <source>Paying only the minimum fee is just fine as long as there is less transaction volume than space in the blocks. But be aware that this can end up in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
+        <translation type="unfinished">Zapłacenie tylko minimalnej opłaty jest nadal wystarczające, dopóki jest mniejszy wolumen transakcji niż miejsca w blokach. Należy jednak mieć świadomość, że może skończyć się to niezatwierdzeniem nigdy transakcji, gdy jest większe zapotrzebowanie na transakcje bitcoina niż sieć może przetworzyć.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>(read the tooltip)</source>
+        <translation type="unfinished">(przeczytaj podpowiedź)</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Recommended:</source>
+        <translation type="unfinished">Zalecane:</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>Custom:</source>
+        <translation type="unfinished">Własna:</translation>
+    </message>
+    <message>
+        <location line="+49"/>
+        <source>(Smart fee not initialized yet. This usually takes a few blocks...)</source>
+        <translation type="unfinished">(Sprytne opłaty nie są jeszcze zainicjowane. Trwa to zwykle kilka bloków...)</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Confirmation time target:</source>
+        <translation type="unfinished">Docelowy czas potwierdzenia:</translation>
+    </message>
+    <message>
+        <location line="+74"/>
+        <source>With Replace-By-Fee (BIP-125) you can increase a transaction&apos;s fee after it is sent. Without this, a higher fee may be recommended to compensate for increased transaction delay risk.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Enable Replace-By-Fee</source>
+        <translation type="unfinished">Włącz RBF (podmiana transakcji przez podniesienie opłaty)</translation>
+    </message>
+    <message>
+        <location line="+49"/>
+        <source>Confirm the send action.</source>
+        <translation type="unfinished">Wyślij.</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Display history of sent messages.</source>
+        <translation type="unfinished">Wyświetl historię wysłanych wiadomości.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>History</source>
+        <translation type="unfinished">Historia</translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>Balance:</source>
+        <translation type="unfinished">Saldo:</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Read</source>
+        <translation type="unfinished">Odbieranie</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Enter subject to search transactions.</source>
+        <translation type="unfinished">Wprowadź temat wiadomości żeby wyszukać.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Search for transaction subject</source>
+        <translation type="unfinished">Wprowadź temat wiadomości żeby wyszukać.</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>Date</source>
+        <translation type="unfinished">Data</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>From</source>
+        <translation type="unfinished">Od</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Subject</source>
+        <translation type="unfinished">Temat</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>From: </source>
+        <translation type="unfinished">Od: </translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Messege sender.</source>
+        <translation type="unfinished">Nadawca wiadomości.</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Add sender to address book.</source>
+        <translation type="unfinished">Dodaj nadawcę do książki adresowej.</translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Subject: </source>
+        <translation type="unfinished">Temat:</translation>
+    </message>
+    <message>
+        <location filename="../messengerpage.cpp" line="+95"/>
+        <source>Copy quantity</source>
+        <translation type="unfinished">Skopiuj ilość</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy amount</source>
+        <translation type="unfinished">Kopiuj kwotę</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy fee</source>
+        <translation type="unfinished">Skopiuj prowizję</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy after fee</source>
+        <translation type="unfinished">Skopiuj ilość po opłacie</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy bytes</source>
+        <translation type="unfinished">Skopiuj ilość bajtów</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy dust</source>
+        <translation type="unfinished">Kopiuj pył</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy change</source>
+        <translation type="unfinished">Skopiuj resztę</translation>
+    </message>
+    <message>
+        <location line="+100"/>
+        <source>Pay only the required fee of %1</source>
+        <translation type="unfinished">Zapłać tylko wymaganą opłatę w wysokości %1</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+43"/>
+        <source>Estimated to begin confirmation within %n block(s).</source>
+        <translation><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n blok.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloki.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloków.</numerusform><numerusform>Przybliżony czas rozpoczęcia zatwierdzenia: %n bloków.</numerusform></translation>
+    </message>
+    <message>
+        <location line="+61"/>
+        <source>%1 (%2 blocks)</source>
+        <translation type="unfinished">%1 (%2 bloków)</translation>
+    </message>
+    <message>
+        <location line="+136"/>
+        <source>Warning: Invalid BST address</source>
+        <translation type="unfinished">Ostrzeżenie: nieprawidłowy adres BST</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Warning: Unknown change address</source>
+        <translation type="unfinished">Ostrzeżenie: Nieznany adres reszty</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Confirm custom change address</source>
+        <translation type="unfinished">Potwierdź zmianę własnego adresu reszty</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>The address you selected for change is not part of this wallet. Any or all funds in your wallet may be sent to this address. Are you sure?</source>
+        <translation type="unfinished">Wybrany adres reszty nie jest częścią tego portfela. Dowolne lub wszystkie środki w twoim portfelu mogą być wysyłane na ten adres. Jesteś pewny?</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>(no label)</source>
+        <translation type="unfinished">(brak nazwy)</translation>
+    </message>
+    <message>
+        <location line="+367"/>
+        <source>Reply</source>
+        <translation type="unfinished">Odpowiedz</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Copy address</source>
+        <translation type="unfinished">Skopiuj adres</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Add to address book</source>
+        <translation type="unfinished">Dodaj do książki adresowej</translation>
+    </message>
+</context>
+<context>
+    <name>MessengerSendHistory</name>
+    <message>
+        <location filename="../forms/messengersendhistory.ui" line="+26"/>
+        <source>Sent history</source>
+        <translation type="unfinished">Historia wysłanych</translation>
+    </message>
+    <message>
+        <location line="+45"/>
+        <source>Date</source>
+        <translation type="unfinished">Data</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>To</source>
+        <translation type="unfinished">Do</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Subject</source>
+        <translation type="unfinished">Temat</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>To: </source>
+        <translation type="unfinished">Do: </translation>
+    </message>
+    <message>
+        <location line="+31"/>
+        <source>Subject: </source>
+        <translation type="unfinished">Temat: </translation>
+    </message>
+    <message>
+        <location line="+51"/>
+        <source>Close</source>
+        <translation type="unfinished">Zamknij</translation>
     </message>
 </context>
 <context>
@@ -1450,8 +2761,8 @@
         <translation>Kwota</translation>
     </message>
     <message>
-        <source>Enter a Bitcoin address (e.g. %1)</source>
-        <translation>Wprowadź adres bitcoinowy (np. %1)</translation>
+        <source>Enter a BST address (e.g. %1)</source>
+        <translation>Wprowadź adres BST (np. %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -2108,11 +3419,11 @@
     </message>
     <message>
         <source>If this is activated, but the change address is empty or invalid, change will be sent to a newly generated address.</source>
-        <translation>Kiedy ta opcja jest wybrana, to jeżeli adres reszty jest pusty lub nieprawidłowy, to reszta będzie wysyłana na nowo wygenerowany adres, </translation>
+        <translation>Kiedy ta opcja jest wybrana, to jeżeli adres reszty jest pusty lub nieprawidłowy, to reszta będzie wysyłana na nowo wygenerowany adres. </translation>
     </message>
     <message>
         <source>Custom change address</source>
-        <translation>Niestandardowe zmiany adresu</translation>
+        <translation>Niestandardowy adres reszty</translation>
     </message>
     <message>
         <source>Transaction Fee:</source>
@@ -2341,7 +3652,7 @@ Uwaga: Ponieważ opłata jest naliczana za każdy bajt, opłata "100 satoshi za 
     </message>
     <message>
         <source>Confirm custom change address</source>
-        <translation>Potwierdź zmianę adresu własnego</translation>
+        <translation>Potwierdź zmianę własnego adresu reszty</translation>
     </message>
     <message>
         <source>The address you selected for change is not part of this wallet. Any or all funds in your wallet may be sent to this address. Are you sure?</source>

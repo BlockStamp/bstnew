@@ -214,7 +214,7 @@ BITCOIN_QT_H = \
   qt/csvmodelwriter.h \
   qt/editaddressdialog.h \
   qt/editmsgaddressdialog.h \
-  qt/gemetxdialog.h \
+  qt/gametxdialog.h \
   qt/guiconstants.h \
   qt/guiutil.h \
   qt/intro.h \

@@ -298,7 +298,6 @@ void MessengerAddressBook::selectNewAddress(const QModelIndex &parent, int begin
 
 void MessengerAddressBook::on_exportButton_clicked()
 {
-    printf("on exportButton clicked\n");
     // CSV is currently the only supported format
     QString filename = GUIUtil::getSaveFileName(this,
         tr("Export Address List"), QString(),

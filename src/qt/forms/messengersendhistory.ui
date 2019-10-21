@@ -73,7 +73,7 @@
        </column>
        <column>
         <property name="text">
-         <string>From</string>
+         <string>To</string>
         </property>
        </column>
        <column>
