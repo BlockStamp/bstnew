@@ -322,7 +322,6 @@ bool CWallet::AddCryptedKey(const CPubKey &vchPubKey,
 
 bool CWallet::AddMessengerCryptedKey(const std::vector<unsigned char> &cryptedPrivKey, const std::vector<unsigned char> &iv)
 {
-    ///TODO: Review this implementation
     if (!CCryptoKeyStore::AddMessengerCryptedKey(cryptedPrivKey, iv)) {
         return false;
     }
@@ -849,8 +848,6 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
 
 bool CWallet::EncryptMessenger(const SecureString& strMessengerPassphrase)
 {
-    ///TODO: Finish and review this implementation
-
     if (IsMsgCrypted())
         return false;
 
@@ -1233,7 +1230,6 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
     bool fUpdated = false;
     if (!fInsertedNew)
     {
-        //TODO: which of the following should stay?
         // Merge
         if (!wtxIn.hashUnset() && wtxIn.hashBlock != wtx.hashBlock)
         {
@@ -3505,7 +3501,6 @@ void CWallet::GenerateMessengerKeys()
         return;
     }
 
-    //TODO: Consider using SecureString instead of ordinary std::string
     WalletBatch walletBatch(*msgDatabase);
     std::string publicRsaKey, privateRsaKey;
 

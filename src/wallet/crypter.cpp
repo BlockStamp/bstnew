@@ -127,7 +127,6 @@ static bool EncryptMessengerSecret(
     const std::vector<unsigned char> msgIV,
     std::vector<unsigned char> &vchCiphertext)
 {
-    ///TODO: Review this implementation
     CCrypter cKeyCrypter;
     if(!cKeyCrypter.SetKey(vMasterKey, msgIV))
         return false;
@@ -200,7 +199,6 @@ static bool DecryptMessengerKeys(
     MessengerKey& privMsgKey,
     MessengerKey& pubMsgKey)
 {
-    ///TODO: review this implementation
     CKeyingMaterial plaintextKeys;
     if(!DecryptMessengerSecret(vMasterKey, cryptedKey, msgIv, plaintextKeys)) {
          return false;
@@ -240,7 +238,6 @@ bool CCryptoKeyStore::SetCrypted()
 
 bool CCryptoKeyStore::SetMsgCrypted()
 {
-    ///TODO: Review
     LOCK(cs_KeyStore);
     if (fMsgUseCrypto)
         return true;
@@ -337,7 +334,6 @@ bool CCryptoKeyStore::Unlock(const CKeyingMaterial& vMasterKeyIn)
 
 bool CCryptoKeyStore::MsgUnlock(const CKeyingMaterial& vMasterKeyIn)
 {
-    ///TODO: Review this implementation
     {
         LOCK(cs_KeyStore);
         if (!SetMsgCrypted())

@@ -340,7 +340,6 @@ bool BerkeleyBatch::VerifyEnvironment(const fs::path& file_path, std::string& er
     return true;
 }
 
-///TODO:: What to do with msg_wallet.dat???
 bool BerkeleyBatch::VerifyDatabaseFile(const fs::path& file_path, std::string& warningStr, std::string& errorStr, BerkeleyEnvironment::recoverFunc_type recoverFunc)
 {
     std::string walletFile;

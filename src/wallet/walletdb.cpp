@@ -111,7 +111,6 @@ bool WalletBatch::WriteMessengerCryptedKeys(
     const std::vector<unsigned char>& encryptedPrivKey,
     const std::vector<unsigned char>& msgIv)
 {
-    ///TODO: Review this implementation
     if (!WriteIC(std::string("_cryptedmessengerkey"), std::make_pair(encryptedPrivKey, msgIv))) {
         return false;
     }
@@ -332,8 +331,6 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             CWalletTx wtx(nullptr /* pwallet */, MakeTransactionRef());
             ssValue >> wtx;
 
-            //TODO: Should we validate this transaction? If this was an encrypted message
-            //and we decrypted it correctly then it should probably always stay
             CValidationState state;
             if (!(CheckTransaction(*wtx.tx, state) && (wtx.GetHash() == hash) && state.IsValid()))
                 return false;
@@ -839,8 +836,6 @@ void MaybeCompactWalletDB()
     fOneThread = false;
 }
 
-
-///TODO: What to do with msg_wallet.db???
 //
 // Try to (very carefully!) recover wallet file if there is a problem.
 //

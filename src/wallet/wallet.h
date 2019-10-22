@@ -811,7 +811,6 @@ public:
     MasterKeyMap mapMasterKeys;
     unsigned int nMasterKeyMaxID = 0;
 
-    ///TODO: Probably needs to be replaced with just one CMasterKey
     MasterKeyMap mapMessengerMasterKeys;
     unsigned int nMessengerMasterKeyMaxID = 0;
 

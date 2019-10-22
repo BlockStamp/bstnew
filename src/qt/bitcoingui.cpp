@@ -1259,9 +1259,6 @@ void BitcoinGUI::updateMessengerWalletStatus()
     }
     WalletModel * const walletModel = walletView->getWalletModel();
     setMessengerEncryptionStatus(walletModel->getMessengerEncryptionStatus());
-
-    ///TODO: What to do with the following:
-    //setHDStatus(walletModel->wallet().hdEnabled());
 }
 
 #endif // ENABLE_WALLET
