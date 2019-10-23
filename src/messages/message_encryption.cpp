@@ -313,7 +313,7 @@ bool generateKeysPair(std::string& publicRsaKey, std::string& privateRsaKey)
 }
 
 RSA* createPrivateRSA(const std::string& key) {
-    BIO * keybio = BIO_new_mem_buf(key.c_str(), -1);
+    BIO * keybio = BIO_new_mem_buf((void*)key.c_str(), -1);
     if (keybio==nullptr) {
         return nullptr;
     }
