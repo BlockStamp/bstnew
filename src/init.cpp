@@ -1456,12 +1456,6 @@ bool AppInitMain()
                 pblocktree.reset();
                 pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, false, fReset));
 
-                if (gArgs.IsArgSet("-txdata")) {
-                    const fs::path txdbpath = GetDataDir()/"txdatabase";
-                    fs::create_directory(txdbpath);
-                    txdatabase.reset(new TxBerkeleyDb(txdbpath, "txdb.dat"));
-                }
-
                 if (fReset) {
                     pblocktree->WriteReindexing(true);
                     //If we're reindexing in prune mode, wipe away unusable block files and all undo data files

@@ -16,7 +16,6 @@
 #include <protocol.h> // For CMessageHeader::MessageStartChars
 #include <policy/feerate.h>
 #include <script/script_error.h>
-#include <txbdb/txbdb.h>
 #include <sync.h>
 #include <versionbits.h>
 
@@ -499,9 +498,6 @@ extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern std::unique_ptr<CBlockTreeDB> pblocktree;
-
-///** Global variable that stores OP_RETURN values of transactions (protected by cs_main) */
-extern std::unique_ptr<TxBerkeleyDb> txdatabase;
 
 /**
  * Return the spend height, which is one more than the inputs.GetBestBlock().

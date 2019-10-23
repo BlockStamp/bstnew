@@ -173,9 +173,6 @@ public:
     // Block disconnection on our pcoinsTip:
     bool DisconnectTip(CValidationState& state, const CChainParams& chainparams, DisconnectedBlockTransactions *disconnectpool);
 
-    // Add op returns to db
-    bool AddOpReturnToDb(const CBlock& block, int height);
-
     // Manual block validity manipulation:
     bool PreciousBlock(CValidationState& state, const CChainParams& params, CBlockIndex* pindex) LOCKS_EXCLUDED(cs_main);
     bool InvalidateBlock(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
@@ -297,7 +294,6 @@ CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& loc
 std::unique_ptr<CCoinsViewDB> pcoinsdbview;
 std::unique_ptr<CCoinsViewCache> pcoinsTip;
 std::unique_ptr<CBlockTreeDB> pblocktree;
-std::unique_ptr<TxBerkeleyDb> txdatabase;
 
 enum class FlushStateMode {
     NONE,
@@ -1845,27 +1841,6 @@ static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 static int64_t nBlocksTotal = 0;
 
-bool CChainState::AddOpReturnToDb(const CBlock& block, int height)
-{
-    if (!txdatabase) return true;
-
-    for (unsigned int i = 0; i < block.vtx.size(); i++) {
-        const CTransaction& tx = *(block.vtx[i]);
-
-        std::vector<char> opReturn = tx.loadOpReturn();
-
-        //TODO: Check why op return is empty sometimes
-        if (opReturn.empty()) {
-            continue;
-        }
-
-        if (!txdatabase->SaveTxData(height, i, opReturn)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 static bool updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
     if (!gArgs.IsArgSet("-txfee")) {
         return true;
@@ -2205,8 +2180,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
         setDirtyBlockIndex.insert(pindex);
     }
-
-    AddOpReturnToDb(block, pindex->nHeight);
 
     assert(pindex->phashBlock);
     // add this block to the view's block chain
