@@ -369,7 +369,6 @@ void SetupServerArgs()
     hidden_args.emplace_back("-sysperms");
 #endif
     gArgs.AddArg("-txindex", strprintf("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)", DEFAULT_TXINDEX), false, OptionsCategory::OPTIONS);
-    gArgs.AddArg("-txfee", strprintf("Save fee of every transaction in block database (default: %u)", DEFAULT_TXFEE), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-namehistory", strprintf("Keep track of the full name history (default: %u)", 0), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-txdata", strprintf("Save data of every transaction (stored as OP_RETURN) in database (default: %u)", DEFAULT_TXDATA), false, OptionsCategory::OPTIONS);
 

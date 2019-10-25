@@ -195,6 +195,12 @@ AC_ARG_ENABLE([asm],
   [use_asm=$enableval],
   [use_asm=yes])
 
+AC_ARG_ENABLE([fee-storing],
+  [AS_HELP_STRING([--enable-fee-storing],
+  [enable storing transaction fees in blocks (default is no)])],
+  [store_fee=$enableval],
+  [store_fee=no])
+
 if test "x$use_asm" = xyes; then
   AC_DEFINE(USE_ASM, 1, [Define this symbol to build in assembly routines])
 fi
@@ -1365,6 +1371,10 @@ AM_CONDITIONAL([ENABLE_AVX2],[test x$enable_avx2 = xyes])
 AM_CONDITIONAL([ENABLE_SHANI],[test x$enable_shani = xyes])
 AM_CONDITIONAL([USE_ASM],[test x$use_asm = xyes])
 
+if test "x$store_fee" = xyes; then
+  AC_DEFINE(STORE_FEE, 1, [Define this symbol to store transaction fees in block])
+fi
+
 AC_DEFINE(CLIENT_VERSION_MAJOR, _CLIENT_VERSION_MAJOR, [Major version])
 AC_DEFINE(CLIENT_VERSION_MINOR, _CLIENT_VERSION_MINOR, [Minor version])
 AC_DEFINE(CLIENT_VERSION_REVISION, _CLIENT_VERSION_REVISION, [Build revision])
@@ -1499,6 +1509,7 @@ echo "  sanitizers    = $use_sanitizers"
 echo "  debug enabled = $enable_debug"
 echo "  gprof enabled = $enable_gprof"
 echo "  werror        = $enable_werror"
+echo "  fee storing   = $store_fee"
 echo
 echo "  target os     = $TARGET_OS"
 echo "  build os      = $BUILD_OS"

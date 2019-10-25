@@ -11,7 +11,6 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <uint256.h>
-#include <util.h>
 
 constexpr int32_t MAKE_MODULO_GAME_INDICATOR=0x40000000;
 constexpr int32_t MAKE_MODULO_NEW_GAME_INDICATOR=0x20000000;
@@ -203,10 +202,11 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 
     s >> tx.nVersion;
 
-    /* Include fee if node started with -txfee flag and the stream saves to disk */
-    if (gArgs.IsArgSet("-txfee") && (s.GetType() & SER_DISK)) {
+#ifdef STORE_FEE
+    if (s.GetType() & SER_DISK) {
         s >> tx.fee;
     }
+#endif
 
     unsigned char flags = 0;
     tx.vin.clear();
@@ -243,10 +243,11 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
     s << tx.nVersion;
 
-    /* Include fee if node started with -txfee flag and the stream saves to disk */
-    if (gArgs.IsArgSet("-txfee") &&  (s.GetType() & SER_DISK)) {
+#ifdef STORE_FEE
+    if (s.GetType() & SER_DISK) {
         s << tx.fee;
     }
+#endif
 
     unsigned char flags = 0;
     // Consistency check
@@ -297,7 +298,9 @@ public:
     const std::vector<CTxIn> vin;
     const std::vector<CTxOut> vout;
 
+#ifdef STORE_FEE
     CAmount fee{};
+#endif
 
     const int32_t nVersion;
     const uint32_t nLockTime;
@@ -448,7 +451,9 @@ struct CMutableTransaction
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
 
+#ifdef STORE_FEE
     CAmount fee{};
+#endif
 
     int32_t nVersion;
     uint32_t nLockTime;

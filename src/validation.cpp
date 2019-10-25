@@ -1841,11 +1841,9 @@ static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 static int64_t nBlocksTotal = 0;
 
-static bool updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
-    if (!gArgs.IsArgSet("-txfee")) {
-        return true;
-    }
 
+#ifdef STORE_FEE
+static bool updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockInMemory, const CChainParams& chainparams) {
     CDiskBlockPos position = pindex->GetBlockPos();
     if (position.IsNull()) { // block is not on disk
         return true;
@@ -1868,6 +1866,7 @@ static bool updateTxFeesOnDiskIfNeeded(CBlockIndex* pindex, const CBlock& blockI
 
     return WriteBlockToDiskWithoutHeader(blockOnDisk, position);
 }
+#endif
 
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins.
  *  Validity checks that depend on the UTXO set are also done; ConnectBlock()
@@ -2082,7 +2081,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
 
             nFees += txfee;
-            tx.fee = gArgs.IsArgSet("-txfee") ? txfee : 0;
+#ifdef STORE_FEE
+            tx.fee = txfee;
+#endif
 
             if (!MoneyRange(nFees)) {
                 return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
@@ -2138,9 +2139,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         }
     }
 
+#ifdef STORE_FEE
     if (!updateTxFeesOnDiskIfNeeded(pindex, block, chainparams)) {
         return error("ConnectBlock(): Failed to update tx fees on disk");
     }
+#endif
 
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);

@@ -201,9 +201,10 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
     entry.pushKV("weight", GetTransactionWeight(tx));
     entry.pushKV("locktime", (int64_t)tx.nLockTime);
 
-    if (include_fee) {
+#ifdef STORE_FEE
+    if (include_fee)
         entry.pushKV("fee", ValueFromAmount(tx.fee));
-    }
+#endif
 
     UniValue vin(UniValue::VARR);
     for (unsigned int i = 0; i < tx.vin.size(); i++) {
