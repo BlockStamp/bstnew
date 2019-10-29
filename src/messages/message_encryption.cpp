@@ -9,21 +9,21 @@
 #include <memory>
 
 const int ENCR_MARKER_SIZE = 8;
+const size_t RSA_SIGNATURE_LENGTH = 256;
 const std::string ENCR_MARKER = "MESSAGE:";
 const std::string MSG_RECOGNIZE_TAG = "MSG"; //< message prefix to recognize after decode
 const char MSG_DELIMITER = '\0';
 const char KEY_SEPARATOR = '\n';
 const char* const MY_ADDRESS_LABEL = ".::my address::.";
 
-namespace {
 using EVP_CIPHER_CTX_free_ptr = std::unique_ptr<EVP_CIPHER_CTX, decltype(&::EVP_CIPHER_CTX_free)>;
 
-const size_t AES_256_KEY_LENGTH = 256;
-const size_t AES_256_KEY_LENGTH_BYTES = AES_256_KEY_LENGTH/8;
-const size_t AES_256_IV_LENGTH_BYTES = 16;
-const int padding = RSA_PKCS1_OAEP_PADDING;
+static const size_t AES_256_KEY_LENGTH = 256;
+static const size_t AES_256_KEY_LENGTH_BYTES = AES_256_KEY_LENGTH/8;
+static const size_t AES_256_IV_LENGTH_BYTES = 16;
+static const int padding = RSA_PKCS1_OAEP_PADDING;
 
-void generateRandomKey(unsigned char* key)
+static void generateRandomKey(unsigned char* key)
 {
     const int result = RAND_bytes(key, AES_256_KEY_LENGTH_BYTES);
     if (result != 1) {
@@ -31,7 +31,7 @@ void generateRandomKey(unsigned char* key)
     }
 }
 
-void generateRandomIv(unsigned char* iv)
+static void generateRandomIv(unsigned char* iv)
 {
     const int result = RAND_bytes(iv, AES_256_IV_LENGTH_BYTES);
     if (result != 1) {
@@ -39,7 +39,7 @@ void generateRandomIv(unsigned char* iv)
     }
 }
 
-std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
+static std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
     const unsigned char* data,
     std::size_t dataLength,
     unsigned char* key,
@@ -72,7 +72,7 @@ std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithAES(
     return std::make_pair(std::move(encryptedData), encryptedSize);
 }
 
-std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithRsa(
+static std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithRsa(
     unsigned char* data,
     int dataLength,
     const char* rsaKey)
@@ -98,7 +98,6 @@ std::pair<std::unique_ptr<unsigned char[]>, std::size_t> encryptWithRsa(
     }
 
     return std::make_pair(std::move(encryptedData), encryptedSize);
-}
 }
 
 //Note: publicRsaKey must be null terminated
@@ -131,7 +130,7 @@ std::vector<unsigned char> createEncryptedMessage(
     return result;
 }
 
-int decryptKey(unsigned char* encryptedData, int dataLength, const char* rsaKey, unsigned char* decryptedKey)
+static int decryptKey(unsigned char* encryptedData, int dataLength, const char* rsaKey, unsigned char* decryptedKey)
 {
     BIO* keybio = BIO_new_mem_buf((char*)rsaKey, -1);
     if (keybio == nullptr) {
@@ -160,7 +159,7 @@ int decryptKey(unsigned char* encryptedData, int dataLength, const char* rsaKey,
     return rsaSize;
 }
 
-int readIv(unsigned char* data, size_t dataLength, unsigned char* iv) {
+static int readIv(unsigned char* data, size_t dataLength, unsigned char* iv) {
     if (dataLength < AES_256_IV_LENGTH_BYTES) {
         throw std::runtime_error("Failed to decrypt message");
     }
@@ -169,7 +168,7 @@ int readIv(unsigned char* data, size_t dataLength, unsigned char* iv) {
     return AES_256_IV_LENGTH_BYTES;
 }
 
-std::vector<unsigned char> decryptData(
+static std::vector<unsigned char> decryptData(
     unsigned char* encryptedData,
     int dataLength,
     unsigned char* key,
@@ -211,7 +210,7 @@ std::vector<unsigned char> decryptData(
     return decryptedData;
 }
 
-void checkMessageMarker(unsigned char* data, int dataLength)
+static void checkMessageMarker(unsigned char* data, int dataLength)
 {
     if (dataLength < ENCR_MARKER_SIZE ||
         std::string(data, data+ENCR_MARKER_SIZE) != ENCR_MARKER)
@@ -312,18 +311,18 @@ bool generateKeysPair(std::string& publicRsaKey, std::string& privateRsaKey)
 
 }
 
-RSA* createPrivateRSA(const std::string& key) {
-    BIO * keybio = BIO_new_mem_buf((void*)key.c_str(), -1);
-    if (keybio==nullptr) {
-        return nullptr;
-    }
-
-    RSA *rsa = nullptr;
-    rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa, nullptr, nullptr);
-    return rsa;
+static RSA* createPrivateRSA(std::string key) {
+  RSA *rsa = NULL;
+  const char* c_string = key.c_str();
+  BIO * keybio = BIO_new_mem_buf((void*)c_string, -1);
+  if (keybio==NULL) {
+      return 0;
+  }
+  rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa, NULL, NULL);
+  return rsa;
 }
 
-RSA* createPublicRSA(std::string key) {
+static RSA* createPublicRSA(std::string key) {
     RSA *rsa = NULL;
     BIO *keybio;
     const char* c_string = key.c_str();
@@ -331,7 +330,7 @@ RSA* createPublicRSA(std::string key) {
     if (keybio==NULL) {
       return 0;
     }
-    rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa,NULL, NULL);
+    rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa, NULL, NULL);
     BIO_free(keybio);
     return rsa;
 }
@@ -353,11 +352,11 @@ bool matchRSAKeys(const std::string& publicKey, const std::string& privateKey)
     return rv;
 }
 
-bool RSASign( RSA* rsa,
+static bool RSASign( RSA* rsa,
               const unsigned char* Msg,
               size_t MsgLen,
-              unsigned char** EncMsg,
-              size_t* MsgLenEnc) {
+              std::vector<unsigned char>& signature)
+{
     EVP_MD_CTX* m_RSASignCtx = EVP_MD_CTX_create();
     EVP_PKEY* priKey  = EVP_PKEY_new();
     EVP_PKEY_assign_RSA(priKey, rsa);
@@ -369,22 +368,27 @@ bool RSASign( RSA* rsa,
     {
         return false;
     }
-    if (EVP_DigestSignFinal(m_RSASignCtx, NULL, MsgLenEnc) <=0)
+
+    size_t MsgLenEnc{};
+    if (EVP_DigestSignFinal(m_RSASignCtx, NULL, &MsgLenEnc) <=0)
     {
         return false;
     }
-    *EncMsg = (unsigned char*)malloc(*MsgLenEnc);
-    if (EVP_DigestSignFinal(m_RSASignCtx, *EncMsg, MsgLenEnc) <= 0)
+
+    signature.resize(MsgLenEnc);
+    if (EVP_DigestSignFinal(m_RSASignCtx, signature.data(), &MsgLenEnc) <= 0)
     {
         return false;
     }
+
+    signature.resize(MsgLenEnc);
+
     EVP_MD_CTX_cleanup(m_RSASignCtx);
     return true;
 }
 
-bool RSAVerifySignature( RSA* rsa,
-                         unsigned char* MsgHash,
-                         size_t MsgHashLen,
+static bool RSAVerifySignature( RSA* rsa,
+                         const std::string& signature,
                          const char* Msg,
                          size_t MsgLen,
                          bool* Authentic) {
@@ -401,7 +405,7 @@ bool RSAVerifySignature( RSA* rsa,
     {
         return false;
     }
-    int AuthStatus = EVP_DigestVerifyFinal(m_RSAVerifyCtx, MsgHash, MsgHashLen);
+    int AuthStatus = EVP_DigestVerifyFinal(m_RSAVerifyCtx, (unsigned char*)signature.c_str(), signature.size());
     if (AuthStatus==1)
     {
         *Authentic = true;
@@ -420,77 +424,26 @@ bool RSAVerifySignature( RSA* rsa,
     }
 }
 
-void Base64Encode( const unsigned char* buffer,
-                   size_t length,
-                   char** base64Text) {
-    BIO *bio, *b64;
-    BUF_MEM *bufferPtr;
-
-    b64 = BIO_new(BIO_f_base64());
-    bio = BIO_new(BIO_s_mem());
-    bio = BIO_push(b64, bio);
-
-    BIO_write(bio, buffer, length);
-    BIO_flush(bio);
-    BIO_get_mem_ptr(bio, &bufferPtr);
-    BIO_set_close(bio, BIO_NOCLOSE);
-    BIO_free_all(bio);
-
-    *base64Text=(*bufferPtr).data;
-}
-
-size_t calcDecodeLength(const char* b64input) {
-    size_t len = strlen(b64input), padding = 0;
-
-    if (b64input[len-1] == '=' && b64input[len-2] == '=') //last two chars are =
-        padding = 2;
-    else if (b64input[len-1] == '=') //last char is =
-        padding = 1;
-    return (len*3)/4 - padding;
-}
-
-void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length) {
-    BIO *bio, *b64;
-
-    int decodeLen = calcDecodeLength(b64message);
-    *buffer = (unsigned char*)malloc(decodeLen + 1);
-    (*buffer)[decodeLen] = '\0';
-
-    bio = BIO_new_mem_buf((void*)b64message, -1);
-    b64 = BIO_new(BIO_f_base64());
-    bio = BIO_push(b64, bio);
-
-    *length = BIO_read(bio, *buffer, strlen(b64message));
-    BIO_free_all(bio);
-}
-
-char* signMessage(std::string privateKey, std::string plainText) {
+std::string signMessage(const std::string& privateKey, const std::string& plainText) {
     RSA* privateRSA = createPrivateRSA(privateKey);
-    unsigned char* encMessage;
-    char* base64Text;
-    size_t encMessageLength;
-    RSASign(privateRSA, (unsigned char*) plainText.c_str(), plainText.length(), &encMessage, &encMessageLength);
-    Base64Encode(encMessage, encMessageLength, &base64Text);
-    free(encMessage);
-    return base64Text;
+
+    std::vector<unsigned char> signature;
+    bool result = RSASign(privateRSA, (unsigned char*) plainText.c_str(), plainText.length(), signature);
+
+    if (!result || signature.size() != RSA_SIGNATURE_LENGTH) {
+        throw std::runtime_error("Could not sign message");
+    }
+
+    return std::string(signature.begin(), signature.end());
 }
 
-bool verifySignature(std::string publicKey, std::string plainText, char* signatureBase64) {
+bool verifySignature(
+    const std::string& publicKey,
+    const std::string& plainText,
+    const std::string& signature)
+{
     RSA* publicRSA = createPublicRSA(publicKey);
-    unsigned char* encMessage;
-    size_t encMessageLength;
     bool authentic;
-    Base64Decode(signatureBase64, &encMessage, &encMessageLength);
-    bool result = RSAVerifySignature(publicRSA, encMessage, encMessageLength, plainText.c_str(), plainText.length(), &authentic);
-    return result & authentic;
-}
-
-bool verifySignature(std::string publicKey, std::string plainText, const char* signatureBase64) {
-    RSA* publicRSA = createPublicRSA(publicKey);
-    unsigned char* encMessage;
-    size_t encMessageLength;
-    bool authentic;
-    Base64Decode(signatureBase64, &encMessage, &encMessageLength);
-    bool result = RSAVerifySignature(publicRSA, encMessage, encMessageLength, plainText.c_str(), plainText.length(), &authentic);
-    return result & authentic;
+    bool result = RSAVerifySignature(publicRSA, signature, plainText.c_str(), plainText.length(), &authentic);
+    return result && authentic;
 }

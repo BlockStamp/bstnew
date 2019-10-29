@@ -33,20 +33,10 @@ bool checkRSApublicKey(const std::string& rsaPublicKey) {
         }
     }
 
-//    // RSA 1024
-//    if (encodingLength == 216) {
-//        return true;
-//    }
-
     // RSA 2048
     if (encodingLength == 392) {
         return true;
     }
-
-//    // RSA 4096
-//    if (encodingLength == 736) {
-//        return true;
-//    }
 
     LogPrintf("Incorrect length of public key: %u\n", encodingLength);
     return false;
@@ -70,20 +60,6 @@ bool checkRSAprivateKey(const std::string& rsaPrivateKey)
     }
 
     return true;
-
-//    std::size_t encodingLength = 0;
-//    for(size_t i = keyBeg.length(); i < posend; ++i)
-//    {
-//        if (is_base64(rsaPrivateKey[i]))
-//        {
-//            ++encodingLength;
-//        }
-//    }
-//    if (encodingLength == 1590) {
-//        LogPrintf("Incorrect length of private key: %u\n", encodingLength);
-//        return false;
-//    }
-
 }
 
 void decryptMessageAndSplit(std::vector<char> &opReturnData,
@@ -98,30 +74,35 @@ void decryptMessageAndSplit(std::vector<char> &opReturnData,
         privateKey.c_str());
 
     std::string message(decryptedData.begin(), decryptedData.end());
-
-    std::size_t newlinepos, previous = 0;
-    if ((newlinepos = message.find(MSG_DELIMITER)) == std::string::npos)
+    if (message.length() < RSA_SIGNATURE_LENGTH) {
         throw std::runtime_error("Incorrect message format");
-    const auto signature = message.substr(previous, newlinepos);
-    previous = newlinepos+1;
+    }
 
-    if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
+    const auto signature = message.substr(0, RSA_SIGNATURE_LENGTH);
+
+    std::size_t newlinepos, previous = RSA_SIGNATURE_LENGTH;
+    if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos) {
         throw std::runtime_error("Incorrect message format");
+    }
+
     CMessengerKey fromKey(message.substr(previous, newlinepos - previous), CMessengerKey::PUBLIC_KEY);
     from = fromKey.toString();
     previous = newlinepos+1;
 
-    if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos)
+    if ((newlinepos = message.find(MSG_DELIMITER, previous)) == std::string::npos) {
         throw std::runtime_error("Incorrect message format");
+    }
     subject = message.substr(previous, newlinepos - previous);
 
-    if (!verifySignature(fromKey.toString(), fromKey.toString(), signature.c_str()))
+    if (!verifySignature(fromKey.toString(), fromKey.toString(), signature)) {
         throw std::runtime_error("Suspicious message, signature verify failed");
+    }
 
     body = message.substr(newlinepos+1);
 
-    if (from.empty() || subject.empty() || body.empty())
+    if (from.empty() || subject.empty() || body.empty()) {
         throw std::runtime_error("Incorrect message format");
+    }
 }
 
 void loadMsgKeysFromFile(const std::string& filename, CMessengerKey& privateRsaKey, CMessengerKey& publicRsaKey)

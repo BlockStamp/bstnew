@@ -637,7 +637,8 @@ void MessengerPage::send()
                 const std::string subject = ui->subjectEdit->text().toUtf8().constData();
                 const std::string message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
 
-                char* signature = signMessage(privateRsaKey.toString(), fromAddress);
+                const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
+
                 std::vector<unsigned char> data = createData(
                 fromAddress,
                 toAddress,
@@ -727,11 +728,10 @@ std::vector<unsigned char> MessengerPage::createData(
     const std::string& toAddress,
     const std::string& subject,
     const std::string& message,
-    const char* signature)
+    const std::string& signature)
 {
     std::string msg = MSG_RECOGNIZE_TAG
             + signature
-            + MSG_DELIMITER
             + fromAddress
             + MSG_DELIMITER
             + subject

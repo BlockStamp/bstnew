@@ -73,12 +73,11 @@ private:
     void updateCoinControlState(CCoinControl& ctrl);
 
 
-    std::vector<unsigned char> createData(
-        const std::string& fromAddress,
+    std::vector<unsigned char> createData(const std::string& fromAddress,
         const std::string& toAddress,
         const std::string& subject,
         const std::string& message,
-        const char* signature);
+        const std::string& signature);
 
 protected:
     virtual void showEvent(QShowEvent * event);

@@ -6,6 +6,7 @@
 #include <utility>
 
 extern const int ENCR_MARKER_SIZE;
+extern const size_t RSA_SIGNATURE_LENGTH;
 extern const std::string ENCR_MARKER;
 extern const std::string MSG_RECOGNIZE_TAG;
 extern const char MSG_DELIMITER;
@@ -18,8 +19,7 @@ std::vector<unsigned char> createDecryptedMessage(unsigned char* encryptedData, 
 bool generateKeysPair(std::string &publicRsaKey, std::string &privateRsaKey);
 bool matchRSAKeys(const std::string& publicKey, const std::string& privateKey);
 
-char* signMessage(std::string privateKey, std::string plainText);
-bool verifySignature(std::string publicKey, std::string plainText, char* signatureBase64);
-bool verifySignature(std::string publicKey, std::string plainText, const char* signatureBase64);
+std::string signMessage(const std::string& privateKey, const std::string& plainText);
+bool verifySignature(const std::string& publicKey, const std::string& plainText, const std::string& signature);
 
 #endif

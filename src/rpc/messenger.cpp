@@ -98,11 +98,10 @@ UniValue sendmessage(const JSONRPCRequest& request)
     const std::string message = request.params[1].get_str();
     const std::string toAddress = request.params[2].get_str();
 
-    char* signature = signMessage(rsaPrivateKey.toString(), fromAddress);
+    const std::string signature = signMessage(rsaPrivateKey.toString(), fromAddress);
 
     std::string msg=MSG_RECOGNIZE_TAG
             + signature
-            + MSG_DELIMITER
             + fromAddress
             + MSG_DELIMITER
             + subject
