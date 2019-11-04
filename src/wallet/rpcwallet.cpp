@@ -448,6 +448,56 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
     return tx->GetHash().GetHex();
 }
 
+static CTransactionRef CreateMsgTx(CWallet * const pwallet)
+{
+    CMutableTransaction txNew;
+
+    std::vector<unsigned char> data;
+    CScript scriptPubKey;
+    scriptPubKey << OP_RETURN << data;
+    CAmount nAmount = 0;
+    txNew.vout.push_back(CTxOut(nAmount, scriptPubKey));
+
+    CTransactionRef tx = MakeTransactionRef(std::move(txNew));
+
+//    if (!pwallet->CreateTransaction(/*vecSend, withInput,*/ tx/*, reservekey, nFeeRequired, nChangePosRet, strError, coin_control*/)) {
+//        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
+//            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
+//        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+//    }
+    CReserveKey reservekey(pwallet);
+
+    CValidationState state;
+    if (!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state)) {
+        std::string strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    return tx;
+}
+
+static UniValue createmsgtransaction(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp)
+        throw std::runtime_error("createmsgtransaction - error");
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+    EnsureWalletIsUnlocked(pwallet);
+
+    CTransactionRef tx = CreateMsgTx(pwallet);
+    return tx->GetHash().GetHex();
+}
+
 static UniValue listaddressgroupings(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -4200,6 +4250,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrase",                 &walletpassphrase,              {"passphrase","timeout"} },
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     { "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
+    { "wallet",             "createmsgtransaction",             &createmsgtransaction,          {} },
 
     // Name-related wallet calls.
     { "names",              "name_list",                        &name_list,                     {"name"} },
