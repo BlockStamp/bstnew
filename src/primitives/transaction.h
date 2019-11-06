@@ -12,6 +12,7 @@
 #include <serialize.h>
 #include <uint256.h>
 
+constexpr int32_t MSG_TX_INDICATOR=0x80000000; //TODO: check if this value can be used
 constexpr int32_t MAKE_MODULO_GAME_INDICATOR=0x40000000;
 constexpr int32_t MAKE_MODULO_NEW_GAME_INDICATOR=0x20000000;
 constexpr int32_t GET_MODULO_NEW_GAME_INDICATOR=0x10000000;
@@ -353,6 +354,11 @@ public:
     bool IsCoinBase() const
     {
         return (vin.size() == 1 && vin[0].prevout.IsNull());
+    }
+
+    bool IsMsgTx() const
+    {
+        return nVersion == (MSG_TX_INDICATOR | CTransaction::CURRENT_VERSION);
     }
 
     bool IsNamecoin() const
