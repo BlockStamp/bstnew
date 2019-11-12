@@ -11,8 +11,8 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <iostream>
 
-constexpr int32_t MSG_TX_INDICATOR=0x80000000; //TODO: check if this value can be used
 constexpr int32_t MAKE_MODULO_GAME_INDICATOR=0x40000000;
 constexpr int32_t MAKE_MODULO_NEW_GAME_INDICATOR=0x20000000;
 constexpr int32_t GET_MODULO_NEW_GAME_INDICATOR=0x10000000;
@@ -358,7 +358,7 @@ public:
 
     bool IsMsgTx() const
     {
-        return nVersion == (MSG_TX_INDICATOR | CTransaction::CURRENT_VERSION);
+        return vin.empty() && vout.size() == 1 && vout[0].nValue == 0;
     }
 
     bool IsNamecoin() const

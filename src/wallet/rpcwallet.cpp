@@ -452,7 +452,7 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet)
 {
     CMutableTransaction txNew;
 
-    std::string str = "Moja wiadomość, Treść mojej wiadomości - 1111111111111111111111111111111111111111111111111111";
+    std::string str = "Moja wiadomość, Treść mojej wiadomości - 123123123123123123123123123123123123123123" + std::to_string(GetTime());
 
     std::vector<unsigned char> data(str.cbegin(), str.cend());
     CScript scriptPubKey;
@@ -462,7 +462,6 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet)
     txNew.vout[0].scriptPubKey = scriptPubKey;
     txNew.vout[0].nValue = 0;
 
-    txNew.nVersion = (MSG_TX_INDICATOR | CTransaction::CURRENT_VERSION);
     CTransactionRef tx = MakeTransactionRef(std::move(txNew));
 
 //    if (!pwallet->CreateTransaction(/*vecSend, withInput,*/ tx/*, reservekey, nFeeRequired, nChangePosRet, strError, coin_control*/)) {

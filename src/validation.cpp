@@ -998,6 +998,7 @@ static bool AcceptToMemoryPoolWithTime(const CChainParams& chainparams, CTxMemPo
     std::vector<COutPoint> coins_to_uncache;
     bool res = AcceptToMemoryPoolWorker(chainparams, pool, state, tx, pfMissingInputs, nAcceptTime, plTxnReplaced, bypass_limits, nAbsurdFee, coins_to_uncache, test_accept);
     if (!res) {
+        std::cout << "AcceptToMemoryPoolWorker returned false\n";
         for (const COutPoint& hashTx : coins_to_uncache)
             pcoinsTip->Uncache(hashTx);
     }
@@ -1879,6 +1880,8 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                   std::set<valtype>& expiredNames,
                   const CChainParams& chainparams, bool fJustCheck)
 {
+    std::cout << "Connect block\n";
+
     AssertLockHeld(cs_main);
     assert(pindex);
     assert(*pindex->phashBlock == block.GetHash());

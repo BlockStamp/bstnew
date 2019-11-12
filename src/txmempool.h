@@ -66,7 +66,7 @@ class CTxMemPool;
 
 class CTxMemPoolEntry
 {
-private:
+public:
     const CTransactionRef tx;
     const CAmount nFee;             //!< Cached to avoid expensive parent-transaction lookups
     const size_t nTxWeight;         //!< ... and avoid recomputing tx weight (also used for GetTxSize())
