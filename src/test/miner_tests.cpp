@@ -8,6 +8,7 @@
 #include <consensus/merkle.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+#include <internal_miner.h>
 #include <validation.h>
 #include <miner.h>
 #include <policy/policy.h>
@@ -640,6 +641,20 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
     TestPackageSelection(chainparams, scriptPubKey, txFirst);
 
     fCheckpointsEnabled = true;
+}
+
+BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
+{
+    ///TODO: remove this TC, may cause a long time execution
+    std::cout << "MineTransaction test" << std::endl;
+
+    CTransaction txn{};
+    uint64_t nonce = internal_miner::mineTransaction(txn);
+    std::cout << "Nonce: " << nonce << std::endl;
+    BOOST_CHECK(nonce != 0);
+
+    bool rv = internal_miner::verifyTransactionHash(txn, nonce);
+    BOOST_CHECK(rv);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -129,6 +129,7 @@ BITCOIN_CORE_H = \
   interfaces/handler.h \
   interfaces/node.h \
   interfaces/wallet.h \
+  internal_miner.h \
   key.h \
   key_io.h \
   keystore.h \
@@ -250,6 +251,7 @@ libbitcoin_server_a_SOURCES = \
   index/txindex.cpp \
   interfaces/handler.cpp \
   interfaces/node.cpp \
+  internal_miner.cpp \
   init.cpp \
   games/gamesutils.cpp \
   games/gamestxs.cpp \
