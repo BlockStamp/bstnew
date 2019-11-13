@@ -145,6 +145,9 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
     if (tx.IsCoinBase())
         return nSigOps;
 
+    if (tx.IsMsgTx())
+        return nSigOps;
+
     if (flags & SCRIPT_VERIFY_P2SH) {
         nSigOps += GetP2SHSigOpCount(tx, inputs) * WITNESS_SCALE_FACTOR;
     }
@@ -162,7 +165,7 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
 bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fCheckDuplicateInputs)
 {
     // Basic checks that don't depend on any context
-    if (tx.vin.empty() && !tx.IsMsgTx())
+    if (tx.vin.empty())
         return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
 
     if (tx.vout.empty())
@@ -190,8 +193,10 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
         std::set<COutPoint> vInOutPoints;
         for (const auto& txin : tx.vin)
         {
-            if (!vInOutPoints.insert(txin.prevout).second)
+            if (!vInOutPoints.insert(txin.prevout).second) {
+                std::cout << "\nERROR - Duplicate inputs\n";
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
+            }
         }
     }
 
@@ -207,9 +212,8 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
                 return state.DoS(10, false, REJECT_INVALID, "bad-txns-prevout-null");
     }
 
+    //TODO: Add checks for MsgTx!!!
     if (tx.IsMsgTx()) {
-        if (!tx.vin.empty() || tx.vout.size() != 1 || tx.vout[0].nValue != 0)
-            return state.DoS(10, false, REJECT_INVALID, "bad-msg-tx");
     }
 
     if(modulo::ver_1::isMakeBetTx(tx))

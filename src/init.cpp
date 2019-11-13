@@ -1562,6 +1562,7 @@ bool AppInitMain()
 
                     if (!CVerifyDB().VerifyDB(chainparams, pcoinsdbview.get(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL),
                                   gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS))) {
+                        std::cout << "VerifyDB ERROR!\n";
                         strLoadError = _("Corrupted block database detected");
                         break;
                     }

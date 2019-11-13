@@ -530,7 +530,7 @@ static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, CValidationSt
     // and when we actually call through to CheckInputs
     LOCK(pool.cs);
 
-    assert(!tx.IsCoinBase());
+    assert(!tx.IsCoinBase() && !tx.IsMsgTx());
     for (const CTxIn& txin : tx.vin) {
         const Coin& coin = view.AccessCoin(txin.prevout);
 
@@ -568,16 +568,20 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     }
 
     if (!CheckTransaction(tx, state)) {
+        std::cout << "AcceptToMemoryPoolWorker - Check transaction FAIL\n";
         return false; // state filled in by CheckTransaction
     }
 
     // Coinbase is only valid in a block, not as a loose transaction
-    if (tx.IsCoinBase())
+    if (tx.IsCoinBase()) {
+        std::cout << "AcceptToMemoryPoolWorker - coinbase FAIL\n";
         return state.DoS(100, false, REJECT_INVALID, "coinbase");
+    }
 
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     std::string reason;
     if (fRequireStandard && !IsStandardTx(tx, reason)) {
+        std::cout << "AcceptToMemoryPoolWorker - isStandard FAIL\n";
         return state.DoS(0, false, REJECT_NONSTANDARD, reason);
     }
 
@@ -585,57 +589,70 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     // A transaction with 1 segwit input and 1 P2WPHK output has non-witness size of 82 bytes.
     // Transactions smaller than this are not relayed to reduce unnecessary malloc overhead.
     if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) < MIN_STANDARD_TX_NONWITNESS_SIZE) {
+        std::cout << "AcceptToMemoryPoolWorker - too small FAIL\n";
         return state.DoS(0, false, REJECT_NONSTANDARD, "tx-size-small");
     }
 
     // Only accept nLockTime-using transactions that can be mined in the next
     // block; we don't want our mempool filled up with transactions that can't
     // be mined yet.
-    if (!CheckFinalTx(tx, STANDARD_LOCKTIME_VERIFY_FLAGS))
+    if (!CheckFinalTx(tx, STANDARD_LOCKTIME_VERIFY_FLAGS)) {
+        std::cout << "AcceptToMemoryPoolWorker - tx non-final FAIL\n";
         return state.DoS(0, false, REJECT_NONSTANDARD, "non-final");
+    }
 
     // is it already in the memory pool?
     if (pool.exists(hash)) {
+        std::cout << "AcceptToMemoryPoolWorker - already in pool FAIL\n";
         return state.Invalid(false, REJECT_DUPLICATE, "txn-already-in-mempool");
     }
 
     // Check for conflicts with in-memory transactions
     std::set<uint256> setConflicts;
-    for (const CTxIn &txin : tx.vin)
-    {
-        const CTransaction* ptxConflicting = pool.GetConflictTx(txin.prevout);
-        if (ptxConflicting) {
-            if (!setConflicts.count(ptxConflicting->GetHash()))
-            {
-                // Allow opt-out of transaction replacement by setting
-                // nSequence > MAX_BIP125_RBF_SEQUENCE (SEQUENCE_FINAL-2) on all inputs.
-                //
-                // SEQUENCE_FINAL-1 is picked to still allow use of nLockTime by
-                // non-replaceable transactions. All inputs rather than just one
-                // is for the sake of multi-party protocols, where we don't
-                // want a single party to be able to disable replacement.
-                //
-                // The opt-out ignores descendants as anyone relying on
-                // first-seen mempool behavior should be checking all
-                // unconfirmed ancestors anyway; doing otherwise is hopelessly
-                // insecure.
-                bool fReplacementOptOut = true;
-                if (fEnableReplacement)
+    if (!tx.IsMsgTx()) {
+        for (const CTxIn &txin : tx.vin)
+        {
+            const CTransaction* ptxConflicting = pool.GetConflictTx(txin.prevout);
+            if (ptxConflicting) {
+                std::cout << "\tChecking for conflicts NOT OK: " << ptxConflicting->GetHash().ToString() << ", for prevout " << txin.prevout.ToString() << std::endl;
+            }
+            else {
+                std::cout << "\tChecking for conflicts OK: nullptr, for prevout" << txin.prevout.ToString() << std::endl;
+            }
+
+            if (ptxConflicting) {
+                if (!setConflicts.count(ptxConflicting->GetHash()))
                 {
-                    for (const CTxIn &_txin : ptxConflicting->vin)
+                    // Allow opt-out of transaction replacement by setting
+                    // nSequence > MAX_BIP125_RBF_SEQUENCE (SEQUENCE_FINAL-2) on all inputs.
+                    //
+                    // SEQUENCE_FINAL-1 is picked to still allow use of nLockTime by
+                    // non-replaceable transactions. All inputs rather than just one
+                    // is for the sake of multi-party protocols, where we don't
+                    // want a single party to be able to disable replacement.
+                    //
+                    // The opt-out ignores descendants as anyone relying on
+                    // first-seen mempool behavior should be checking all
+                    // unconfirmed ancestors anyway; doing otherwise is hopelessly
+                    // insecure.
+                    bool fReplacementOptOut = true;
+                    if (fEnableReplacement)
                     {
-                        if (_txin.nSequence <= MAX_BIP125_RBF_SEQUENCE)
+                        for (const CTxIn &_txin : ptxConflicting->vin)
                         {
-                            fReplacementOptOut = false;
-                            break;
+                            if (_txin.nSequence <= MAX_BIP125_RBF_SEQUENCE)
+                            {
+                                fReplacementOptOut = false;
+                                break;
+                            }
                         }
                     }
-                }
-                if (fReplacementOptOut) {
-                    return state.Invalid(false, REJECT_DUPLICATE, "txn-mempool-conflict");
-                }
+                    if (fReplacementOptOut) {
+                        return state.Invalid(false, REJECT_DUPLICATE, "txn-mempool-conflict");
+                    }
 
-                setConflicts.insert(ptxConflicting->GetHash());
+                    setConflicts.insert(ptxConflicting->GetHash());
+                }
             }
         }
     }
@@ -651,25 +668,29 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         CCoinsViewMemPool viewMemPool(pcoinsTip.get(), pool);
         view.SetBackend(viewMemPool);
 
-        // do all inputs exist?
-        for (const CTxIn& txin : tx.vin) {
-            if (!pcoinsTip->HaveCoinInCache(txin.prevout)) {
-                coins_to_uncache.push_back(txin.prevout);
-            }
-            if (!view.HaveCoin(txin.prevout)) {
-                // Are inputs missing because we already have the tx?
-                for (size_t out = 0; out < tx.vout.size(); out++) {
-                    // Optimistically just do efficient check of cache for outputs
-                    //bioinfo change: from namecoin - use HaveCoin() instead of HaveCoinInCache()
-                    if (pcoinsTip->HaveCoin(COutPoint(hash, out))) {
-                        return state.Invalid(false, REJECT_DUPLICATE, "txn-already-known");
+        if (!tx.IsMsgTx()) {
+            // do all inputs exist?
+            for (const CTxIn& txin : tx.vin) {
+                if (!pcoinsTip->HaveCoinInCache(txin.prevout)) {
+                    coins_to_uncache.push_back(txin.prevout);
+                }
+                if (!view.HaveCoin(txin.prevout)) {
+                    // Are inputs missing because we already have the tx?
+                    for (size_t out = 0; out < tx.vout.size(); out++) {
+                        // Optimistically just do efficient check of cache for outputs
+                        //bioinfo change: from namecoin - use HaveCoin() instead of HaveCoinInCache()
+                        if (pcoinsTip->HaveCoin(COutPoint(hash, out))) {
+                            std::cout << "Error - transaction already known\n";
+                            return state.Invalid(false, REJECT_DUPLICATE, "txn-already-known");
+                        }
                     }
+                    // Otherwise assume this might be an orphan tx for which we just haven't seen parents yet
+                    if (pfMissingInputs) {
+                        *pfMissingInputs = true;
+                    }
+                    std::cout << "Error - MISSING INPUTS\n";
+                    return false; // fMissingInputs and !state.IsInvalid() is used to detect this condition, don't set state.Invalid()
                 }
-                // Otherwise assume this might be an orphan tx for which we just haven't seen parents yet
-                if (pfMissingInputs) {
-                    *pfMissingInputs = true;
-                }
-                return false; // fMissingInputs and !state.IsInvalid() is used to detect this condition, don't set state.Invalid()
             }
         }
 
@@ -699,21 +720,28 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // be mined yet.
         // Must keep pool.cs for this unless we change CheckSequenceLocks to take a
         // CoinsViewCache instead of create its own
-        if (!CheckSequenceLocks(tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
+        if (!tx.IsMsgTx() && !CheckSequenceLocks(tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp)) {
+            std::cout << "Check sequence locks - ERROR\n";
             return state.DoS(0, false, REJECT_NONSTANDARD, "non-BIP68-final");
+        }
 
         CAmount nFees = 0;
-        if (!Consensus::CheckTxInputs(tx, state, view, GetSpendHeight(view), SCRIPT_VERIFY_NAMES_MEMPOOL, nFees)) {
+        if (!tx.IsMsgTx() && !Consensus::CheckTxInputs(tx, state, view, GetSpendHeight(view), SCRIPT_VERIFY_NAMES_MEMPOOL, nFees)) {
+            std::cout << "CheckInputs - error\n";
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
 
         // Check for non-standard pay-to-script-hash in inputs
-        if (fRequireStandard && !AreInputsStandard(tx, view))
+        if (!tx.IsMsgTx() && fRequireStandard && !AreInputsStandard(tx, view)) {
+            std::cout << "Error - not all inputs are standard\n";
             return state.Invalid(false, REJECT_NONSTANDARD, "bad-txns-nonstandard-inputs");
+        }
 
         // Check for non-standard witness in P2WSH
-        if (tx.HasWitness() && fRequireStandard && !IsWitnessStandard(tx, view))
+        if (tx.HasWitness() && fRequireStandard && !IsWitnessStandard(tx, view)) {
+            std::cout << "Error - witness not standard\n";
             return state.DoS(0, false, REJECT_NONSTANDARD, "bad-witness-nonstandard", true);
+        }
 
         int64_t nSigOpsCost = GetTransactionSigOpCost(tx, view, STANDARD_SCRIPT_VERIFY_FLAGS);
 
@@ -741,9 +769,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // itself can contain sigops MAX_STANDARD_TX_SIGOPS is less than
         // MAX_BLOCK_SIGOPS; we still consider this an invalid rather than
         // merely non-standard transaction.
-        if (nSigOpsCost > MAX_STANDARD_TX_SIGOPS_COST)
+        if (nSigOpsCost > MAX_STANDARD_TX_SIGOPS_COST) {
+            std::cout << "Too many sigops\n";
             return state.DoS(0, false, REJECT_NONSTANDARD, "bad-txns-too-many-sigops", false,
                 strprintf("%d", nSigOpsCost));
+        }
 
         CAmount mempoolRejectFee = pool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFee(nSize);
         if (!bypass_limits && mempoolRejectFee > 0 && nModifiedFees < mempoolRejectFee) {
@@ -769,6 +799,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         size_t nLimitDescendantSize = gArgs.GetArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT)*1000;
         std::string errString;
         if (!pool.CalculateMemPoolAncestors(entry, setAncestors, nLimitAncestors, nLimitAncestorSize, nLimitDescendants, nLimitDescendantSize, errString)) {
+            std::cout << "Error - too long mempool ancestory\n";
             return state.DoS(0, false, REJECT_NONSTANDARD, "too-long-mempool-chain", false, errString);
         }
 
@@ -842,6 +873,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             // This potentially overestimates the number of actual descendants
             // but we just want to be conservative to avoid doing too much
             // work.
+
             if (nConflictingCount <= maxDescendantsToVisit) {
                 // If not too many to replace, then calculate the set of
                 // transactions that would have to be evicted
@@ -912,6 +944,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
         PrecomputedTransactionData txdata(tx);
         if (!CheckInputs(tx, state, view, true, scriptVerifyFlags, true, false, txdata)) {
+            std::cout << "CheckInputs returned false" << std::endl;
             // SCRIPT_VERIFY_CLEANSTACK requires SCRIPT_VERIFY_WITNESS, so we
             // need to turn both off, and compare against just turning off CLEANSTACK
             // to see if the failure is specifically due to witness validation.
@@ -945,12 +978,14 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // Thus add the mempool-flag here.
         unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Tip(), Params().GetConsensus());
         currentBlockScriptVerifyFlags |= SCRIPT_VERIFY_NAMES_MEMPOOL;
-        if (!CheckInputsFromMempoolAndCache(tx, state, view, pool, currentBlockScriptVerifyFlags, true, txdata)) {
+        if (!tx.IsMsgTx() && !CheckInputsFromMempoolAndCache(tx, state, view, pool, currentBlockScriptVerifyFlags, true, txdata)) {
+            std::cout << "failed against latest-block\n";
             return error("%s: BUG! PLEASE REPORT THIS! CheckInputs failed against latest-block but not STANDARD flags %s, %s",
                     __func__, hash.ToString(), FormatStateMessage(state));
         }
 
         if (test_accept) {
+            std::cout << "Tx was accepted, but not added\n";
             // Tx was accepted, but not added
             return true;
         }
@@ -987,6 +1022,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     }
 
     GetMainSignals().TransactionAddedToMempool(ptx);
+    std::cout << "Returning true from AcceptToMemory Pool" << std::endl;
     return true;
 }
 
@@ -1348,7 +1384,7 @@ void CChainState::InvalidBlockFound(CBlockIndex *pindex, const CValidationState 
 void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, CTxUndo &txundo, int nHeight)
 {
     // mark inputs spent
-    if (!tx.IsCoinBase()) {
+    if (!tx.IsCoinBase() && !tx.IsMsgTx()) {
         txundo.vprevout.reserve(tx.vin.size());
         for (const CTxIn &txin : tx.vin) {
             txundo.vprevout.emplace_back();
@@ -1411,7 +1447,7 @@ void InitScriptExecutionCache() {
  */
 bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, bool cacheSigStore, bool cacheFullScriptStore, PrecomputedTransactionData& txdata, std::vector<CScriptCheck> *pvChecks) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    if (!tx.IsCoinBase())
+    if (!tx.IsCoinBase() && !tx.IsMsgTx())
     {
         if (pvChecks)
             pvChecks->reserve(tx.vin.size());
@@ -1614,11 +1650,13 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
 
     CBlockUndo blockUndo;
     if (!UndoReadFromDisk(blockUndo, pindex)) {
+        std::cout << "DisconnectBlock ERROR - UndoReadFromDisk" << std::endl;
         error("DisconnectBlock(): failure reading undo data");
         return DISCONNECT_FAILED;
     }
 
     if (blockUndo.vtxundo.size() + 1 != block.vtx.size()) {
+        std::cout << "DisconnectBlock ERROR - block and undo data inconsistent" << std::endl;
         error("DisconnectBlock(): block and undo data inconsistent");
         return DISCONNECT_FAILED;
     }
@@ -1645,13 +1683,14 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 Coin coin;
                 bool is_spent = view.SpendCoin(out, &coin);
                 if (!is_spent || tx.vout[o] != coin.out || pindex->nHeight != coin.nHeight || is_coinbase != coin.fCoinBase) {
+                    std::cout << "TX OUTPUT MISMATCH - ERROR" << std::endl;
                     fClean = false; // transaction output mismatch
                 }
             }
         }
 
         // restore inputs
-        if (i > 0 && !modulo::ver_2::isGetBetTx(tx)) { // not coinbases
+        if (i > 0 && !modulo::ver_2::isGetBetTx(tx) && !tx.IsMsgTx()) { // not coinbases
             CTxUndo &txundo = blockUndo.vtxundo[i-1];
             if (txundo.vprevout.size() != tx.vin.size()) {
                 error("DisconnectBlock(): transaction and undo data inconsistent");
@@ -1880,8 +1919,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                   std::set<valtype>& expiredNames,
                   const CChainParams& chainparams, bool fJustCheck)
 {
-    std::cout << "Connect block\n";
-
     AssertLockHeld(cs_main);
     assert(pindex);
     assert(*pindex->phashBlock == block.GetHash());
@@ -1905,8 +1942,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             // We don't write down blocks to disk if they may have been
             // corrupted, so this should be impossible unless we're having hardware
             // problems.
+            std::cout << "Corrupt Block Error\n";
             return AbortNode(state, "Corrupt block found indicating potential hardware failure; shutting down");
         }
+
+        std::cout << "CheckBlock Error in ConnectBlock\n";
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     }
 
@@ -2042,6 +2082,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         for (const auto& tx : block.vtx) {
             for (size_t o = 0; o < tx->vout.size(); o++) {
                 if (view.HaveCoin(COutPoint(tx->GetHash(), o))) {
+                    std::cout << "ConnectBlock(): tried to overwrite transaction\n";
                     return state.DoS(100, error("ConnectBlock(): tried to overwrite transaction"),
                                      REJECT_INVALID, "bad-txns-BIP30");
                 }
@@ -2079,10 +2120,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
         nInputs += tx.vin.size();
 
-        if (!tx.IsCoinBase() && !modulo::ver_2::isGetBetTx(tx))
+        if (!tx.IsCoinBase() && !modulo::ver_2::isGetBetTx(tx) && !tx.IsMsgTx())
         {
             CAmount txfee = 0;
             if (!Consensus::CheckTxInputs(tx, state, view, pindex->nHeight, flags, txfee)) {
+                std::cout << "CheckTxInput Error\n";
                 return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
             }
 
@@ -2092,6 +2134,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 #endif
 
             if (!MoneyRange(nFees)) {
+                std::cout << "Fee out of range error\n";
                 return state.DoS(100, error("%s: accumulated fee in the block out of range.", __func__),
                                  REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
             }
@@ -2105,6 +2148,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
 
             if (!SequenceLocks(tx, nLockTimeFlags, &prevheights, *pindex)) {
+                std::cout << "Sequence Lock Error\n";
                 return state.DoS(100, error("%s: contains a non-BIP68-final transaction", __func__),
                                  REJECT_INVALID, "bad-txns-nonfinal");
             }
@@ -2117,13 +2161,15 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         if(!modulo::ver_2::isGetBetTx(tx))
         {
             nSigOpsCost += GetTransactionSigOpCost(tx, view, flags);
-            if (nSigOpsCost > MAX_BLOCK_SIGOPS_COST)
+            if (nSigOpsCost > MAX_BLOCK_SIGOPS_COST) {
+                std::cout << "Too many SigOps Error\n";
                 return state.DoS(100, error("ConnectBlock(): too many sigops"),
                                  REJECT_INVALID, "bad-blk-sigops");
+            }
         }
 
         txdata.emplace_back(tx);
-        if (!tx.IsCoinBase() && !modulo::ver_2::isGetBetTx(tx))
+        if (!tx.IsCoinBase() && !modulo::ver_2::isGetBetTx(tx) && !tx.IsMsgTx())
         {
             std::vector<CScriptCheck> vChecks;
             bool fCacheResults = fJustCheck; /* Don't cache results if we're actually connecting blocks (still consult the cache, though) */
@@ -2154,8 +2200,10 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime3 = GetTimeMicros(); nTimeConnect += nTime3 - nTime2;
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs-1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
-    nFees+=getBetFee;    
+    nFees+=getBetFee;
+
     if (!MoneyRange(nFees)) {
+        std::cout << "accumulated fee including getBetFee in the block out of range" << std::endl;
         return state.DoS(100, error("%s: accumulated fee including getBetFee in the block out of range.", __func__),
                          REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
     }
@@ -2182,8 +2230,10 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     if (!ExpireNames(pindex->nHeight + 1, view, blockundo, expiredNames))
         return error("%s : ExpireNames failed", __func__);
 
-    if (!WriteUndoDataForBlock(blockundo, state, pindex, chainparams))
+    if (!WriteUndoDataForBlock(blockundo, state, pindex, chainparams)) {
+        std::cout << "WriteUndoDataForBlock error\n";
         return false;
+    }
 
     if (!pindex->IsValid(BLOCK_VALID_SCRIPTS)) {
         pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
@@ -3693,8 +3743,9 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     CBlockIndex *pindexDummy = nullptr;
     CBlockIndex *&pindex = ppindex ? *ppindex : pindexDummy;
 
-    if (!AcceptBlockHeader(block, state, chainparams, &pindex))
+    if (!AcceptBlockHeader(block, state, chainparams, &pindex)) {
         return false;
+    }
 
     // Try to process all requested blocks that we don't have, but only
     // process an unrequested block if it's new and has enough work to
@@ -3764,6 +3815,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
+    std::cout << "ProcessNewBlock \n";
     AssertLockNotHeld(cs_main);
     {
         CBlockIndex *pindex = nullptr;
@@ -3781,6 +3833,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         }
         if (!ret) {
             GetMainSignals().BlockChecked(*pblock, state);
+            std::cout << "AcceptBlock failed\n";
             return error("%s: AcceptBlock FAILED (%s)", __func__, FormatStateMessage(state));
         }
     }
@@ -3788,8 +3841,10 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     NotifyHeaderTip();
 
     CValidationState state; // Only used to report errors, not invalidity - ignore it
-    if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
+    if (!g_chainstate.ActivateBestChain(state, chainparams, pblock)) {
+        std::cout << "ActivateBestChain failed\n";
         return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
+    }
 
     return true;
 }
@@ -3807,14 +3862,22 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     indexDummy.phashBlock = &block_hash;
 
     // NOTE: CheckBlockHeader is called by CheckBlock
-    if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
+    if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime())) {
+        std::cout << "ContextualCheckBlockHeader ERROR" << std::endl;
         return error("%s: Consensus::ContextualCheckBlockHeader: %s", __func__, FormatStateMessage(state));
-    if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot))
+    }
+    if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot)) {
+        std::cout << "CheckBlock ERROR" << std::endl;
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
-    if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev))
+    }
+    if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev)) {
+        std::cout << "ContextualCheckBlock ERROR" << std::endl;
         return error("%s: Consensus::ContextualCheckBlock: %s", __func__, FormatStateMessage(state));
-    if (!g_chainstate.ConnectBlock(block, state, &indexDummy, viewNew, namesDummy, chainparams, true))
+    }
+    if (!g_chainstate.ConnectBlock(block, state, &indexDummy, viewNew, namesDummy, chainparams, true)) {
+        std::cout << "ConnectBlock ERROR" << std::endl;
         return false;
+    }
     assert(state.IsValid());
 
     return true;
@@ -4241,17 +4304,22 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
         }
         CBlock block;
         // check level 0: read from disk
-        if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus()))
+        if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
+            std::cout << "ReadBlockFromDisk ERROR in VerifyDB" << std::endl;
             return error("VerifyDB(): *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
+        }
         // check level 1: verify block validity
-        if (nCheckLevel >= 1 && !CheckBlock(block, state, chainparams.GetConsensus()))
+        if (nCheckLevel >= 1 && !CheckBlock(block, state, chainparams.GetConsensus())) {
+            std::cout << "CheckBlock ERROR in VerifyDb" << std::endl;
             return error("%s: *** found bad block at %d, hash=%s (%s)\n", __func__,
                          pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
+        }
         // check level 2: verify undo validity
         if (nCheckLevel >= 2 && pindex) {
             CBlockUndo undo;
             if (!pindex->GetUndoPos().IsNull()) {
                 if (!UndoReadFromDisk(undo, pindex)) {
+                    std::cout << "UndoReadFromDisk ERROR in VerifyDB" << std::endl;
                     return error("VerifyDB(): *** found bad undo data at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString());
                 }
             }
@@ -4261,6 +4329,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
             assert(coins.GetBestBlock() == pindex->GetBlockHash());
             DisconnectResult res = g_chainstate.DisconnectBlock(block, pindex, coins, dummyNames);
             if (res == DISCONNECT_FAILED) {
+                std::cout << "DisconnectFailed ERROR in VerifyDb" << std::endl;
                 return error("VerifyDB(): *** irrecoverable inconsistency in block data at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
             }
             if (res == DISCONNECT_UNCLEAN) {
@@ -4273,9 +4342,10 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
         if (ShutdownRequested())
             return true;
     }
-    if (pindexFailure)
+    if (pindexFailure) {
+        std::cout << "pindexFailure in VerifyDb" << std::endl;
         return error("VerifyDB(): *** coin database inconsistencies found (last %i blocks, %i good transactions before that)\n", chainActive.Height() - pindexFailure->nHeight + 1, nGoodTransactions);
-
+    }
     // store block count as we move pindex at check level >= 4
     int block_count = chainActive.Height() - pindex->nHeight;
 
@@ -4286,16 +4356,20 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
             uiInterface.ShowProgress(_("Verifying blocks..."), std::max(1, std::min(99, 100 - (int)(((double)(chainActive.Height() - pindex->nHeight)) / (double)nCheckDepth * 50))), false);
             pindex = chainActive.Next(pindex);
             CBlock block;
-            if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus()))
+            if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus())) {
+                std::cout << "Error in ReadBlockFromDisk in VerifyDB" << std::endl;
                 return error("VerifyDB(): *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
-            if (!g_chainstate.ConnectBlock(block, state, pindex, coins, dummyNames, chainparams))
+            }
+            if (!g_chainstate.ConnectBlock(block, state, pindex, coins, dummyNames, chainparams)) {
+                std::cout << "Error in ConnectBlock in VerifyDB" << std::endl;
                 return error("VerifyDB(): *** found unconnectable block at %d, hash=%s (%s)", pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
+            }
         }
     }
 
     LogPrintf("[DONE].\n");
     LogPrintf("No coin database inconsistencies in last %i blocks (%i transactions)\n", block_count, nGoodTransactions);
-
+    std::cout << "VerfiyDB OK\n";
     return true;
 }
 

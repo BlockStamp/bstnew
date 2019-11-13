@@ -2169,12 +2169,14 @@ void CWallet::ReacceptWalletTransactions()
 
 bool CWalletTx::RelayWalletTransaction(CConnman* connman)
 {
+    std::cout << "RelayWalletTransaction\n";
     assert(pwallet->GetBroadcastTransactions());
     if (!IsCoinBase() && !isAbandoned() && GetDepthInMainChain() == 0)
     {
         CValidationState state;
         /* GetDepthInMainChain already catches known conflicts. */
         if (InMempool() || AcceptToMemoryPool(maxTxFee, state)) {
+            std::cout << "Relaying " << GetHash().ToString() << std::endl;
             pwallet->WalletLogPrintf("Relaying wtx %s\n", GetHash().ToString());
             if (connman) {
                 CInv inv(MSG_TX, GetHash());
@@ -3468,12 +3470,14 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
             // otherwise just for transaction history.
             AddToWallet(wtxNew);
 
-            // Notify that old coins are spent
-            for (const CTxIn& txin : wtxNew.tx->vin)
-            {
-                CWalletTx &coin = mapWallet.at(txin.prevout.hash);
-                coin.BindWallet(this);
-                NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+            if (!wtxNew.tx->IsMsgTx()) {
+                // Notify that old coins are spent
+                for (const CTxIn& txin : wtxNew.tx->vin)
+                {
+                    CWalletTx &coin = mapWallet.at(txin.prevout.hash);
+                    coin.BindWallet(this);
+                    NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+                }
             }
         }
 
@@ -3485,11 +3489,11 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
         {
             // Broadcast
             if (!wtx.AcceptToMemoryPool(maxTxFee, state)) {
-                std::cout << "Not accepted to mempool\n";
+                std::cout << "Not accepted to mempool in CommitTransaction" << std::endl;
                 WalletLogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", FormatStateMessage(state));
                 // TODO: if we expect the failure to be long term or permanent, instead delete wtx from the wallet and return failure.
             } else {
-                std::cout << "Accepted to mempool\n";
+                std::cout << "Accepted to mempool" << std::endl;
                 wtx.RelayWalletTransaction(connman);
             }
         }

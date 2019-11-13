@@ -39,6 +39,9 @@ public:
     void SetNull() { hash.SetNull(); n = (uint32_t) -1; }
     bool IsNull() const { return (hash.IsNull() && n == (uint32_t) -1); }
 
+    void SetMsg() { hash.SetNull(); n = (uint32_t) -2; }
+    bool IsMsg() const { return (hash.IsNull() && n == (uint32_t) -2); }
+
     friend bool operator<(const COutPoint& a, const COutPoint& b)
     {
         int cmp = a.hash.Compare(b.hash);
@@ -358,7 +361,7 @@ public:
 
     bool IsMsgTx() const
     {
-        return vin.empty() && vout.size() == 1 && vout[0].nValue == 0;
+        return vin.size() == 1 && vin[0].prevout.IsMsg() && vout.size() == 1 && vout[0].nValue == 0;
     }
 
     bool IsNamecoin() const
