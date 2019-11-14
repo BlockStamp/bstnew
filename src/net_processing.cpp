@@ -1981,7 +1981,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     std::cout << "Error - blocks only\n";
                     LogPrint(BCLog::NET, "transaction (%s) inv sent in violation of protocol peer=%d\n", inv.hash.ToString(), pfrom->GetId());
                 } else if (!fAlreadyHave && !fImporting && !fReindex && !IsInitialBlockDownload()) {
-                    std::cout << "Adding: " << inv.hash.ToString() << " to AskFor\n";
                     pfrom->AskFor(inv);
                 }
             }
@@ -2209,10 +2208,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         CTransactionRef ptx;
         vRecv >> ptx;
         const CTransaction& tx = *ptx;
-
-        std::cout << "\n!!!RECEIVED tx: " << tx.GetHash().ToString() << std::endl;
-        std::vector<char> opReturn = tx.loadOpReturn();
-        std::cout << "\topReturn: " << std::string(opReturn.begin(), opReturn.end()) << std::endl;
 
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);

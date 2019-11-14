@@ -614,13 +614,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         {
             const CTransaction* ptxConflicting = pool.GetConflictTx(txin.prevout);
             if (ptxConflicting) {
-                std::cout << "\tChecking for conflicts NOT OK: " << ptxConflicting->GetHash().ToString() << ", for prevout " << txin.prevout.ToString() << std::endl;
-            }
-            else {
-                std::cout << "\tChecking for conflicts OK: nullptr, for prevout" << txin.prevout.ToString() << std::endl;
-            }
-
-            if (ptxConflicting) {
                 if (!setConflicts.count(ptxConflicting->GetHash()))
                 {
                     // Allow opt-out of transaction replacement by setting
@@ -1022,7 +1015,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     }
 
     GetMainSignals().TransactionAddedToMempool(ptx);
-    std::cout << "Returning true from AcceptToMemory Pool" << std::endl;
     return true;
 }
 
@@ -3815,7 +3807,6 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
-    std::cout << "ProcessNewBlock \n";
     AssertLockNotHeld(cs_main);
     {
         CBlockIndex *pindex = nullptr;
@@ -4369,7 +4360,6 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
 
     LogPrintf("[DONE].\n");
     LogPrintf("No coin database inconsistencies in last %i blocks (%i transactions)\n", block_count, nGoodTransactions);
-    std::cout << "VerfiyDB OK\n";
     return true;
 }
 

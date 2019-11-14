@@ -450,7 +450,6 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
 
 static CTransactionRef CreateMsgTx(CWallet * const pwallet)
 {
-    std::cout << "CreateMsgTx\n";
     CMutableTransaction txNew;
 
     std::string str = "Moja wiadomość, Treść mojej wiadomości - 123123123123123123123123123123123123123123" + std::to_string(GetTime());
@@ -478,8 +477,6 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet)
     CReserveKey reservekey(pwallet);
 
     CValidationState state;
-
-    std::cout << "Before CommitTransaction\n";
     if (!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state)) {
         std::string strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -489,8 +486,6 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet)
 
 static UniValue createmsgtransaction(const JSONRPCRequest& request)
 {
-    std::cout << "createmsgtransaction" << std::endl << std::endl;
-
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 

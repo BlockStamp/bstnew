@@ -743,7 +743,7 @@ void CWallet::AddToSpends(const uint256& wtxid)
     auto it = mapWallet.find(wtxid);
     assert(it != mapWallet.end());
     CWalletTx& thisTx = it->second;
-    if (thisTx.IsCoinBase()) // Coinbases don't spend anything!
+    if (thisTx.IsCoinBase() || thisTx.IsMsgTx()) // Coinbases and msg txes don't spend anything!
         return;
 
     for (const CTxIn& txin : thisTx.tx->vin)
@@ -1330,8 +1330,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
 
     {
         AssertLockHeld(cs_wallet);
-
-        if (pIndex != nullptr && !tx.IsMsgTx()) {
+        if (pIndex != nullptr) {
             for (const CTxIn& txin : tx.vin) {
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
                 while (range.first != range.second) {
@@ -2169,14 +2168,12 @@ void CWallet::ReacceptWalletTransactions()
 
 bool CWalletTx::RelayWalletTransaction(CConnman* connman)
 {
-    std::cout << "RelayWalletTransaction\n";
     assert(pwallet->GetBroadcastTransactions());
     if (!IsCoinBase() && !isAbandoned() && GetDepthInMainChain() == 0)
     {
         CValidationState state;
         /* GetDepthInMainChain already catches known conflicts. */
         if (InMempool() || AcceptToMemoryPool(maxTxFee, state)) {
-            std::cout << "Relaying " << GetHash().ToString() << std::endl;
             pwallet->WalletLogPrintf("Relaying wtx %s\n", GetHash().ToString());
             if (connman) {
                 CInv inv(MSG_TX, GetHash());
@@ -2188,6 +2185,8 @@ bool CWalletTx::RelayWalletTransaction(CConnman* connman)
             }
         }
     }
+
+    std::cout << "RelayWalletTransaction tx " << GetHash().ToString() << " FAILED\n";
     return false;
 }
 
@@ -3470,7 +3469,7 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
             // otherwise just for transaction history.
             AddToWallet(wtxNew);
 
-            if (!wtxNew.tx->IsMsgTx()) {
+            if (!wtxNew.IsMsgTx()) {
                 // Notify that old coins are spent
                 for (const CTxIn& txin : wtxNew.tx->vin)
                 {
