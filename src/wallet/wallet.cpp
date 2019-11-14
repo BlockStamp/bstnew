@@ -1331,7 +1331,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
     {
         AssertLockHeld(cs_wallet);
 
-        if (pIndex != nullptr) {
+        if (pIndex != nullptr && !tx.IsMsgTx()) {
             for (const CTxIn& txin : tx.vin) {
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
                 while (range.first != range.second) {
