@@ -744,10 +744,7 @@ void CWallet::AddToSpends(const uint256& wtxid)
     assert(it != mapWallet.end());
     CWalletTx& thisTx = it->second;
     if (thisTx.IsCoinBase() || thisTx.IsMsgTx()) // Coinbases and msg txes don't spend anything!
-    {
-        std::cout << "AddToSpends - NOT ADDING because " << wtxid.ToString() << " is " << (thisTx.IsCoinBase() ? "coinbase" : "msg tx" ) << std::endl;
         return;
-    }
 
     for (const CTxIn& txin : thisTx.tx->vin)
         AddToSpends(txin.prevout, wtxid);
