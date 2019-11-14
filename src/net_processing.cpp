@@ -1981,7 +1981,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                     std::cout << "Error - blocks only\n";
                     LogPrint(BCLog::NET, "transaction (%s) inv sent in violation of protocol peer=%d\n", inv.hash.ToString(), pfrom->GetId());
                 } else if (!fAlreadyHave && !fImporting && !fReindex && !IsInitialBlockDownload()) {
-                    std::cout << "Adding: " << inv.hash.ToString() << " to AskFor\n";
                     pfrom->AskFor(inv);
                 }
             }

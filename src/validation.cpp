@@ -614,13 +614,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         {
             const CTransaction* ptxConflicting = pool.GetConflictTx(txin.prevout);
             if (ptxConflicting) {
-                std::cout << "\tChecking for conflicts NOT OK: " << ptxConflicting->GetHash().ToString() << ", for prevout " << txin.prevout.ToString() << std::endl;
-            }
-            else {
-                std::cout << "\tChecking for conflicts OK: nullptr, for prevout" << txin.prevout.ToString() << std::endl;
-            }
-
-            if (ptxConflicting) {
                 if (!setConflicts.count(ptxConflicting->GetHash()))
                 {
                     // Allow opt-out of transaction replacement by setting

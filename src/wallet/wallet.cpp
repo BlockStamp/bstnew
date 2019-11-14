@@ -2168,14 +2168,12 @@ void CWallet::ReacceptWalletTransactions()
 
 bool CWalletTx::RelayWalletTransaction(CConnman* connman)
 {
-    std::cout << "RelayWalletTransaction\n";
     assert(pwallet->GetBroadcastTransactions());
     if (!IsCoinBase() && !isAbandoned() && GetDepthInMainChain() == 0)
     {
         CValidationState state;
         /* GetDepthInMainChain already catches known conflicts. */
         if (InMempool() || AcceptToMemoryPool(maxTxFee, state)) {
-            std::cout << "Relaying " << GetHash().ToString() << std::endl;
             pwallet->WalletLogPrintf("Relaying wtx %s\n", GetHash().ToString());
             if (connman) {
                 CInv inv(MSG_TX, GetHash());
@@ -2187,6 +2185,8 @@ bool CWalletTx::RelayWalletTransaction(CConnman* connman)
             }
         }
     }
+
+    std::cout << "RelayWalletTransaction tx " << GetHash().ToString() << " FAILED\n";
     return false;
 }
 
