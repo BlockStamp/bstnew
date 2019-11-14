@@ -1022,7 +1022,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     }
 
     GetMainSignals().TransactionAddedToMempool(ptx);
-    std::cout << "Returning true from AcceptToMemory Pool" << std::endl;
     return true;
 }
 
@@ -3815,7 +3814,6 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
 
 bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
-    std::cout << "ProcessNewBlock \n";
     AssertLockNotHeld(cs_main);
     {
         CBlockIndex *pindex = nullptr;

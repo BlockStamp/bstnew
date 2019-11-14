@@ -2210,10 +2210,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         vRecv >> ptx;
         const CTransaction& tx = *ptx;
 
-        std::cout << "\n!!!RECEIVED tx: " << tx.GetHash().ToString() << std::endl;
-        std::vector<char> opReturn = tx.loadOpReturn();
-        std::cout << "\topReturn: " << std::string(opReturn.begin(), opReturn.end()) << std::endl;
-
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
 
