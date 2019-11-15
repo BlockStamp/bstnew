@@ -23,6 +23,7 @@
 #include <messages/message_encryption.h>
 #include <messages/message_utils.h>
 #include <data/retrievedatatxs.h>
+#include <internal_miner.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -659,6 +660,139 @@ UniValue listmsgsinceblock(const JSONRPCRequest& request)
     return ret;
 }
 
+static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned char>& data)
+{
+    CMutableTransaction txNew;
+
+//    std::string str = "Moja wiadomość, Treść mojej wiadomości - 123123123123123123123123123123123123123123" + std::to_string(GetTime());
+//    std::vector<unsigned char> data(str.cbegin(), str.cend());
+
+    CScript scriptPubKey;
+    scriptPubKey << OP_RETURN << data;
+
+    txNew.vin.resize(1);
+    txNew.vin[0].prevout.SetMsg();
+
+    txNew.vout.resize(1);
+    txNew.vout[0].scriptPubKey = scriptPubKey;
+    txNew.vout[0].nValue = 0;
+
+    CTransactionRef tx = MakeTransactionRef(std::move(txNew));
+    assert(!tx->IsCoinBase());
+    assert(tx->IsMsgTx());
+
+//    if (!pwallet->CreateTransaction(/*vecSend, withInput,*/ tx/*, reservekey, nFeeRequired, nChangePosRet, strError, coin_control*/)) {
+//        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
+//            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
+//        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+//    }
+    CReserveKey reservekey(pwallet);
+
+    CValidationState state;
+    if (!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state)) {
+        std::string strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    return tx;
+}
+
+static UniValue createmsgtransaction(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 3 || !checkRSApublicKey(request.params[2].get_str()))
+        throw std::runtime_error(
+                "createmsgtransaction \"subject\" \"string\" \"public_key\" \n"
+                "\nStores encrypted message in a blockchain.\n"
+                "Before this command walletpassphrase is required. \n"
+                "Message is free (no fee) but user needs to perform the job for send. \n"
+                "Note! Job will take some time, depends on cpu speed. When job is done, sending next message will be available. \n"
+
+                "\nArguments:\n"
+                "1. \"subject\"                     (string, required) A user message string\n"
+                "2. \"message\"                     (string, required) A user message string\n"
+                "3. \"public_key\"                  (string, required) Receiver public key (length: 1024, 2048 or 4096)\n"
+
+                "\nResult:\n"
+                "\"txid\"                           (string) A hex-encoded transaction id\n"
+
+
+                "\nExamples:\n"
+
+                + HelpExampleCli("sendmessage", " \"subject\" \"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
+                                 "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
+                                 "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
+                                 "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
+                                 "QOwquEtyyIcVmSdqgYdmzEm7x4M6jQURuM9xQrVA7aA0cupS4YalgJj1W1npNkru\n"\
+                                 "u4abrhiTGJ7dGbkEtppBdZqLirKOWz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVh\n"\
+                                 "kW8r13uDYCKOaXLpQjiEWtjoOCU56iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6\n"\
+                                 "LQIDAQAB\n"
+                                 "-----END PUBLIC KEY-----\"")
+
+                + HelpExampleRpc("sendmessage", " \"subject\" \"mystring\"  \"-----BEGIN PUBLIC KEY-----\n"\
+                                 "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
+                                 "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
+                                 "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
+                                 "QOwquEtyyIcVmSdqgYdmzEm7x4M6jQURuM9xQrVA7aA0cupS4YalgJj1W1npNkru\n"\
+                                 "u4abrhiTGJ7dGbkEtppBdZqLirKOWz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVh\n"\
+                                 "kW8r13uDYCKOaXLpQjiEWtjoOCU56iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6\n"\
+                                 "LQIDAQAB\n"
+                                 "-----END PUBLIC KEY-----\"")
+    );
+
+    // Make sure the results are valid at least up to the most recent block
+    // the user could have gotten from another RPC command prior to now
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+    EnsureWalletIsUnlocked(pwallet);
+    EnsureMsgWalletIsUnlocked(pwallet);
+
+    CMessengerKey rsaPrivateKey, rsaPublicKey;
+
+    if (!pwallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey))
+    {
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
+    }
+
+    const std::string fromAddress = rsaPublicKey.toString();
+    const std::string subject = request.params[0].get_str();
+    const std::string message = request.params[1].get_str();
+    const std::string toAddress = request.params[2].get_str();
+
+    const std::string signature = signMessage(rsaPrivateKey.toString(), fromAddress);
+
+    std::string msg=MSG_RECOGNIZE_TAG
+            + signature
+            + fromAddress
+            + MSG_DELIMITER
+            + subject
+            + MSG_DELIMITER
+            + message;
+//            + std::to_string(GetTime()); /// TODO to fix, unique data
+
+    if(msg.length()>maxDataSize)
+    {
+        throw std::runtime_error(strprintf("data size is grater than %d bytes", maxDataSize));
+    }
+
+    CMessengerKey public_key(toAddress, CMessengerKey::PUBLIC_KEY);
+
+    std::vector<unsigned char> data = createEncryptedMessage(
+                reinterpret_cast<const unsigned char*>(msg.c_str()),
+                msg.length(),
+                public_key.toString().c_str());
+
+    CTransactionRef tx = CreateMsgTx(pwallet, data);
+    return tx->GetHash().GetHex();
+}
+
+
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
@@ -672,6 +806,7 @@ static const CRPCCommand commands[] =
     { "messenger",         "messengerlock",                &messengerlock,             {} },
     { "messenger",         "messengerpassphrasechange",    &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
     { "messenger",         "listmsgsinceblock",            &listmsgsinceblock,         {"blockhash"} },
+    { "messenger",         "createmsgtransaction",         &createmsgtransaction,      {"subject", "message", "public_key"} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)
