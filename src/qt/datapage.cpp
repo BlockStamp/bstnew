@@ -22,6 +22,7 @@
 #include <qt/walletmodel.h>
 #include <qt/askpassphrasedialog.h>
 #include <qt/storetxdialog.h>
+#include <qt/sendcoinsdialog.h>
 
 #include <chainparams.h>
 #include <key_io.h>
@@ -817,6 +818,11 @@ void DataPage::store()
                     throw std::runtime_error(std::string("CreateTransaction failed with reason: ")+strFailReason);
                 }
                 
+                if (!confirmWindow(nFeeRequired))
+                {
+                    return;
+                }
+
                 CValidationState state;
                 if(!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state))
                 {
@@ -849,6 +855,34 @@ void DataPage::store()
         }
     }
 #endif
+}
+
+bool DataPage::confirmWindow(const CAmount totalAmount)
+{
+    QString questionString = tr("Are you sure you want to store data?");
+    questionString.append("<br /><span style='font-size:10pt;'>");
+    questionString.append(tr("Please, review your transaction."));
+    questionString.append("</span><br />");
+
+    // transaction total amount
+    QStringList alternativeUnits;
+    for (const BitcoinUnits::Unit u : BitcoinUnits::availableUnits())
+    {
+        if(u != walletModel->getOptionsModel()->getDisplayUnit())
+            alternativeUnits.append(BitcoinUnits::formatHtmlWithUnit(u, totalAmount));
+    }
+    questionString.append("<hr />");
+    questionString.append(QString("<b>%1</b>: <b>%2</b>").arg(tr("Total Amount"))
+        .arg(BitcoinUnits::formatHtmlWithUnit(walletModel->getOptionsModel()->getDisplayUnit(), totalAmount)));
+    questionString.append(QString("<br /><span style='font-size:10pt; font-weight:normal;'>(=%1)</span>")
+        .arg(alternativeUnits.join(" " + tr("or") + " ")));
+
+    SendConfirmationDialog confirmDialog(tr("Confirm store data"),
+        questionString, SEND_CONFIRM_DELAY, this);
+    confirmDialog.exec();
+    QMessageBox::StandardButton retval = static_cast<QMessageBox::StandardButton>(confirmDialog.result());
+
+    return (retval == QMessageBox::Yes);
 }
 
 void OK_MessageBox(const std::string& title, const std::string& iconPath, QWidget *parent = nullptr)

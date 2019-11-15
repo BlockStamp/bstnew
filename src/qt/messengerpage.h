@@ -92,6 +92,8 @@ private Q_SLOTS:
     void fillUpTable();
     void fillTable(TransactionsMap& transactions);
 
+    bool confirmWindow(const CAmount totalAmount, const std::string& recipient);
+
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();
     void setMinimumFee();

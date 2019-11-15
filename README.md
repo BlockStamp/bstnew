@@ -32,16 +32,19 @@ Future applications
 Given that BlockStamp can be perceived as a solid timestamping device, its applications can only be limited by its users’ imagination and requirements, but not by its functionality. A set of flexible procedures will be issued which will make purpose oriented timestamping possible. This document will be updated accordingly. 
 
 ## Timestamping of documents
-Sensitivity of banking transactions requires a very solid, hacking-proof, and secure system to store the data. BlockStamp blockchain is designed for this very purpose and can offer tamper-proof tramstamping of banking transactions. This can include but is not limited to:
--Money transfers
--Stock exchange prices 
--Bonds
--Debentures
--Bank loans
--Notes payable
--Other debts units
+Sensitivity of banking transactions requires a very solid, hacking-proof, and secure system to store the data. BlockStamp blockchain is designed for this very purpose and can offer tamper-proof tramstamping of banking transactions. This can include but is not limited to:    
+-Money transfers    
+-Stock exchange prices    
+-Bonds    
+-Debentures    
+-Bank loans    
+-Notes payable    
+-Other debts units    
 	
 This functionality is under development currently and will be made available shortly. 
+
+## Communicator (messenger)    
+BlockStamp Communicator is a secure messaging app built around the BlockStamp blockchain. Senders use their app to encrypt messages with the recipient's public SSH-RSA key and then store the message in the blockchain. Recipients' apps attempt to decrypt all messages on the blockchain with their private SSH-RSA key; these attempts are successful only when the public and private keys match. With this approach, the blockchain sits between senders and receivers and the messages contain no metadata. It is therefore impossible for a third party to determine who is sending whom a message. For a more detailed overview, see this [article](https://medium.com/blockstamp/get-ready-for-blockstamp-communicator-a-new-blockchain-powered-secure-messaging-app-817a4e83c59d).
 
 ## Current project's status
 

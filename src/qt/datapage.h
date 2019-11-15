@@ -87,6 +87,8 @@ private Q_SLOTS:
     void fileCheckClicked();
     void storeFileEditTextChanged(const QString&);
     void storeMessageEditTextChanged();
+
+    bool confirmWindow(const CAmount totalAmount);
     
     void on_buttonChooseFee_clicked();
     void on_buttonMinimizeFee_clicked();

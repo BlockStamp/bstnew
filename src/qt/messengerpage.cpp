@@ -685,6 +685,11 @@ void MessengerPage::send()
                     throw std::runtime_error(std::string("CreateTransaction failed with reason: ")+strFailReason);
                 }
 
+                if (!confirmWindow(nFeeRequired, toAddress))
+                {
+                    return;
+                }
+
                 CValidationState state;
                 if(!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state))
                 {
@@ -889,6 +894,41 @@ void MessengerPage::addToAddressBook()
     ui->fromLabel->setText("");
     ui->subjectReadLabel->setText("");
     ui->messageViewEdit->setPlainText("");
+}
+
+bool MessengerPage::confirmWindow(const CAmount totalAmount, const std::string& recipient)
+{
+    QString questionString = tr("Are you sure you want to send message?");
+    questionString.append("<br /><span style='font-size:10pt;'>");
+    questionString.append(tr("Please, review your transaction."));
+    questionString.append("</span><br />");
+
+    // message recipient
+    std::string msg_recipient;
+    if (walletModel->wallet().getMsgAddress(recipient, &msg_recipient))
+    {
+        questionString.append(QString("<br /><b>%1</b> <b>%2</b>").arg(tr("Message to: ")).arg(msg_recipient.c_str()));
+    }
+
+    // message total amount
+    QStringList alternativeUnits;
+    for (const BitcoinUnits::Unit u : BitcoinUnits::availableUnits())
+    {
+        if(u != walletModel->getOptionsModel()->getDisplayUnit())
+            alternativeUnits.append(BitcoinUnits::formatHtmlWithUnit(u, totalAmount));
+    }
+    questionString.append("<hr />");
+    questionString.append(QString("<b>%1</b>: <b>%2</b>").arg(tr("Total Amount"))
+        .arg(BitcoinUnits::formatHtmlWithUnit(walletModel->getOptionsModel()->getDisplayUnit(), totalAmount)));
+    questionString.append(QString("<br /><span style='font-size:10pt; font-weight:normal;'>(=%1)</span>")
+        .arg(alternativeUnits.join(" " + tr("or") + " ")));
+
+    SendConfirmationDialog confirmDialog(tr("Confirm send message"),
+        questionString, SEND_CONFIRM_DELAY, this);
+    confirmDialog.exec();
+    QMessageBox::StandardButton retval = static_cast<QMessageBox::StandardButton>(confirmDialog.result());
+
+    return (retval == QMessageBox::Yes);
 }
 
 void MessengerPage::on_searchTxnEdited(const QString& text)
