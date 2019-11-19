@@ -1094,6 +1094,7 @@ public:
     /** should probably be renamed to IsRelevantToMe */
     bool IsFromMe(const CTransaction& tx) const;
     bool IsEnrcyptedMsg(const std::vector<char>& opReturn) const;
+    bool IsFreeEncryptedMsg(const std::vector<char>& opReturn) const;
     CAmount GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames = true) const;
     /** Returns whether all of the inputs match the filter */
     bool IsAllFromMe(const CTransaction& tx, const isminefilter& filter) const;

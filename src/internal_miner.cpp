@@ -22,7 +22,6 @@ using namespace std;
 namespace internal_miner
 {
 
-const std::string TARGET = "8000000FFFFF0000000000000000000000000000000000000000000000000000";
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -111,7 +110,7 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
 {
     int64_t nStart = GetTime();
     arith_uint256 hashTarget = getTarget(txn);
-    printf("Hash target: %s\n", hashTarget.GetHex().c_str());
+    LogPrintf("Hash target: %s\n", hashTarget.GetHex().c_str());
 
     if (txn.vout.size() != 1)
         return {0,0,0};
@@ -123,7 +122,7 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
         CBlockIndex *prevBlock = chainActive.Tip();
         LogPrintf("block hash: %s, height: %u\n", prevBlock->GetBlockHash().ToString().c_str(), prevBlock->nHeight);
         uint256 hash;
-        ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(28), 0};
+        ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(0), 0};
 
         while (true) {
             // Check if something found
@@ -133,11 +132,10 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
                 {
                     // Found a solution
                     LogPrintf("InternalMiner:\n");
-                    LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex(), hashTarget.GetHex());
-                    LogPrintf("\nproof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-                    LogPrintf("Block height:%d Block hash:%d nonce:%d\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
+                    LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+                    LogPrintf("Block height:%u Block hash:%u nonce:%u\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
                     LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
-                    return {extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce};
+                    return extNonce;
                 }
             }
 //            printf("\rTransaction hash: %s", txn.GetHash().ToString().c_str());
@@ -147,7 +145,7 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
             if (extNonce.nonce >= 0xffff0000)
                 break;
             if (prevBlock != chainActive.Tip()) {
-                LogPrintf("Internal miner: New block detected\n");
+                printf("Internal miner: New block detected\n");
                 break;
             }
         }
@@ -156,19 +154,35 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
     return {0,0,0};
 }
 
-bool verifyTransactionHash(const CTransaction& txn, uint64_t nonce)
+bool verifyTransactionHash(const CTransaction& txn)
 {
-    ///TODO: nonce should be obtain from CTransaction OP_RETURN
-
     arith_uint256 hashTarget = getTarget(txn);
     uint256 hash = txn.GetHash();
+    std::vector<char> opReturn = txn.loadOpReturn();
 
-    printf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+    assert(opReturn.size() >= (unsigned int)(ENCR_MARKER_SIZE + 12));
 
-    if ((((uint16_t*)&hash)[15] == 0x8000) && UintToArith256(hash) <= hashTarget)
-        return true;
+    ExtNonce extNonce;
+    std::memcpy(&extNonce.tip_block_height, opReturn.data()+ENCR_MARKER_SIZE, sizeof(uint32_t));
+    std::memcpy(&extNonce.tip_block_hash, opReturn.data()+ENCR_MARKER_SIZE+4, sizeof(uint32_t));
+    std::memcpy(&extNonce.nonce, opReturn.data()+ENCR_MARKER_SIZE+8, sizeof(uint32_t));
 
-    return false;
+    CBlockIndex *prevBlock = chainActive.Tip();
+
+    LogPrintf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+    LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", extNonce.tip_block_hash, extNonce.tip_block_height);
+    LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
+
+    if (((uint16_t*)&hash)[15] != 0x8000)
+        return false;
+    if (UintToArith256(hash) > hashTarget)
+        return false;
+    if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height)
+        return false;
+    if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash)
+        return false;
+
+    return true;
 }
 
 }

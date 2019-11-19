@@ -32,7 +32,7 @@ struct ExtNonce
 /** Run the miner threads */
 ExtNonce mineTransaction(CMutableTransaction &txn);
 
-bool verifyTransactionHash(const CTransaction &txn, uint64_t nonce);
+bool verifyTransactionHash(const CTransaction &txn);
 }
 
 #endif // BITCOIN_INTERNALMINER_H

@@ -18,6 +18,7 @@
 #include <uint256.h>
 #include <util.h>
 #include <utilstrencodings.h>
+#include <messages/message_encryption.h>
 
 #include <test/test_bitcoin.h>
 
@@ -649,7 +650,8 @@ BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
     std::cout << "MineTransaction test" << std::endl;
 
     std::vector<unsigned char> extData;
-    extData.resize(12, 0);
+    extData.insert(extData.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
+    extData.insert(extData.end(), 12, 0);
 
     CMutableTransaction txn{};
     CScript scriptPubKey;
@@ -665,7 +667,7 @@ BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
 
     CTransactionRef tx = MakeTransactionRef(std::move(txn));
 
-    bool rv = internal_miner::verifyTransactionHash(*tx, ext_nonce.nonce);
+    bool rv = internal_miner::verifyTransactionHash(*tx);
     BOOST_CHECK(rv);
 }
 

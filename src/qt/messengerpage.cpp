@@ -572,6 +572,15 @@ void MessengerPage::read(const std::string& txnId)
             const CWalletTx& wtx = it->second.wltTx;
             std::vector<char> OPreturnData = wtx.tx->loadOpReturn();
 
+            if (wallet.get()->IsFreeEncryptedMsg(OPreturnData))
+            {
+                assert(OPreturnData.size() >= 12);
+                // remove additional block info data
+                OPreturnData.erase(OPreturnData.begin(), OPreturnData.begin() + ENCR_MARKER_SIZE + (3 * sizeof(uint32_t)));
+                // replace ENCR_MARKER text
+                OPreturnData.insert(OPreturnData.begin(), ENCR_MARKER.begin(), ENCR_MARKER.end());
+            }
+
             std::string from, subject, body;
             decryptMessageAndSplit(OPreturnData, privateRsaKey.toString(), from, subject, body);
 

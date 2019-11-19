@@ -194,6 +194,15 @@ UniValue readmessage(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
         }
 
+        if (pwallet->IsFreeEncryptedMsg(OPreturnData))
+        {
+            assert(OPreturnData.size() >= 12);
+            // remove additional block info data
+            OPreturnData.erase(OPreturnData.begin(), OPreturnData.begin() + ENCR_MARKER_SIZE + (3 * sizeof(uint32_t)));
+            // replace ENCR_MARKER text
+            OPreturnData.insert(OPreturnData.begin(), ENCR_MARKER.begin(), ENCR_MARKER.end());
+        }
+
         std::string from, subject, body;
         decryptMessageAndSplit(OPreturnData, privateRsaKey.toString(), from, subject, body);
 
@@ -667,7 +676,7 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
 //    std::string str = "Moja wiadomość, Treść mojej wiadomości - 123123123123123123123123123123123123123123" + std::to_string(GetTime());
 //    std::vector<unsigned char> data(str.cbegin(), str.cend());
 
-    assert(data.size() > ENCR_MARKER_SIZE);
+    assert((int)data.size() > ENCR_MARKER_SIZE);
     CScript scriptPubKey;
     std::vector<unsigned char> extData;
     extData.insert(extData.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
@@ -683,13 +692,11 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
     txNew.vout[0].nValue = 0;
 
     printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
-    internal_miner::ExtNonce ext_nonce = internal_miner::mineTransaction(txNew);
+    internal_miner::mineTransaction(txNew);
 
     CTransactionRef tx = MakeTransactionRef(std::move(txNew));
     assert(!tx->IsCoinBase());
     assert(tx->IsMsgTx());
-
-    printf("Hash after: %s\n", tx->GetHash().GetHex().c_str());
 
 //    if (!pwallet->CreateTransaction(/*vecSend, withInput,*/ tx/*, reservekey, nFeeRequired, nChangePosRet, strError, coin_control*/)) {
 //        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)

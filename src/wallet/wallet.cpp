@@ -31,6 +31,7 @@
 #include <wallet/walletutil.h>
 #include <messages/message_encryption.h>
 #include <messages/message_utils.h>
+#include <internal_miner.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -1268,7 +1269,18 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
     const CTransaction& tx = *ptx;
     std::vector<char> opReturn = tx.loadOpReturn();
 
-    if (!IsEnrcyptedMsg(opReturn)) {
+    if (!IsEnrcyptedMsg(opReturn) && !IsFreeEncryptedMsg(opReturn)) {
+        return;
+    }
+
+    if (IsFreeEncryptedMsg(opReturn) && internal_miner::verifyTransactionHash(*ptx)) {
+        // modify op return
+        assert(opReturn.size() >= 12);
+        // remove additional block info data
+        opReturn.erase(opReturn.begin(), opReturn.begin() + ENCR_MARKER_SIZE + (3 * sizeof(uint32_t)));
+        // replace ENCR_MARKER text
+        opReturn.insert(opReturn.begin(), ENCR_MARKER.begin(), ENCR_MARKER.end());
+    } else {
         return;
     }
 
@@ -1714,8 +1726,14 @@ bool CWallet::IsFromMe(const CTransaction& tx) const
 
 bool CWallet::IsEnrcyptedMsg(const std::vector<char>& opReturn) const
 {
-    return opReturn.size() >= ENCR_MARKER_SIZE &&
+    return (int)opReturn.size() >= ENCR_MARKER_SIZE &&
         std::string(opReturn.data(), opReturn.data() + ENCR_MARKER_SIZE) == ENCR_MARKER;
+}
+
+bool CWallet::IsFreeEncryptedMsg(const std::vector<char>& opReturn) const
+{
+    return (int)opReturn.size() >= ENCR_MARKER_SIZE &&
+        std::string(opReturn.data(), opReturn.data() + ENCR_MARKER_SIZE) == ENCR_FREE_MARKER;
 }
 
 CAmount CWallet::GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames) const
