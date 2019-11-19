@@ -101,8 +101,8 @@ static arith_uint256 getTarget(const CTransaction& txn)
     uint256 txnTargetUint256 = ArithToUint256(txnTarget);
     txnTargetUint256.flip_bit(PICO_BIT_POS);
 
-    std::cout << "Target for block = " << blockTarget.ToString() << blockTarget.getdouble() << std::endl;
-    std::cout << "Target for txn = "<< txnTarget.ToString() << txnTarget.getdouble() << std::endl;
+    std::cout << "Target for block = " << blockTarget.ToString() << " = " << blockTarget.getdouble() << std::endl;
+    std::cout << "Target for txn = "<< txnTarget.ToString() << " = " << txnTarget.getdouble() << std::endl;
 
     return UintToArith256(txnTargetUint256);
 }
