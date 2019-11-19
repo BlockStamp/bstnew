@@ -8,6 +8,7 @@
 extern const int ENCR_MARKER_SIZE;
 extern const size_t RSA_SIGNATURE_LENGTH;
 extern const std::string ENCR_MARKER;
+extern const std::string ENCR_FREE_MARKER;
 extern const std::string MSG_RECOGNIZE_TAG;
 extern const char MSG_DELIMITER;
 extern const char KEY_SEPARATOR;

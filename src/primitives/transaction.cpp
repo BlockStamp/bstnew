@@ -90,6 +90,14 @@ uint256 CTransaction::ComputeWitnessHash() const
     return SerializeHash(*this, SER_GETHASH, 0);
 }
 
+uint256 CTransaction::RefreshHash()
+{
+    hash = ComputeHash();
+    if (HasWitness())
+        m_witness_hash = ComputeHash();
+    return GetHash();
+}
+
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
 CTransaction::CTransaction() : vin(), vout(), nVersion(CTransaction::CURRENT_VERSION), nLockTime(0), hash{}, m_witness_hash{} {}
 

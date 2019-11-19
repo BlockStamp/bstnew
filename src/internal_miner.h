@@ -21,10 +21,18 @@ class CWallet;
 
 namespace internal_miner
 {
-/** Run the miner threads */
-uint64_t mineTransaction(CTransaction txn);
 
-bool verifyTransactionHash(CTransaction& txn, uint64_t nonce);
+struct ExtNonce
+{
+    uint32_t tip_block_height;
+    uint32_t tip_block_hash;
+    uint32_t nonce;
+};
+
+/** Run the miner threads */
+ExtNonce mineTransaction(CMutableTransaction &txn);
+
+bool verifyTransactionHash(const CTransaction &txn, uint64_t nonce);
 }
 
 #endif // BITCOIN_INTERNALMINER_H

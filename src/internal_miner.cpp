@@ -6,10 +6,12 @@
 #include "internal_miner.h"
 
 #include "arith_uint256.h"
+#include "messages/message_encryption.h"
 #include "streams.h"
 #include "timedata.h"
 #include "txmempool.h"
 #include "util.h"
+#include "validation.h"
 
 #include <boost/thread.hpp>
 
@@ -31,21 +33,31 @@ const std::string TARGET = "8000000FFFFF0000000000000000000000000000000000000000
 // nonce is 0xffff0000 or above, the block is rebuilt and nNonce starts over at
 // zero.
 //
-bool static ScanHash(CTransaction *txn, uint32_t& nNonce, uint256 *phash)
+bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std::vector<unsigned char>& opReturnData)
 {
     // Write the first 76 bytes of the block header to a double-SHA256 state.
-    CHash256 hasher;
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    ss << txn->GetHash();
+//    CHash256 hasher;
+//    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+//    ss << txn->GetHash();
 //    hasher.Write((unsigned char*)&ss[0], 76);
 
     while (true)
     {
-        nNonce++;
+        ++extNonce.nonce;
+
+        std::memcpy(opReturnData.data()+ENCR_MARKER_SIZE , &extNonce.tip_block_height, sizeof(uint32_t));
+        std::memcpy(opReturnData.data()+ENCR_MARKER_SIZE+4, &extNonce.tip_block_hash, sizeof(uint32_t));
+        std::memcpy(opReturnData.data()+ENCR_MARKER_SIZE+8, &extNonce.nonce, sizeof(uint32_t));
+
+        CScript nScript;
+        nScript << OP_RETURN << opReturnData;
+        txn.vout[0].scriptPubKey = nScript;
+
+        *phash = txn.GetHash();
 
         // Write the last 4 bytes of the block header (the nonce) to a copy of
         // the double-SHA256 state, and compute the result.
-        CHash256(hasher).Write((unsigned char*)&nNonce, 4).Finalize((unsigned char*)phash);
+//        CHash256(hasher).Write((unsigned char*)&nNonce, 4).Finalize((unsigned char*)phash);
 
         // Return the nonce if the hash has at least some zero bits,
         // caller will check if it has enough to reach the target
@@ -53,68 +65,81 @@ bool static ScanHash(CTransaction *txn, uint32_t& nNonce, uint256 *phash)
             return true;
 
         // If nothing found after trying for a while, return -1
-        if ((nNonce & 0xfff) == 0)
+        if ((extNonce.nonce & 0xfff) == 0)
             return false;
     }
     return false;
 }
 
-uint64_t mineTransaction(CTransaction txn)
+const char* getTarget(CMutableTransaction& /*txn*/)
 {
-    uint64_t result = 0;
-    unsigned int nExtraNonce = 0;
+    ///TODO: count target based on size of transaction
+    return TARGET.c_str();
+}
+
+const char* getTarget(const CTransaction& /*txn*/)
+{
+    ///TODO: count target based on size of transaction
+    return TARGET.c_str();
+}
+
+ExtNonce mineTransaction(CMutableTransaction& txn)
+{
     int64_t nStart = GetTime();
     arith_uint256 hashTarget;
-    hashTarget.SetHex(TARGET);
+    hashTarget.SetHex(getTarget(txn));
     printf("Hash target: %s\n", hashTarget.GetHex().c_str());
 
+    if (txn.vout.size() != 1)
+        return {0,0,0};
+
+    std::vector<unsigned char> opReturn = txn.loadOpReturn();
+
     while (true) {
+
+        CBlockIndex *prevBlock = chainActive.Tip();
+        LogPrintf("block hash: %s, height: %u\n", prevBlock->GetBlockHash().ToString().c_str(), prevBlock->nHeight);
         uint256 hash;
-        uint32_t nNonce = 0;
+        ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(28), 0};
 
         while (true) {
             // Check if something found
-            if (ScanHash(&txn, nNonce, &hash))
+            if (ScanHash(txn, extNonce, &hash, opReturn))
             {
-                if (UintToArith256(hash) <= hashTarget)
+                if (UintToArith256(txn.GetHash()) <= hashTarget)
                 {
                     // Found a solution
-                    LogPrintf("BitcoinMiner:\n");
+                    LogPrintf("InternalMiner:\n");
                     LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex(), hashTarget.GetHex());
-                    printf("proof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-                    printf("\nNonce: %u, extra nonce: %u\n", nNonce, nExtraNonce);
-                    result =(uint64_t)nExtraNonce << 32 | nNonce;
-                    printf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
-                    return result;
+                    LogPrintf("\nproof-of-work found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+                    LogPrintf("Block height:%d Block hash:%d nonce:%d\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
+                    LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
+                    return {extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce};
                 }
             }
+//            printf("\rTransaction hash: %s", txn.GetHash().ToString().c_str());
 
             // Check for stop
             boost::this_thread::interruption_point();
-            if (nNonce >= 0xffff0000)
+            if (extNonce.nonce >= 0xffff0000)
                 break;
+            if (prevBlock != chainActive.Tip()) {
+                LogPrintf("Internal miner: New block detected\n");
+                break;
+            }
         }
-
-        ++nExtraNonce;
-        if (nExtraNonce == 0)
-            break;
     }
 
-    return result;
+    return {0,0,0};
 }
 
-bool verifyTransactionHash(CTransaction& txn, uint64_t nonce)
+bool verifyTransactionHash(const CTransaction& txn, uint64_t nonce)
 {
     ///TODO: nonce should be obtain from CTransaction OP_RETURN
 
     arith_uint256 hashTarget;
-    hashTarget.SetHex(TARGET);
-    uint256 hash;
-
-    CHash256 hasher;
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    ss << txn.GetHash();
-    CHash256(hasher).Write((unsigned char*)&nonce, 4).Finalize((unsigned char*)&hash);
+    hashTarget.SetHex(getTarget(txn));
+    uint256 hash = txn.GetHash();
 
     printf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
 

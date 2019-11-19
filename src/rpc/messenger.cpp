@@ -667,8 +667,13 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
 //    std::string str = "Moja wiadomość, Treść mojej wiadomości - 123123123123123123123123123123123123123123" + std::to_string(GetTime());
 //    std::vector<unsigned char> data(str.cbegin(), str.cend());
 
+    assert(data.size() > ENCR_MARKER_SIZE);
     CScript scriptPubKey;
-    scriptPubKey << OP_RETURN << data;
+    std::vector<unsigned char> extData;
+    extData.insert(extData.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
+    extData.insert(extData.end(), 12, 0); // placehoder for additional data info (block and nonce).
+    extData.insert(extData.end(), data.begin() + ENCR_MARKER_SIZE, data.end()); // skip default ENCR_MARKER tag (already added).
+    scriptPubKey << OP_RETURN << extData;
 
     txNew.vin.resize(1);
     txNew.vin[0].prevout.SetMsg();
@@ -677,9 +682,14 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
     txNew.vout[0].scriptPubKey = scriptPubKey;
     txNew.vout[0].nValue = 0;
 
+    printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
+    internal_miner::ExtNonce ext_nonce = internal_miner::mineTransaction(txNew);
+
     CTransactionRef tx = MakeTransactionRef(std::move(txNew));
     assert(!tx->IsCoinBase());
     assert(tx->IsMsgTx());
+
+    printf("Hash after: %s\n", tx->GetHash().GetHex().c_str());
 
 //    if (!pwallet->CreateTransaction(/*vecSend, withInput,*/ tx/*, reservekey, nFeeRequired, nChangePosRet, strError, coin_control*/)) {
 //        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
