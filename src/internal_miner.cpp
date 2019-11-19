@@ -97,7 +97,7 @@ static arith_uint256 getTarget(const CTransaction& txn)
     unsigned int nBits = GetNextWorkRequired(pindexPrev, nullptr, Params().GetConsensus());
     arith_uint256 blockTarget = arith_uint256().SetCompact(nBits);
 
-    arith_uint256 txnTarget = blockTarget / ratio;
+    arith_uint256 txnTarget = blockTarget * ratio;
     uint256 txnTargetUint256 = ArithToUint256(txnTarget);
     txnTargetUint256.flip_bit(PICO_BIT_POS);
 
