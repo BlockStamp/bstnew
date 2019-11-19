@@ -12,6 +12,8 @@
 #include "txmempool.h"
 #include "util.h"
 #include "validation.h"
+#include "pow.h"
+#include "chainparams.h"
 
 #include <boost/thread.hpp>
 
@@ -71,23 +73,44 @@ bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std:
     return false;
 }
 
-const char* getTarget(CMutableTransaction& /*txn*/)
-{
-    ///TODO: count target based on size of transaction
-    return TARGET.c_str();
+static CAmount getTxnCost(const CTransaction& txn) {
+    const unsigned int txSize = txn.GetTotalSize();
+    const CAmount feePerByte = 10;
+    const CAmount cost = txSize * feePerByte;
+
+    return cost;
 }
 
-const char* getTarget(const CTransaction& /*txn*/)
+static arith_uint256 getTarget(const CTransaction& txn)
 {
-    ///TODO: count target based on size of transaction
-    return TARGET.c_str();
+    CBlockIndex* pindexPrev = chainActive.Tip();
+    assert(pindexPrev != nullptr);
+
+    const CAmount blockReward = GetBlockSubsidy(chainActive.Height(), Params().GetConsensus());
+    const CAmount txnCost = getTxnCost(txn);
+    const double ratio = (double)blockReward / (double)txnCost;
+
+    std::cout << "blockReward: " << blockReward << std::endl;
+    std::cout << "txnCost: " << txnCost << std::endl;
+    std::cout << "ratio: " << ratio << std::endl;
+
+    unsigned int nBits = GetNextWorkRequired(pindexPrev, nullptr, Params().GetConsensus());
+    arith_uint256 blockTarget = arith_uint256().SetCompact(nBits);
+
+    arith_uint256 txnTarget = blockTarget / ratio;
+    uint256 txnTargetUint256 = ArithToUint256(txnTarget);
+    txnTargetUint256.flip_bit(PICO_BIT_POS);
+
+    std::cout << "Target for block = " << blockTarget.ToString() << blockTarget.getdouble() << std::endl;
+    std::cout << "Target for txn = "<< txnTarget.ToString() << txnTarget.getdouble() << std::endl;
+
+    return UintToArith256(txnTargetUint256);
 }
 
 ExtNonce mineTransaction(CMutableTransaction& txn)
 {
     int64_t nStart = GetTime();
-    arith_uint256 hashTarget;
-    hashTarget.SetHex(getTarget(txn));
+    arith_uint256 hashTarget = getTarget(txn);
     printf("Hash target: %s\n", hashTarget.GetHex().c_str());
 
     if (txn.vout.size() != 1)
@@ -137,8 +160,7 @@ bool verifyTransactionHash(const CTransaction& txn, uint64_t nonce)
 {
     ///TODO: nonce should be obtain from CTransaction OP_RETURN
 
-    arith_uint256 hashTarget;
-    hashTarget.SetHex(getTarget(txn));
+    arith_uint256 hashTarget = getTarget(txn);
     uint256 hash = txn.GetHash();
 
     printf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());

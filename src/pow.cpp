@@ -10,6 +10,8 @@
 #include <primitives/block.h>
 #include <uint256.h>
 
+unsigned int PICO_BIT_POS = 255;
+
 static uint32_t GetNextCashWorkRequired(const CBlockIndex *pindexPrev, const CBlockHeader *pblock, const Consensus::Params &params);
 
 static bool IsDAAEnabled(uint32_t nHeight, const Consensus::Params& params)
@@ -104,8 +106,7 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
         return false;
 
     // Check proof of work matches claimed amount
-    constexpr unsigned int picoBitPos=255;
-    hash.flip_bit(picoBitPos);
+    hash.flip_bit(PICO_BIT_POS);
     if (UintToArith256(hash) > bnTarget)
         return false;
 
