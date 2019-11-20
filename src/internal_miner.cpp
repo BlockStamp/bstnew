@@ -72,22 +72,39 @@ bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std:
     return false;
 }
 
-static CAmount getTxnCost(const CTransaction& txn) {
-    //TODO: add checks for txn size() - for too small and too big
+static bool getTxnCost(const CTransaction& txn, CAmount& cost) {
     const unsigned int txSize = txn.GetTotalSize();
-    const CAmount feePerByte = 10;
-    const CAmount cost = txSize * feePerByte;
 
-    return cost;
+    // Msg transaction can have at most 100 characters for subject
+    // and 1000 characters for content
+    constexpr unsigned int minSize = 1078, maxSize = 2182;
+
+    if (txSize < minSize || txSize > maxSize) {
+        std::cout << "ERROR getTxnCost - size " << txSize << std::endl;
+        return false;
+    }
+
+    constexpr CAmount feePerByte = 10;
+    cost = txSize * feePerByte;
+    return true;
 }
 
-static arith_uint256 getTarget(const CTransaction& txn)
+static bool getTarget(const CTransaction& txn, arith_uint256& target)
 {
+    if (!txn.IsMsgTx()) {
+        LogPrintf("Error: getTarget called for non message transaction\n");
+        return false;
+    }
+
     CBlockIndex* pindexPrev = chainActive.Tip();
     assert(pindexPrev != nullptr);
 
     const CAmount blockReward = GetBlockSubsidy(chainActive.Height(), Params().GetConsensus());
-    const CAmount txnCost = getTxnCost(txn);
+    CAmount txnCost = 0;
+    if (!getTxnCost(txn, txnCost)) {
+        LogPrintf("Error: Failed to calculate message transaction cost\n");
+        return false;
+    }
     const uint32_t ratio = blockReward / txnCost;
 
     std::cout << "blockReward: " << blockReward << std::endl;
@@ -104,13 +121,17 @@ static arith_uint256 getTarget(const CTransaction& txn)
     std::cout << "Target for block = " << blockTarget.ToString() << " = " << blockTarget.getdouble() << std::endl;
     std::cout << "Target for txn = "<< txnTarget.ToString() << " = " << txnTarget.getdouble() << std::endl;
 
-    return UintToArith256(txnTargetUint256);
+    target = UintToArith256(txnTargetUint256);
+    return true;
 }
 
 ExtNonce mineTransaction(CMutableTransaction& txn)
 {
     int64_t nStart = GetTime();
-    arith_uint256 hashTarget = getTarget(txn);
+    arith_uint256 hashTarget;
+    if (!getTarget(txn, hashTarget))
+        throw std::runtime_error("Failed to mine transaction");
+
     LogPrintf("Hash target: %s\n", hashTarget.GetHex().c_str());
 
     if (txn.vout.size() != 1)
@@ -157,7 +178,12 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
 
 bool verifyTransactionHash(const CTransaction& txn)
 {
-    arith_uint256 hashTarget = getTarget(txn);
+    arith_uint256 hashTarget;
+    if (!getTarget(txn, hashTarget)) {
+        LogPrintf("proof-of-work verification failed, could not calculate target\n");
+        return false;
+    }
+
     uint256 hash = txn.GetHash();
     std::vector<char> opReturn = txn.loadOpReturn();
 
