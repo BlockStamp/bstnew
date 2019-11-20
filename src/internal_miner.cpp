@@ -73,6 +73,7 @@ bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std:
 }
 
 static CAmount getTxnCost(const CTransaction& txn) {
+    //TODO: add checks for txn size() - for too small and too big
     const unsigned int txSize = txn.GetTotalSize();
     const CAmount feePerByte = 10;
     const CAmount cost = txSize * feePerByte;
@@ -87,7 +88,7 @@ static arith_uint256 getTarget(const CTransaction& txn)
 
     const CAmount blockReward = GetBlockSubsidy(chainActive.Height(), Params().GetConsensus());
     const CAmount txnCost = getTxnCost(txn);
-    const double ratio = (double)blockReward / (double)txnCost;
+    const uint32_t ratio = blockReward / txnCost;
 
     std::cout << "blockReward: " << blockReward << std::endl;
     std::cout << "txnCost: " << txnCost << std::endl;
@@ -95,8 +96,8 @@ static arith_uint256 getTarget(const CTransaction& txn)
 
     unsigned int nBits = GetNextWorkRequired(pindexPrev, nullptr, Params().GetConsensus());
     arith_uint256 blockTarget = arith_uint256().SetCompact(nBits);
-
     arith_uint256 txnTarget = blockTarget * ratio;
+
     uint256 txnTargetUint256 = ArithToUint256(txnTarget);
     txnTargetUint256.flip_bit(PICO_BIT_POS);
 
