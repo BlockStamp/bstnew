@@ -90,12 +90,9 @@ static bool getTxnCost(const CTransaction& txn, CAmount& cost) {
     return true;
 }
 
-static bool getTarget(const CTransaction& txn, arith_uint256& target)
+static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, arith_uint256& target)
 {
-    CBlockIndex* pindexPrev = chainActive.Tip();
-    assert(pindexPrev != nullptr);
-
-    const CAmount blockReward = GetBlockSubsidy(chainActive.Height(), Params().GetConsensus());
+    const CAmount blockReward = GetBlockSubsidy(indexPrev->nHeight, Params().GetConsensus());
     CAmount txnCost = 0;
     if (!getTxnCost(txn, txnCost)) {
         LogPrintf("Error: Failed to calculate message transaction cost\n");
@@ -107,8 +104,7 @@ static bool getTarget(const CTransaction& txn, arith_uint256& target)
     std::cout << "txnCost: " << txnCost << std::endl;
     std::cout << "ratio: " << ratio << std::endl;
 
-    unsigned int nBits = GetNextWorkRequired(pindexPrev, nullptr, Params().GetConsensus());
-    arith_uint256 blockTarget = arith_uint256().SetCompact(nBits);
+    arith_uint256 blockTarget = arith_uint256().SetCompact(indexPrev->nBits);
     arith_uint256 txnTarget = blockTarget * ratio;
 
     uint256 txnTargetUint256 = ArithToUint256(txnTarget);
@@ -121,15 +117,11 @@ static bool getTarget(const CTransaction& txn, arith_uint256& target)
     return true;
 }
 
+//TODO: Consider moving setting tip_block_height and tip_block_hash to outer loop
+//TODO: Consider updating only parts of nScript, not the whole nScript (only incremented nonce is needed to be changed often)
 ExtNonce mineTransaction(CMutableTransaction& txn)
 {
     int64_t nStart = GetTime();
-    arith_uint256 hashTarget;
-    if (!getTarget(txn, hashTarget))
-        throw std::runtime_error("Failed to mine transaction");
-
-    LogPrintf("Hash target: %s\n", hashTarget.GetHex().c_str());
-
     if (txn.vout.size() != 1)
         return {0,0,0};
 
@@ -139,6 +131,12 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
 
         CBlockIndex *prevBlock = chainActive.Tip();
         LogPrintf("block hash: %s, height: %u\n", prevBlock->GetBlockHash().ToString().c_str(), prevBlock->nHeight);
+
+        arith_uint256 hashTarget;
+        if (!getTarget(txn, prevBlock, hashTarget))
+            throw std::runtime_error("Failed to mine transaction");
+        LogPrintf("Hash target: %s\n", hashTarget.GetHex().c_str());
+
         uint256 hash;
         ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(0), 0};
 
@@ -179,12 +177,6 @@ bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
         return false;
     }
 
-    arith_uint256 hashTarget;
-    if (!getTarget(txn, hashTarget)) {
-        LogPrintf("proof-of-work verification failed, could not calculate target\n");
-        return false;
-    }
-
     uint256 hash = txn.GetHash();
     std::vector<char> opReturn = txn.loadOpReturn();
 
@@ -198,6 +190,12 @@ bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
     CBlockIndex *prevBlock = checkTxInTip ? chainActive.Tip() : chainActive[extNonce.tip_block_height];
     if (!prevBlock) {
         std::cout << "Error: verifyTransactionHash - prevBlock is null\n";
+        return false;
+    }
+
+    arith_uint256 hashTarget;
+    if (!getTarget(txn, prevBlock, hashTarget)) {
+        LogPrintf("proof-of-work verification failed, could not calculate target\n");
         return false;
     }
 
