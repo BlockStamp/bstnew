@@ -84,6 +84,7 @@ static bool getTxnCost(const CTransaction& txn, CAmount& cost) {
         return false;
     }
 
+    //TODO: Find what feePerByte should be
     constexpr CAmount feePerByte = 10;
     cost = txSize * feePerByte;
     return true;
@@ -91,11 +92,6 @@ static bool getTxnCost(const CTransaction& txn, CAmount& cost) {
 
 static bool getTarget(const CTransaction& txn, arith_uint256& target)
 {
-    if (!txn.IsMsgTx()) {
-        LogPrintf("Error: getTarget called for non message transaction\n");
-        return false;
-    }
-
     CBlockIndex* pindexPrev = chainActive.Tip();
     assert(pindexPrev != nullptr);
 
@@ -176,8 +172,13 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
     return {0,0,0};
 }
 
-bool verifyTransactionHash(const CTransaction& txn)
+bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
 {
+    if (!txn.IsMsgTx()) {
+        LogPrintf("Error: proof-of-work verification failed, non message transaction\n");
+        return false;
+    }
+
     arith_uint256 hashTarget;
     if (!getTarget(txn, hashTarget)) {
         LogPrintf("proof-of-work verification failed, could not calculate target\n");
@@ -194,20 +195,32 @@ bool verifyTransactionHash(const CTransaction& txn)
     std::memcpy(&extNonce.tip_block_hash, opReturn.data()+ENCR_MARKER_SIZE+4, sizeof(uint32_t));
     std::memcpy(&extNonce.nonce, opReturn.data()+ENCR_MARKER_SIZE+8, sizeof(uint32_t));
 
-    CBlockIndex *prevBlock = chainActive.Tip();
+    CBlockIndex *prevBlock = checkTxInTip ? chainActive.Tip() : chainActive[extNonce.tip_block_height];
+    if (!prevBlock) {
+        std::cout << "Error: verifyTransactionHash - prevBlock is null\n";
+        return false;
+    }
 
     LogPrintf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", extNonce.tip_block_hash, extNonce.tip_block_height);
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
 
-    if (((uint16_t*)&hash)[15] != 0x8000)
+    if (((uint16_t*)&hash)[15] != 0x8000) {
+        std::cout << "\tError: verifyTransactionHash - hash does not start with 0x80" << std::endl;
         return false;
-    if (UintToArith256(hash) > hashTarget)
+    }
+    if (UintToArith256(hash) > hashTarget) {
+        std::cout << "\tError: verifyTransactionHash - hash > hashTarget " << std::endl;
         return false;
-    if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height)
+    }
+    if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
+        std::cout << "\tError: verifyTransactionHash - height not correct " << std::endl;
         return false;
-    if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash)
+    }
+    if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {
+        std::cout << "\tError: verifyTransactionHash - hash part not correct " << std::endl;
         return false;
+    }
 
     return true;
 }

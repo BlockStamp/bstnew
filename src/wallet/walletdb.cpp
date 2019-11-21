@@ -335,6 +335,11 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             if (!(CheckTransaction(*wtx.tx, state) && (wtx.GetHash() == hash) && state.IsValid()))
                 return false;
 
+            if (wtx.tx->IsMsgTx() && !(CheckMsgTransaction(*wtx.tx, state, false) && (wtx.GetHash() == hash) && state.IsValid())) {
+                std::cout << "Error when reading msg_tx: " << wtx.GetHash().ToString() << std::endl;
+                return false;
+            }
+
             pwallet->LoadEncrMsgToWallet(from, subject, wtx);
         }
         else if (strType == "msg_hist")

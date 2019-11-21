@@ -10,6 +10,7 @@
 #include <script/interpreter.h>
 #include <consensus/validation.h>
 #include <games/modulo/moduloverify.h>
+#include <internal_miner.h>
 #include <chainparams.h>
 
 // TODO remove the following dependencies
@@ -212,10 +213,6 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
                 return state.DoS(10, false, REJECT_INVALID, "bad-txns-prevout-null");
     }
 
-    //TODO: Add checks for MsgTx!!!
-    if (tx.IsMsgTx()) {
-    }
-
     if(modulo::ver_1::isMakeBetTx(tx))
     {
         if(!modulo::ver_1::txMakeBetVerify(tx))
@@ -235,6 +232,14 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
         {
             return state.DoS(10, false, REJECT_INVALID, "modulo_ver_2::bad-makebet-overlimit");
         }
+    }
+
+    return true;
+}
+
+bool CheckMsgTransaction(const CTransaction& tx, CValidationState& state, bool checkTxInTip) {
+    if (!internal_miner::verifyTransactionHash(tx, checkTxInTip)) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn");
     }
 
     return true;

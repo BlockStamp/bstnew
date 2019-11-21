@@ -1273,7 +1273,9 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
         return;
     }
 
-    if (IsFreeEncryptedMsg(opReturn) && internal_miner::verifyTransactionHash(*ptx)) {
+    //TODO: Check if verifyTransactionHash should be called with false
+    //TODO: verifyTransactionHash is expensive - consider removing it - txn should be already validated here
+    if (IsFreeEncryptedMsg(opReturn) && internal_miner::verifyTransactionHash(*ptx, false)) {
         // modify op return
         assert(opReturn.size() >= 12);
         // remove additional block info data

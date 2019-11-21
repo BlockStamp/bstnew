@@ -39,6 +39,7 @@
 #include <utilmoneystr.h>
 #include <utilstrencodings.h>
 #include <validationinterface.h>
+#include <internal_miner.h>
 #include <warnings.h>
 
 #include <future>
@@ -570,6 +571,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     if (!CheckTransaction(tx, state)) {
         std::cout << "AcceptToMemoryPoolWorker - Check transaction FAIL\n";
         return false; // state filled in by CheckTransaction
+    }
+
+    if (tx.IsMsgTx() && !CheckMsgTransaction(tx, state, true)) {
+        std::cout << "MSG TX: " << tx.GetHash().ToString() << ", VERIFICATION FAILED\n";
+        return false; // state filled in by CheckMsgTransaction
     }
 
     // Coinbase is only valid in a block, not as a loose transaction
@@ -1942,6 +1948,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     }
 
+    if (!CheckMsgTxnsInBlock(block, state, true)) {
+        std::cout << "CheckMsgTxnsInBlock failed in ConnectBlock\n";
+        return error("%s: Consensus::CheckMsgTxnsInBlock: %s", __func__, FormatStateMessage(state));
+    }
+
     // verify that the view's current state corresponds to the previous block
     uint256 hashPrevBlock = pindex->pprev == nullptr ? uint256() : pindex->pprev->GetBlockHash();
     assert(hashPrevBlock == view.GetBestBlock());
@@ -3300,6 +3311,16 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     return true;
 }
 
+bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, bool checkTxInTip) {
+    for (const CTransactionRef& txn : block.vtx) {
+        if (txn->IsMsgTx() && !internal_miner::verifyTransactionHash(*txn, checkTxInTip)) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn", false, "failed to verify hash of message transaction");
+        }
+    }
+
+    return true;
+}
+
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
@@ -3772,7 +3793,10 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     }
 
     if (!CheckBlock(block, state, chainparams.GetConsensus()) ||
+        !CheckMsgTxnsInBlock(block, state, true) ||
         !ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev)) {
+        std::cout << "CheckMsgTxnsInBlock probably failed in AcceptBlock\n";
+
         if (state.IsInvalid() && !state.CorruptionPossible()) {
             pindex->nStatus |= BLOCK_FAILED_VALID;
             setDirtyBlockIndex.insert(pindex);
@@ -3815,6 +3839,12 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         // Ensure that CheckBlock() passes before calling AcceptBlock, as
         // belt-and-suspenders.
         bool ret = CheckBlock(*pblock, state, chainparams.GetConsensus());
+
+        if (ret) {
+            ret = CheckMsgTxnsInBlock(*pblock, state, true);
+            if (!ret)
+                std::cout << "CheckMsgTxnsInBlock failed in ProcessNewBlock\n";
+        }
 
         LOCK(cs_main);
 
@@ -3860,6 +3890,10 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot)) {
         std::cout << "CheckBlock ERROR" << std::endl;
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
+    }
+    if (!CheckMsgTxnsInBlock(block, state, true)) {
+        std::cout << "CheckMsgTxnsInBlock ERROR in TestBlockValidity" << std::endl;
+        return error("%s: Consensus::CheckMsgTxnsInBlock: %s", __func__, FormatStateMessage(state));
     }
     if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev)) {
         std::cout << "ContextualCheckBlock ERROR" << std::endl;
@@ -4305,6 +4339,12 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
             return error("%s: *** found bad block at %d, hash=%s (%s)\n", __func__,
                          pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
         }
+
+        if (nCheckLevel >= 1 && !CheckMsgTxnsInBlock(block, state, false)) {
+            return error("%s: *** found bad block at %d, hash=%s (%s)\n", __func__,
+                pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
+        }
+
         // check level 2: verify undo validity
         if (nCheckLevel >= 2 && pindex) {
             CBlockUndo undo;

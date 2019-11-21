@@ -207,6 +207,12 @@ ReadStatus PartiallyDownloadedBlock::FillBlock(CBlock& block, const std::vector<
         return READ_STATUS_CHECKBLOCK_FAILED;
     }
 
+    //TODO: Remove unnecessary debug prints - couts and logs that don't inform about errors
+    if (!CheckMsgTxnsInBlock(block, state, true)) {
+        std::cout << "CheckMsgTxnsInBlock ERROR in FillBlock\n";
+        return READ_STATUS_CHECKBLOCK_FAILED;
+    }
+
     LogPrint(BCLog::CMPCTBLOCK, "Successfully reconstructed block %s with %lu txn prefilled, %lu txn from mempool (incl at least %lu from extra pool) and %lu txn requested\n", hash.ToString(), prefilled_count, mempool_count, extra_count, vtx_missing.size());
     if (vtx_missing.size() < 5) {
         for (const auto& tx : vtx_missing) {

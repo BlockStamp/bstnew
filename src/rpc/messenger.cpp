@@ -693,6 +693,7 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
 
     printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
     internal_miner::mineTransaction(txNew);
+    //TODO: Consider running miner on more than one thread
 
     CTransactionRef tx = MakeTransactionRef(std::move(txNew));
     assert(!tx->IsCoinBase());

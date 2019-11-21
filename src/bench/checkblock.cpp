@@ -52,6 +52,8 @@ static void DeserializeAndCheckBlockTest(benchmark::State& state)
         CValidationState validationState;
         bool checked = CheckBlock(block, validationState, chainParams->GetConsensus());
         assert(checked);
+        checked = CheckMsgTxnsInBlock(block, validationState, false);
+        assert(checked);
     }
 }
 
