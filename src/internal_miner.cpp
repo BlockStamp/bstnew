@@ -62,7 +62,7 @@ bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std:
 
         // Return the nonce if the hash has at least some zero bits,
         // caller will check if it has enough to reach the target
-        if (((uint16_t*)phash)[15] == 0x8000)
+        if (((uint8_t*)phash)[31] == 0x80)
             return true;
 
         // If nothing found after trying for a while, return -1
@@ -205,7 +205,7 @@ bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", extNonce.tip_block_hash, extNonce.tip_block_height);
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
 
-    if (((uint16_t*)&hash)[15] != 0x8000) {
+    if (((uint8_t*)&hash)[31] != 0x80) {
         std::cout << "\tError: verifyTransactionHash - hash does not start with 0x80" << std::endl;
         return false;
     }
