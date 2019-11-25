@@ -118,7 +118,7 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
     return true;
 }
 
-void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner::ExtNonce& inputExtNonce)
+void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner::ExtNonce& inputExtNonce, uint32_t nonceStart)
 {
     CMutableTransaction txn;
     {
@@ -149,7 +149,7 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
         LogPrintf("Hash target: %s\n", hashTarget.GetHex().c_str());
 
         uint256 hash;
-        ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(0), 0};
+        ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(0), nonceStart};
 
         while (true) {
             // Check if something found
@@ -256,8 +256,9 @@ Miner::~Miner() {
 }
 
 void Miner::mineTransaction(CMutableTransaction& txn, ExtNonce& extNonce) {
-    for (int i=0; i<m_numThreads; ++i) {
-        m_minerThreads.create_thread(boost::bind(&Miner::mineTransactionWorker, this, boost::ref(txn), boost::ref(extNonce)));
+    const uint32_t nonceOffset = std::numeric_limits<uint32_t>::max() / m_numThreads;
+    for (uint32_t i=0; i<m_numThreads; ++i) {
+        m_minerThreads.create_thread(boost::bind(&Miner::mineTransactionWorker, this, boost::ref(txn), boost::ref(extNonce), i*nonceOffset));
     }
 }
 

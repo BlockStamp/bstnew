@@ -42,7 +42,7 @@ class Miner {
     int m_numThreads;
     boost::thread_group m_minerThreads;
 
-    void mineTransactionWorker(CMutableTransaction& inputTxn, ExtNonce& inputExtNonce);
+    void mineTransactionWorker(CMutableTransaction& inputTxn, ExtNonce& inputExtNonce, uint32_t nonceStart);
 public:
     explicit Miner(int numThreads);
     Miner(const Miner&) = delete;

@@ -24,6 +24,7 @@
 #include <messages/message_utils.h>
 #include <data/retrievedatatxs.h>
 #include <internal_miner.h>
+
 #include <boost/algorithm/string.hpp>
 
 static constexpr size_t maxDataSize=MAX_OP_RETURN_RELAY-6;
@@ -669,7 +670,7 @@ UniValue listmsgsinceblock(const JSONRPCRequest& request)
 }
 
 
-static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned char>& data)
+static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned char>& data, int numThreads)
 {
     CMutableTransaction txNew;
 
@@ -690,7 +691,7 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
 
     printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
     internal_miner::ExtNonce extNonce{};
-    internal_miner::Miner(GetNumCores()).mineTransaction(txNew, extNonce);
+    internal_miner::Miner(numThreads).mineTransaction(txNew, extNonce);
 
     if (extNonce.isSet()) {
         throw std::runtime_error("Could not mine transaction. Possible shutdown request.");
@@ -724,9 +725,9 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 3 || !checkRSApublicKey(request.params[2].get_str()))
+    if (request.fHelp || request.params.size() < 3 || request.params.size() > 4 || !checkRSApublicKey(request.params[2].get_str()))
         throw std::runtime_error(
-                "createmsgtransaction \"subject\" \"string\" \"public_key\" \n"
+                "createmsgtransaction \"subject\" \"string\" \"public_key\" \"threads\" \n"
                 "\nStores encrypted message in a blockchain.\n"
                 "Before this command walletpassphrase is required. \n"
                 "Message is free (no fee) but user needs to perform the job for send. \n"
@@ -736,6 +737,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                 "1. \"subject\"                     (string, required) A user message string\n"
                 "2. \"message\"                     (string, required) A user message string\n"
                 "3. \"public_key\"                  (string, required) Receiver public key (length: 1024, 2048 or 4096)\n"
+                "4. \"threads\"                     (numeric, optional, default=1) The number of threads to be used for mining tx\n"
 
                 "\nResult:\n"
                 "\"txid\"                           (string) A hex-encoded transaction id\n"
@@ -784,6 +786,8 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
     const std::string subject = request.params[0].get_str();
     const std::string message = request.params[1].get_str();
     const std::string toAddress = request.params[2].get_str();
+    const int numThreads = request.params[3].isNull() ?
+        1 : std::min(request.params[3].get_int(), GetNumCores());
 
     const std::string signature = signMessage(rsaPrivateKey.toString(), fromAddress);
 
@@ -808,7 +812,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                 msg.length(),
                 public_key.toString().c_str());
 
-    CTransactionRef tx = CreateMsgTx(pwallet, data);
+    CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
     return tx->GetHash().GetHex();
 }
 
@@ -826,7 +830,7 @@ static const CRPCCommand commands[] =
     { "messenger",         "messengerlock",                &messengerlock,             {} },
     { "messenger",         "messengerpassphrasechange",    &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
     { "messenger",         "listmsgsinceblock",            &listmsgsinceblock,         {"blockhash"} },
-    { "messenger",         "createmsgtransaction",         &createmsgtransaction,      {"subject", "message", "public_key"} },
+    { "messenger",         "createmsgtransaction",         &createmsgtransaction,      {"subject", "message", "public_key", "threads"} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)
