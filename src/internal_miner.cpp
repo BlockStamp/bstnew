@@ -14,6 +14,7 @@
 #include "validation.h"
 #include "pow.h"
 #include "chainparams.h"
+#include "shutdown.h"
 
 #include <boost/thread.hpp>
 
@@ -117,13 +118,23 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
     return true;
 }
 
-//TODO: Consider moving setting tip_block_height and tip_block_hash to outer loop
-//TODO: Consider updating only parts of nScript, not the whole nScript (only incremented nonce is needed to be changed often)
-ExtNonce mineTransaction(CMutableTransaction& txn)
+void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner::ExtNonce& inputExtNonce)
 {
+    CMutableTransaction txn;
+    {
+        boost::lock_guard<boost::mutex> lock(m_minerMutex);
+        if (m_foundHash) {
+            return;
+        }
+
+        // work on copy
+        txn = inputTxn;
+    }
+
     int64_t nStart = GetTime();
-    if (txn.vout.size() != 1)
-        return {0,0,0};
+    if (txn.vout.size() != 1) {
+        return;
+    }
 
     std::vector<unsigned char> opReturn = txn.loadOpReturn();
 
@@ -147,17 +158,33 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
                 if (UintToArith256(txn.GetHash()) <= hashTarget)
                 {
                     // Found a solution
-                    LogPrintf("InternalMiner:\n");
-                    LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-                    LogPrintf("Block height:%u Block hash:%u nonce:%u\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
-                    LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
-                    return extNonce;
+                    boost::lock_guard<boost::mutex> lock(m_minerMutex);
+                    if (!m_foundHash) {
+                        m_foundHash = true;
+                        inputTxn = txn;
+                        inputExtNonce = extNonce;
+
+                        LogPrintf("InternalMiner:\n");
+                        LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+                        LogPrintf("Block height:%u Block hash:%u nonce:%u\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
+                        LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
+
+                    }
+                    return;
                 }
             }
-//            printf("\rTransaction hash: %s", txn.GetHash().ToString().c_str());
 
-            // Check for stop
-            boost::this_thread::interruption_point();
+            {
+                boost::lock_guard<boost::mutex> lock(m_minerMutex);
+                if (m_foundHash) { // Hash found on another thread
+                    return;
+                }
+            }
+
+            if (ShutdownRequested()) {
+                return;
+            }
+
             if (extNonce.nonce >= 0xffff0000)
                 break;
             if (prevBlock != chainActive.Tip()) {
@@ -166,8 +193,6 @@ ExtNonce mineTransaction(CMutableTransaction& txn)
             }
         }
     }
-
-    return {0,0,0};
 }
 
 bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
@@ -221,6 +246,19 @@ bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
     }
 
     return true;
+}
+
+Miner::Miner(int numThreads) : m_numThreads(numThreads) {
+}
+
+Miner::~Miner() {
+    m_minerThreads.join_all();
+}
+
+void Miner::mineTransaction(CMutableTransaction& txn, ExtNonce& extNonce) {
+    for (int i=0; i<m_numThreads; ++i) {
+        m_minerThreads.create_thread(boost::bind(&Miner::mineTransactionWorker, this, boost::ref(txn), boost::ref(extNonce)));
+    }
 }
 
 }

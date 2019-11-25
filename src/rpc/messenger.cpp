@@ -24,7 +24,6 @@
 #include <messages/message_utils.h>
 #include <data/retrievedatatxs.h>
 #include <internal_miner.h>
-
 #include <boost/algorithm/string.hpp>
 
 static constexpr size_t maxDataSize=MAX_OP_RETURN_RELAY-6;
@@ -669,12 +668,10 @@ UniValue listmsgsinceblock(const JSONRPCRequest& request)
     return ret;
 }
 
+
 static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned char>& data)
 {
     CMutableTransaction txNew;
-
-//    std::string str = "Moja wiadomość, Treść mojej wiadomości - 123123123123123123123123123123123123123123" + std::to_string(GetTime());
-//    std::vector<unsigned char> data(str.cbegin(), str.cend());
 
     assert((int)data.size() > ENCR_MARKER_SIZE);
     CScript scriptPubKey;
@@ -692,8 +689,12 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
     txNew.vout[0].nValue = 0;
 
     printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
-    internal_miner::mineTransaction(txNew);
-    //TODO: Consider running miner on more than one thread
+    internal_miner::ExtNonce extNonce{};
+    internal_miner::Miner(GetNumCores()).mineTransaction(txNew, extNonce);
+
+    if (extNonce.isSet()) {
+        throw std::runtime_error("Could not mine transaction. Possible shutdown request.");
+    }
 
     CTransactionRef tx = MakeTransactionRef(std::move(txNew));
     assert(!tx->IsCoinBase());
