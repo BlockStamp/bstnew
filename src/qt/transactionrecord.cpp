@@ -148,6 +148,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         else if (wtx.tx->IsMsgTx())
         {
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::Message, "", nNet, 0));
+            parts.last().involvesWatchAddress = involvesWatchAddress;
         }
         else
         {
