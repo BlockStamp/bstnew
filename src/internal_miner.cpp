@@ -126,7 +126,7 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
         txn = inputTxn;
     }
 
-    int64_t nStart = GetTime();
+
     if (txn.vout.size() != 1) {
         return;
     }
@@ -162,8 +162,6 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
                         LogPrintf("InternalMiner:\n");
                         LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
                         LogPrintf("Block height:%u Block hash:%u nonce:%u\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
-                        LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
-
                     }
                     return;
                 }

@@ -690,12 +690,15 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
     txNew.vout[0].nValue = 0;
 
     printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
+    int64_t nStart = GetTime();
     internal_miner::ExtNonce extNonce{};
     internal_miner::Miner(numThreads).mineTransaction(txNew, extNonce);
 
     if (extNonce.isSet()) {
         throw std::runtime_error("Could not mine transaction. Possible shutdown request.");
     }
+
+    LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
 
     CTransactionRef tx = MakeTransactionRef(std::move(txNew));
     assert(!tx->IsCoinBase());

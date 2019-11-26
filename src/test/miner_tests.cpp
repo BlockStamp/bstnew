@@ -666,7 +666,7 @@ BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
     txn.vout[0].nValue = 0;
 
     internal_miner::ExtNonce ext_nonce;
-    internal_miner::Miner(GetNumCores()).mineTransaction(txn, ext_nonce);
+    internal_miner::Miner(1).mineTransaction(txn, ext_nonce);
     BOOST_CHECK_EQUAL(ext_nonce.nonce, 1754);
 
     CTransactionRef tx = MakeTransactionRef(std::move(txn));
