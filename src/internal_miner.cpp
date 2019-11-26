@@ -7,6 +7,7 @@
 
 #include "arith_uint256.h"
 #include "messages/message_encryption.h"
+#include "wallet/wallet.h"
 #include "streams.h"
 #include "timedata.h"
 #include "txmempool.h"
@@ -178,8 +179,13 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
                 return;
             }
 
-            if (extNonce.nonce >= 0xffff0000)
+            if (m_wallet.IsAbortingMsgTxns()) {
+                return;
+            }
+
+            if (extNonce.nonce >= 0xffff0000) {
                 break;
+            }
             if (prevBlock != chainActive.Tip()) {
                 printf("Internal miner: New block detected\n");
                 break;
@@ -241,7 +247,7 @@ bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
     return true;
 }
 
-Miner::Miner(int numThreads) : m_numThreads(numThreads) {
+Miner::Miner(CWallet& pwallet, uint32_t numThreads) : m_wallet(pwallet), m_numThreads(numThreads) {
 }
 
 Miner::~Miner() {
@@ -249,6 +255,8 @@ Miner::~Miner() {
 }
 
 void Miner::mineTransaction(CMutableTransaction& txn, ExtNonce& extNonce) {
+    m_wallet.ResetAbortingMsgTxns();
+
     const uint32_t nonceOffset = std::numeric_limits<uint32_t>::max() / m_numThreads;
     for (uint32_t i=0; i<m_numThreads; ++i) {
         m_minerThreads.create_thread(boost::bind(&Miner::mineTransactionWorker, this, boost::ref(txn), boost::ref(extNonce), i*nonceOffset));

@@ -29,7 +29,7 @@ struct ExtNonce
     uint32_t tip_block_hash;
     uint32_t nonce;
 
-    bool isSet() const {
+    bool isNull() const {
         return tip_block_height == 0 && tip_block_hash == 0 && nonce == 0;
     }
 };
@@ -37,14 +37,15 @@ struct ExtNonce
 bool verifyTransactionHash(const CTransaction &txn, bool checkTxInTip);
 
 class Miner {
+    CWallet& m_wallet;
+    uint32_t m_numThreads;
     boost::mutex m_minerMutex;
     bool m_foundHash = false;
-    int m_numThreads;
     boost::thread_group m_minerThreads;
 
     void mineTransactionWorker(CMutableTransaction& inputTxn, ExtNonce& inputExtNonce, uint32_t nonceStart);
 public:
-    explicit Miner(int numThreads);
+    Miner(CWallet& pwallet, uint32_t numThreads);
     Miner(const Miner&) = delete;
     Miner& operator=(const Miner&) = delete;
     ~Miner();

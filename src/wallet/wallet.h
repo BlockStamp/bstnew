@@ -662,6 +662,9 @@ private:
     std::mutex mutexMsgScanning;
     friend class MessengerRescanReserver;
 
+    std::atomic<bool> fAbortMsgTxns{false};
+    std::atomic<bool> fPendingMsgTxns{false};
+
     WalletBatch *encrypted_batch = nullptr;
     WalletBatch *messenger_encrypted_batch = nullptr;
 
@@ -897,6 +900,10 @@ public:
     void AbortMsgRescan() { fAbortMsgRescan = true; }
     bool IsMsgAbortingRescan() { return fAbortMsgRescan; }
     bool IsMsgScanning() { return fScanningMessenger; }
+
+    void AbortPendingMsgTxns() { fAbortMsgTxns = true; }
+    bool IsAbortingMsgTxns() { return fAbortMsgTxns; }
+    void ResetAbortingMsgTxns() { fAbortMsgTxns = false; }
 
     /**
      * keystore implementation

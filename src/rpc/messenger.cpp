@@ -692,10 +692,11 @@ static CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<un
     printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
     int64_t nStart = GetTime();
     internal_miner::ExtNonce extNonce{};
-    internal_miner::Miner(numThreads).mineTransaction(txNew, extNonce);
+    internal_miner::Miner(*pwallet, numThreads).mineTransaction(txNew, extNonce);
 
-    if (extNonce.isSet()) {
-        throw std::runtime_error("Could not mine transaction. Possible shutdown request.");
+    if (extNonce.isNull()) {
+        LogPrintf("Could not mine transaction. Possible shutdown request or transaction cancelled.\n");
+        return nullptr;
     }
 
     LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
@@ -748,7 +749,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
 
                 "\nExamples:\n"
 
-                + HelpExampleCli("sendmessage", " \"subject\" \"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
+                + HelpExampleCli("createmsgtransaction", " \"subject\" \"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
                                  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
                                  "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
                                  "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
@@ -756,9 +757,9 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                                  "u4abrhiTGJ7dGbkEtppBdZqLirKOWz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVh\n"\
                                  "kW8r13uDYCKOaXLpQjiEWtjoOCU56iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6\n"\
                                  "LQIDAQAB\n"
-                                 "-----END PUBLIC KEY-----\"")
+                                 "-----END PUBLIC KEY-----\" 4")
 
-                + HelpExampleRpc("sendmessage", " \"subject\" \"mystring\"  \"-----BEGIN PUBLIC KEY-----\n"\
+                + HelpExampleRpc("createmsgtransaction", " \"subject\" \"mystring\"  \"-----BEGIN PUBLIC KEY-----\n"\
                                  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
                                  "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
                                  "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
@@ -766,7 +767,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                                  "u4abrhiTGJ7dGbkEtppBdZqLirKOWz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVh\n"\
                                  "kW8r13uDYCKOaXLpQjiEWtjoOCU56iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6\n"\
                                  "LQIDAQAB\n"
-                                 "-----END PUBLIC KEY-----\"")
+                                 "-----END PUBLIC KEY-----\" 4")
     );
 
     // Make sure the results are valid at least up to the most recent block
@@ -816,7 +817,49 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                 public_key.toString().c_str());
 
     CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
+
+    if (!tx) {
+        return "Transaction not mined";
+    }
+
     return tx->GetHash().GetHex();
+}
+
+UniValue cancelmsgtransaction(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() > 0)
+        throw std::runtime_error(
+            "cancelmsgtransaction\n"
+            "\nStops all pending mining message transactions.\n"
+            "\nExamples:\n"
+            "\nStart mining message transaction\n"
+            + HelpExampleCli("createmsgtransaction", " \"subject\" \"mystring\" \"-----BEGIN PUBLIC KEY-----\n"\
+                "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqZSulRpOGFkqG+ohYaGf\n"\
+                "iKhYEmQF/qTg9Mtl6ATsXyLSQ9pIiNQB07lOUEo7vx62U10JoliSbs6xv2v0CcBd\n"\
+                "YsvWJKzuONckyBGqcZHvSKkscDG0luzVg1NPXXrH8MMJfs4u3H3HdRFhbxecDSp4\n"\
+                "QOwquEtyyIcVmSdqgYdmzEm7x4M6jQURuM9xQrVA7aA0cupS4YalgJj1W1npNkru\n"\
+                "u4abrhiTGJ7dGbkEtppBdZqLirKOWz0Z+OK3aZ8HiZaXlDs0VBz+eK+O3m0aIyVh\n"\
+                "kW8r13uDYCKOaXLpQjiEWtjoOCU56iz+j9dtsio56MIe6npipGbFAN0u+JMjY3V6\n"\
+                "LQIDAQAB\n"
+                "-----END PUBLIC KEY-----\" 4") +
+            "\nCancel the transaction that is being mined\n"
+            + HelpExampleCli("cancelmsgtransaction", "") +
+            "\nAs a JSON-RPC call\n"
+            + HelpExampleRpc("cancelmsgtransaction", "")
+        );
+
+    if (pwallet->IsAbortingMsgTxns()) {
+        return false;
+    }
+
+    pwallet->AbortPendingMsgTxns();
+    return true;
 }
 
 
@@ -834,6 +877,7 @@ static const CRPCCommand commands[] =
     { "messenger",         "messengerpassphrasechange",    &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
     { "messenger",         "listmsgsinceblock",            &listmsgsinceblock,         {"blockhash"} },
     { "messenger",         "createmsgtransaction",         &createmsgtransaction,      {"subject", "message", "public_key", "threads"} },
+    { "messenger",         "cancelmsgtransaction",         &cancelmsgtransaction,      {} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)
