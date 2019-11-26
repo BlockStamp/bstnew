@@ -37,31 +37,26 @@ namespace internal_miner
 //
 bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std::vector<unsigned char>& opReturnData)
 {
-    // Write the first 76 bytes of the block header to a double-SHA256 state.
-//    CHash256 hasher;
-//    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-//    ss << txn->GetHash();
-//    hasher.Write((unsigned char*)&ss[0], 76);
-
     while (true)
     {
         ++extNonce.nonce;
 
-        std::memcpy(opReturnData.data()+ENCR_MARKER_SIZE , &extNonce.tip_block_height, sizeof(uint32_t));
-        std::memcpy(opReturnData.data()+ENCR_MARKER_SIZE+4, &extNonce.tip_block_hash, sizeof(uint32_t));
-        std::memcpy(opReturnData.data()+ENCR_MARKER_SIZE+8, &extNonce.nonce, sizeof(uint32_t));
-
-        CScript nScript;
-        nScript << OP_RETURN << opReturnData;
-        txn.vout[0].scriptPubKey = nScript;
+        CScript& txn_script = txn.vout[0].scriptPubKey;
+        auto it = std::search(txn_script.begin(), txn_script.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
+        if (it != txn_script.end())
+        {
+            int extNonceShift = std::distance(txn_script.begin(), it) + ENCR_MARKER_SIZE;
+            if (txn_script.size() >= extNonceShift+sizeof(ExtNonce))
+            {
+                std::memcpy(txn_script.data()+extNonceShift,   &extNonce.tip_block_height, sizeof(uint32_t));
+                std::memcpy(txn_script.data()+extNonceShift+4, &extNonce.tip_block_hash,  sizeof(uint32_t));
+                std::memcpy(txn_script.data()+extNonceShift+8, &extNonce.nonce, sizeof(uint32_t));
+            }
+        }
 
         *phash = txn.GetHash();
 
-        // Write the last 4 bytes of the block header (the nonce) to a copy of
-        // the double-SHA256 state, and compute the result.
-//        CHash256(hasher).Write((unsigned char*)&nNonce, 4).Finalize((unsigned char*)phash);
-
-        // Return the nonce if the hash has at least some zero bits,
+         // Return the nonce if the hash has at least some zero bits,
         // caller will check if it has enough to reach the target
         if (((uint8_t*)phash)[31] == 0x80)
             return true;
