@@ -34,6 +34,8 @@ struct ExtNonce
     }
 };
 
+bool getTxnCost(const CTransaction& txn, CAmount& cost);
+CAmount getMsgFee(const CTransaction& txn);
 bool verifyTransactionHash(const CTransaction &txn, bool checkTxInTip);
 
 class Miner {

@@ -69,7 +69,13 @@ bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std:
     return false;
 }
 
-static bool getTxnCost(const CTransaction& txn, CAmount& cost) {
+CAmount getMsgFee(const CTransaction& txn) {
+    CAmount fee = 0;
+    getTxnCost(txn, fee);
+    return fee*0.5;
+}
+
+bool getTxnCost(const CTransaction& txn, CAmount& cost) {
     const unsigned int txSize = txn.GetTotalSize();
 
     // Msg transaction can have at most 100 characters for subject
@@ -236,7 +242,7 @@ bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
         return false;
     }
     if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
-        std::cout << "\tError: verifyTransactionHash - height not correct " << std::endl;
+        printf("\tError: verifyTransactionHash - height not correct. prevBlock.height:%d, tip_block_height:%u \n", prevBlock->nHeight, extNonce.tip_block_height);
         return false;
     }
     if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {

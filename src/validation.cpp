@@ -2110,7 +2110,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     CCheckQueueControl<CScriptCheck> control(fScriptChecks && nScriptCheckThreads ? &scriptcheckqueue : nullptr);
 
     std::vector<int> prevheights;
-    CAmount nFees = 0;
+    CAmount nFees = 0, nMsgFees = 0;
     int nInputs = 0;
     int64_t nSigOpsCost = 0;
     blockundo.vtxundo.reserve(block.vtx.size() - 1);
@@ -2122,6 +2122,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         CTransaction& tx = const_cast<CTransaction&>(*(block.vtx[i]));
 
         nInputs += tx.vin.size();
+
+        if (tx.IsMsgTx())
+        {
+            nMsgFees += internal_miner::getMsgFee(tx);
+        }
 
         if (!tx.IsCoinBase() && !modulo::ver_2::isGetBetTx(tx) && !tx.IsMsgTx())
         {
@@ -2211,7 +2216,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                          REJECT_INVALID, "bad-txns-accumulated-fee-outofrange");
     }
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
-    if (block.vtx[0]->GetValueOut() > blockReward)
+    if ((block.vtx[0]->GetValueOut() - nMsgFees) > blockReward)
         return state.DoS(100,
                          error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
                                block.vtx[0]->GetValueOut(), blockReward),
