@@ -822,6 +822,11 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
         return "Transaction not mined";
     }
 
+    if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))
+    {
+        LogPrintf("Error while saving history\n");
+    }
+
     return tx->GetHash().GetHex();
 }
 
