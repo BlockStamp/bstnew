@@ -307,7 +307,7 @@ std::string HelpMessageOpt(const std::string& option, const std::string& message
  * @note This does count virtual cores, such as those provided by HyperThreading.
  */
 int GetNumCores();
-
+void SetThreadPriority(int nPriority);
 void RenameThread(const char* name);
 
 /**

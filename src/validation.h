@@ -28,6 +28,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <internal_miner.h>
 
 #include <atomic>
 
@@ -424,8 +425,8 @@ int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out);
 // TODO: Remove when this check is no longer necessary.
 bool CheckDbLockLimit(const std::vector<CTransactionRef>& vtx);
 
-/** Check msg txns in block, if checkTxInTip is true, all msgTxns must include active tip height and hash info */
-bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState &state, bool checkTxInTip);
+/** Check msg txns in block */
+bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState &state, internal_miner::TxPoWCheck powCheck);
 
 /** Context-independent validity checks */
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true, bool fCheckMerkleRoot = true);

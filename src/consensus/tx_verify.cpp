@@ -237,8 +237,8 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
-bool CheckMsgTransaction(const CTransaction& tx, CValidationState& state, bool checkTxInTip) {
-    if (!internal_miner::verifyTransactionHash(tx, checkTxInTip)) {
+bool CheckMsgTransaction(const CTransaction& tx, CValidationState& state, internal_miner::TxPoWCheck powCheck) {
+    if (!internal_miner::verifyTransactionHash(tx, powCheck)) {
         return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn");
     }
 

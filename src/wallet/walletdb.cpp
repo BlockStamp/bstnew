@@ -335,7 +335,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             if (!(CheckTransaction(*wtx.tx, state) && (wtx.GetHash() == hash) && state.IsValid()))
                 return false;
 
-            if (wtx.tx->IsMsgTx() && !(CheckMsgTransaction(*wtx.tx, state, false) && (wtx.GetHash() == hash) && state.IsValid())) {
+            if (wtx.tx->IsMsgTx() && !(CheckMsgTransaction(*wtx.tx, state, internal_miner::TxPoWCheck::FOR_DB) && (wtx.GetHash() == hash) && state.IsValid())) {
                 std::cout << "Error when reading msg_tx: " << wtx.GetHash().ToString() << std::endl;
                 return false;
             }

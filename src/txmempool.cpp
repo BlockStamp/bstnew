@@ -18,6 +18,9 @@
 #include <util.h>
 #include <utilmoneystr.h>
 #include <utiltime.h>
+#include <internal_miner.h>
+
+uint32_t MSG_TXN_ACCEPTED_DEPTH = 6;
 
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                                  int64_t _nTime, unsigned int _entryHeight,
@@ -597,6 +600,33 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
     }
     lastRollingFeeUpdate = GetTime();
     blockSinceLastRollingFeeBump = true;
+}
+
+//TODO: Review this implementation
+void CTxMemPool::removeTooOldMsgTxns(uint32_t newTipHeight)
+{
+    LOCK(cs);
+    internal_miner::ExtNonce extNonce{};
+
+    const uint32_t minAcceptedHeight =
+        (newTipHeight > MSG_TXN_ACCEPTED_DEPTH) ? (newTipHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+
+    std::vector<txiter> remove;
+    for (auto it = mapTx.begin(); it != mapTx.end(); ++it) {
+        const CTransaction& txn = *it->tx;
+        if (txn.IsMsgTx() && (!readExtNonce(txn, extNonce) || extNonce.tip_block_height < minAcceptedHeight)) {
+            std::cout << "\tTx " << txn.GetHash().ToString() << " will be removed "
+                      << " (extNonce.tip_block_height < minAcceptedHeight) "
+                      << extNonce.tip_block_height << " < " << minAcceptedHeight << std::endl;
+            remove.push_back(it);
+        }
+    }
+
+    for (const auto& it : remove) {
+        std::cout << "\tRemoving txn: " << it->tx->GetHash().ToString() << std::endl;
+        removeUnchecked(it, MemPoolRemovalReason::MSG_TX_EXPIRED);
+    }
 }
 
 void CTxMemPool::_clear()

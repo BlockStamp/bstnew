@@ -24,7 +24,6 @@ using namespace std;
 namespace internal_miner
 {
 
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // BitcoinMiner
@@ -120,8 +119,96 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
     return true;
 }
 
+bool readExtNonce(const CTransaction& txn, ExtNonce& extNonce)
+{
+    //TODO: there should be a faster way of getting tx height
+    std::vector<char> opReturn = txn.loadOpReturn();
+
+    const uint32_t minSize = ENCR_MARKER_SIZE + 3 * sizeof(uint32_t);
+    if (opReturn.size() < minSize)
+        return false;
+
+    std::memcpy(&extNonce.tip_block_height, opReturn.data()+ENCR_MARKER_SIZE, sizeof(uint32_t));
+    std::memcpy(&extNonce.tip_block_hash, opReturn.data()+ENCR_MARKER_SIZE+4, sizeof(uint32_t));
+    std::memcpy(&extNonce.nonce, opReturn.data()+ENCR_MARKER_SIZE+8, sizeof(uint32_t));
+    return true;
+}
+
+bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
+{
+    if (!txn.IsMsgTx()) {
+        LogPrintf("Error: proof-of-work verification failed, non message transaction\n");
+        return false;
+    }
+
+    ExtNonce extNonce;
+    if (!readExtNonce(txn, extNonce)) {
+        std::cout << "Could not read extNonce\n";
+        return false;
+    }
+
+    CBlockIndex* prevBlock = chainActive[extNonce.tip_block_height];
+    if (!prevBlock) {
+        std::cout << "Error: verifyTransactionHash - prevBlock is null\n";
+        return false;
+    }
+
+    arith_uint256 hashTarget;
+    if (!getTarget(txn, prevBlock, hashTarget)) {
+        LogPrintf("proof-of-work verification failed, could not calculate target\n");
+        return false;
+    }
+
+    uint256 hash = txn.GetHash();
+    LogPrintf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+    LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", extNonce.tip_block_hash, extNonce.tip_block_height);
+    LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
+
+    if (((uint8_t*)&hash)[31] != 0x80) {
+        std::cout << "\tError: verifyTransactionHash - hash does not start with 0x80" << std::endl;
+        return false;
+    }
+    if (UintToArith256(hash) > hashTarget) {
+        std::cout << "\tError: verifyTransactionHash - hash > hashTarget " << std::endl;
+        return false;
+    }
+    if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
+        printf("\tError: verifyTransactionHash - height not correct. prevBlock.height:%d, tip_block_height:%u \n", prevBlock->nHeight, extNonce.tip_block_height);
+        return false;
+    }
+    if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {
+        std::cout << "\tError: verifyTransactionHash - hash part not correct " << std::endl;
+        return false;
+    }
+
+    // When verifying txn in mempool or block, check txn was added during the last 6 blocks
+    if (powCheck == FOR_BLOCK || powCheck == FOR_MEMPOOL ) {
+        //TODO: Check if depth of 6 is correct for all places this function is called
+        const uint32_t currHeight = chainActive.Height();
+        const uint32_t minAcceptedHeight =
+            (currHeight > MSG_TXN_ACCEPTED_DEPTH) ? (currHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+        if (extNonce.tip_block_height < minAcceptedHeight) {
+            std::cout << "\tError: verifyTransactionHash - failed - TXN TOO OLD!!!!" << std::endl;
+            return false;
+        }
+    }
+
+    //Additionally, when verifying txn in block, check if this txn wasn't added during the last 6 blocks
+    if (powCheck == FOR_BLOCK) {
+        //TODO: Add checks for replay attack
+    }
+
+    return true;
+}
+
+
+
 void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner::ExtNonce& inputExtNonce, uint32_t nonceStart)
 {
+    SetThreadPriority(THREAD_PRIORITY_LOWEST);
+    RenameThread("bst-msg-txn-miner");
+
     CMutableTransaction txn;
     {
         boost::lock_guard<boost::mutex> lock(m_minerMutex);
@@ -198,59 +285,6 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
             }
         }
     }
-}
-
-bool verifyTransactionHash(const CTransaction& txn, bool checkTxInTip)
-{
-    if (!txn.IsMsgTx()) {
-        LogPrintf("Error: proof-of-work verification failed, non message transaction\n");
-        return false;
-    }
-
-    uint256 hash = txn.GetHash();
-    std::vector<char> opReturn = txn.loadOpReturn();
-
-    assert(opReturn.size() >= (unsigned int)(ENCR_MARKER_SIZE + 12));
-
-    ExtNonce extNonce;
-    std::memcpy(&extNonce.tip_block_height, opReturn.data()+ENCR_MARKER_SIZE, sizeof(uint32_t));
-    std::memcpy(&extNonce.tip_block_hash, opReturn.data()+ENCR_MARKER_SIZE+4, sizeof(uint32_t));
-    std::memcpy(&extNonce.nonce, opReturn.data()+ENCR_MARKER_SIZE+8, sizeof(uint32_t));
-
-    CBlockIndex *prevBlock = checkTxInTip ? chainActive.Tip() : chainActive[extNonce.tip_block_height];
-    if (!prevBlock) {
-        std::cout << "Error: verifyTransactionHash - prevBlock is null\n";
-        return false;
-    }
-
-    arith_uint256 hashTarget;
-    if (!getTarget(txn, prevBlock, hashTarget)) {
-        LogPrintf("proof-of-work verification failed, could not calculate target\n");
-        return false;
-    }
-
-    LogPrintf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-    LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", extNonce.tip_block_hash, extNonce.tip_block_height);
-    LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
-
-    if (((uint8_t*)&hash)[31] != 0x80) {
-        std::cout << "\tError: verifyTransactionHash - hash does not start with 0x80" << std::endl;
-        return false;
-    }
-    if (UintToArith256(hash) > hashTarget) {
-        std::cout << "\tError: verifyTransactionHash - hash > hashTarget " << std::endl;
-        return false;
-    }
-    if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
-        printf("\tError: verifyTransactionHash - height not correct. prevBlock.height:%d, tip_block_height:%u \n", prevBlock->nHeight, extNonce.tip_block_height);
-        return false;
-    }
-    if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {
-        std::cout << "\tError: verifyTransactionHash - hash part not correct " << std::endl;
-        return false;
-    }
-
-    return true;
 }
 
 Miner::Miner(CWallet& pwallet, uint32_t numThreads) : m_wallet(pwallet), m_numThreads(numThreads) {

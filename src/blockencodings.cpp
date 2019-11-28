@@ -208,7 +208,7 @@ ReadStatus PartiallyDownloadedBlock::FillBlock(CBlock& block, const std::vector<
     }
 
     //TODO: Remove unnecessary debug prints - couts and logs that don't inform about errors
-    if (!CheckMsgTxnsInBlock(block, state, true)) {
+    if (!CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK)) {
         std::cout << "CheckMsgTxnsInBlock ERROR in FillBlock\n";
         return READ_STATUS_CHECKBLOCK_FAILED;
     }

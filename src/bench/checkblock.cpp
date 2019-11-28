@@ -52,7 +52,7 @@ static void DeserializeAndCheckBlockTest(benchmark::State& state)
         CValidationState validationState;
         bool checked = CheckBlock(block, validationState, chainParams->GetConsensus());
         assert(checked);
-        checked = CheckMsgTxnsInBlock(block, validationState, false);
+        checked = CheckMsgTxnsInBlock(block, validationState, internal_miner::TxPoWCheck::FOR_DB);
         assert(checked);
     }
 }

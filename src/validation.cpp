@@ -573,7 +573,8 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return false; // state filled in by CheckTransaction
     }
 
-    if (tx.IsMsgTx() && !CheckMsgTransaction(tx, state, true)) {
+    //TODO: Check if we can accept txn to mempool that was not created in last block
+    if (tx.IsMsgTx() && !CheckMsgTransaction(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
         std::cout << "MSG TX: " << tx.GetHash().ToString() << ", VERIFICATION FAILED\n";
         return false; // state filled in by CheckMsgTransaction
     }
@@ -1948,7 +1949,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     }
 
-    if (!CheckMsgTxnsInBlock(block, state, true)) {
+    if (!CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK)) {
         std::cout << "CheckMsgTxnsInBlock failed in ConnectBlock\n";
         return error("%s: Consensus::CheckMsgTxnsInBlock: %s", __func__, FormatStateMessage(state));
     }
@@ -2663,6 +2664,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     // Remove conflicting transactions from the mempool.;
     mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
     mempool.removeExpireConflicts(expiredNames);
+    mempool.removeTooOldMsgTxns(pindexNew->nHeight);
     disconnectpool.removeForBlock(blockConnecting.vtx);
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
@@ -3316,9 +3318,9 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     return true;
 }
 
-bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, bool checkTxInTip) {
+bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, internal_miner::TxPoWCheck powCheck) {
     for (const CTransactionRef& txn : block.vtx) {
-        if (txn->IsMsgTx() && !internal_miner::verifyTransactionHash(*txn, checkTxInTip)) {
+        if (txn->IsMsgTx() && !internal_miner::verifyTransactionHash(*txn, powCheck)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn", false, "failed to verify hash of message transaction");
         }
     }
@@ -3798,7 +3800,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     }
 
     if (!CheckBlock(block, state, chainparams.GetConsensus()) ||
-        !CheckMsgTxnsInBlock(block, state, true) ||
+        !CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK) ||
         !ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev)) {
         std::cout << "CheckMsgTxnsInBlock probably failed in AcceptBlock\n";
 
@@ -3846,7 +3848,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         bool ret = CheckBlock(*pblock, state, chainparams.GetConsensus());
 
         if (ret) {
-            ret = CheckMsgTxnsInBlock(*pblock, state, true);
+            ret = CheckMsgTxnsInBlock(*pblock, state, internal_miner::TxPoWCheck::FOR_BLOCK);
             if (!ret)
                 std::cout << "CheckMsgTxnsInBlock failed in ProcessNewBlock\n";
         }
@@ -3896,7 +3898,8 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
         std::cout << "CheckBlock ERROR" << std::endl;
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     }
-    if (!CheckMsgTxnsInBlock(block, state, true)) {
+    //TODO: should this function be called with FOR_BLOCK?
+    if (!CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK)) {
         std::cout << "CheckMsgTxnsInBlock ERROR in TestBlockValidity" << std::endl;
         return error("%s: Consensus::CheckMsgTxnsInBlock: %s", __func__, FormatStateMessage(state));
     }
@@ -4345,7 +4348,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
                          pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
         }
 
-        if (nCheckLevel >= 1 && !CheckMsgTxnsInBlock(block, state, false)) {
+        if (nCheckLevel >= 1 && !CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_DB)) {
             return error("%s: *** found bad block at %d, hash=%s (%s)\n", __func__,
                 pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
         }

@@ -674,7 +674,7 @@ BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
 
     CTransactionRef tx = MakeTransactionRef(std::move(txn));
 
-    bool rv = internal_miner::verifyTransactionHash(*tx, true);
+    bool rv = internal_miner::verifyTransactionHash(*tx, internal_miner::TxPoWCheck::FOR_MEMPOOL);
     BOOST_CHECK(rv);
 }
 

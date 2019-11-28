@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <internal_miner.h>
 
 class CBlockIndex;
 class CCoinsViewCache;
@@ -19,8 +20,7 @@ class CValidationState;
 
 /** Context-independent validity checks */
 bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fCheckDuplicateInputs=true);
-
-bool CheckMsgTransaction(const CTransaction& tx, CValidationState& state, bool checkTxInTip);
+bool CheckMsgTransaction(const CTransaction& tx, CValidationState& state, internal_miner::TxPoWCheck powCheck);
 
 namespace Consensus {
 /**

@@ -23,6 +23,12 @@ class CWallet;
 
 namespace internal_miner
 {
+enum TxPoWCheck {
+    FOR_BLOCK,      // checks performed to verify txn in new block
+    FOR_MEMPOOL,    // checks performed to verify if txn should remain in mempool or be discarded
+    FOR_DB          // checks if hash and height in txn match, e.g. used in verify db
+};
+
 struct ExtNonce
 {
     uint32_t tip_block_height;
@@ -36,7 +42,8 @@ struct ExtNonce
 
 bool getTxnCost(const CTransaction& txn, CAmount& cost);
 CAmount getMsgFee(const CTransaction& txn);
-bool verifyTransactionHash(const CTransaction &txn, bool checkTxInTip);
+bool verifyTransactionHash(const CTransaction &txn, TxPoWCheck powCheck);
+bool readExtNonce(const CTransaction& txn, ExtNonce& extNonce);
 
 class Miner {
     CWallet& m_wallet;
