@@ -742,7 +742,6 @@ void MessengerPage::send()
 
 void MessengerPage::on_sendByMining_clicked()
 {
-    printf("Before send thread\n");
     const std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
     if (!confirmWindow(0, toAddress))
     {
@@ -751,7 +750,6 @@ void MessengerPage::on_sendByMining_clicked()
 
     boost::thread t(boost::bind(&MessengerPage::sendByMining, this));
     unlockUISending();
-    printf("After send thread\n");
 }
 
 void MessengerPage::lockUISending()
@@ -816,8 +814,8 @@ void MessengerPage::sendByMining()
                     lockUISending();
                 }
 
-                //TODO: num of threads
-                CTransactionRef tx = CreateMsgTx(pwallet, data, 2);
+                const int numThreads = gArgs.GetArg("-msgminingthreads", DEFAULT_MINING_THREADS);
+                CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
 
                 if (!tx) {
                     throw std::runtime_error("Transaction not mined");

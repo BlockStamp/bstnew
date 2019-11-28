@@ -371,6 +371,7 @@ void SetupServerArgs()
     gArgs.AddArg("-txindex", strprintf("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)", DEFAULT_TXINDEX), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-namehistory", strprintf("Keep track of the full name history (default: %u)", 0), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-txdata", strprintf("Save data of every transaction (stored as OP_RETURN) in database (default: %u)", DEFAULT_TXDATA), false, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-msgminingthreads=<n>", strprintf("Set number of threads for sending message by minning (default: %u)", DEFAULT_MINING_THREADS), false, OptionsCategory::OPTIONS);
 
     gArgs.AddArg("-addnode=<ip>", "Add a node to connect to and attempt to keep the connection open (see the `addnode` RPC command help for more info). This option can be specified multiple times to add multiple nodes.", false, OptionsCategory::CONNECTION);
     gArgs.AddArg("-banscore=<n>", strprintf("Threshold for disconnecting misbehaving peers (default: %u)", DEFAULT_BANSCORE_THRESHOLD), false, OptionsCategory::CONNECTION);

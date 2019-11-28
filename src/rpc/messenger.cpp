@@ -739,8 +739,11 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
     const std::string subject = request.params[0].get_str();
     const std::string message = request.params[1].get_str();
     const std::string toAddress = request.params[2].get_str();
-    const int numThreads = request.params[3].isNull() ?
-        1 : std::min(request.params[3].get_int(), GetNumCores());
+    int numThreads = gArgs.GetArg("-msgminingthreads", DEFAULT_MINING_THREADS);
+    if (!request.params[3].isNull())
+    {
+        numThreads = request.params[3].get_int();
+    }
 
     const std::string signature = signMessage(rsaPrivateKey.toString(), fromAddress);
 
