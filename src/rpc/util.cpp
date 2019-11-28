@@ -17,6 +17,8 @@
 #include <validation.h>
 #include <net.h>
 #include <wallet/rpcwallet.h>
+#include <messages/message_encryption.h>
+#include <internal_miner.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -223,3 +225,54 @@ UniValue setOPreturnData(const std::vector<unsigned char>& data, CCoinControl& c
     std::string txid=tx->GetHash().GetHex();
     return UniValue(UniValue::VSTR, txid);
 }
+
+CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned char>& data, int numThreads)
+{
+    CMutableTransaction txNew;
+
+    assert((int)data.size() > ENCR_MARKER_SIZE);
+    CScript scriptPubKey;
+    std::vector<unsigned char> extData;
+    extData.insert(extData.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
+    extData.insert(extData.end(), 12, 0); // placehoder for additional data info (block and nonce).
+    extData.insert(extData.end(), data.begin() + ENCR_MARKER_SIZE, data.end()); // skip default ENCR_MARKER tag (already added).
+    scriptPubKey << OP_RETURN << extData;
+
+    txNew.vin.resize(1);
+    txNew.vin[0].prevout.SetMsg();
+
+    txNew.vout.resize(1);
+    txNew.vout[0].scriptPubKey = scriptPubKey;
+    txNew.vout[0].nValue = 0;
+
+    printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
+    int64_t nStart = GetTime();
+    internal_miner::ExtNonce extNonce{};
+    internal_miner::Miner(*pwallet, numThreads).mineTransaction(txNew, extNonce);
+
+    if (extNonce.isNull()) {
+        LogPrintf("Could not mine transaction. Possible shutdown request or transaction cancelled.\n");
+        return nullptr;
+    }
+
+    LogPrintf("\nDuration: %ld seconds\n\n", GetTime() - nStart);
+
+    CTransactionRef tx = MakeTransactionRef(std::move(txNew));
+    assert(!tx->IsCoinBase());
+    assert(tx->IsMsgTx());
+
+//    if (!pwallet->CreateTransaction(/*vecSend, withInput,*/ tx/*, reservekey, nFeeRequired, nChangePosRet, strError, coin_control*/)) {
+//        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
+//            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
+//        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+//    }
+    CReserveKey reservekey(pwallet);
+
+    CValidationState state;
+    if (!pwallet->CommitTransaction(tx, {}, {}, reservekey, g_connman.get(), state)) {
+        std::string strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    return tx;
+}
+

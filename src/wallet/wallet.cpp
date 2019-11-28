@@ -1282,8 +1282,6 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
         opReturn.erase(opReturn.begin(), opReturn.begin() + ENCR_MARKER_SIZE + (3 * sizeof(uint32_t)));
         // replace ENCR_MARKER text
         opReturn.insert(opReturn.begin(), ENCR_MARKER.begin(), ENCR_MARKER.end());
-    } else {
-        return;
     }
 
     CMessengerKey privateRsaKey, publicRsaKey;

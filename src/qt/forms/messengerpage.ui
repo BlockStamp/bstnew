@@ -1221,6 +1221,19 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="sendWithMining">
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Send by Mining</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="sendHistoryButton">
            <property name="minimumSize">
             <size>

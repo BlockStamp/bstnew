@@ -53,6 +53,8 @@
 #include <array>
 #include <vector>
 
+#include <boost/thread.hpp>
+
 static const std::array<int, 9> confTargets = { {2, 4, 6, 12, 24, 48, 144, 504, 1008} };
 extern int getConfTargetForIndex(int index);
 extern int getIndexForConfTarget(int target);
@@ -145,6 +147,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->fromLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
+    connect(ui->sendWithMining, SIGNAL(clicked()), this, SLOT(on_sendByMining_clicked()));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
     connect(ui->transactionTable, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(on_transactionTableContextMenuRequest(QPoint)));
@@ -737,6 +740,116 @@ void MessengerPage::send()
 #endif
 }
 
+void MessengerPage::on_sendByMining_clicked()
+{
+    printf("Before send thread\n");
+    const std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
+    if (!confirmWindow(0, toAddress))
+    {
+        return;
+    }
+
+    boost::thread t(boost::bind(&MessengerPage::sendByMining, this));
+    unlockUISending();
+    printf("After send thread\n");
+}
+
+void MessengerPage::lockUISending()
+{
+    ui->sendWithMining->setText(tr("Mining..."));
+    ui->sendWithMining->setEnabled(false);
+}
+
+void MessengerPage::unlockUISending()
+{
+    ui->sendWithMining->setEnabled(true);
+    ui->sendWithMining->setText(tr("Send by Mining"));
+}
+
+void MessengerPage::sendByMining()
+{
+#ifdef ENABLE_WALLET
+    if (walletModel)
+    {
+        try
+        {
+            interfaces::Wallet& wlt = walletModel->wallet();
+            std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
+            if(wallet != nullptr)
+            {
+                CWallet* const pwallet=wallet.get();
+
+                pwallet->BlockUntilSyncedToCurrentChain();
+
+                std::string fromAddress, toAddress, subject, message, signature;
+                std::vector<unsigned char> data;
+
+                {
+                    LOCK2(cs_main, pwallet->cs_wallet);
+
+                    WalletModel::MessengerUnlockContext msgCtx(walletModel->requestMessengerUnlock());
+                    if (!msgCtx.isValid())
+                    {
+                        return;
+                    }
+
+                    CMessengerKey privateRsaKey, publicRsaKey;
+                    if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
+                    {
+                        return;
+                    }
+
+                    fromAddress = publicRsaKey.toString();
+                    toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
+                    subject = ui->subjectEdit->text().toUtf8().constData();
+                    message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+
+                    const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
+
+                    data = createData(
+                    fromAddress,
+                    toAddress,
+                    subject,
+                    message,
+                    signature);
+
+                    lockUISending();
+                }
+
+                //TODO: num of threads
+                CTransactionRef tx = CreateMsgTx(pwallet, data, 2);
+
+                if (!tx) {
+                    throw std::runtime_error("Transaction not mined");
+                }
+
+                if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))
+                {
+                    LogPrintf("Error while saving history\n");
+                }
+            }
+            else
+            {
+                throw std::runtime_error(std::string("No wallet found"));
+            }
+        }
+        catch(std::exception const& e)
+        {
+            QMessageBox msgBox;
+            msgBox.setText(e.what());
+            msgBox.exec();
+        }
+        catch(...)
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Unknown exception occured");
+            msgBox.exec();
+        }
+    }
+    unlockUISending();
+#endif
+}
+
 std::vector<unsigned char> MessengerPage::createData(
     const std::string& fromAddress,
     const std::string& toAddress,
@@ -931,6 +1044,13 @@ bool MessengerPage::confirmWindow(const CAmount totalAmount, const std::string& 
         .arg(BitcoinUnits::formatHtmlWithUnit(walletModel->getOptionsModel()->getDisplayUnit(), totalAmount)));
     questionString.append(QString("<br /><span style='font-size:10pt; font-weight:normal;'>(=%1)</span>")
         .arg(alternativeUnits.join(" " + tr("or") + " ")));
+
+    if (totalAmount == 0) // send by mining
+    {
+        questionString.append("<hr /><span style='font-size:10pt;'>");
+        questionString.append(tr("Message is totally free but user node will have to mine the transaction which can take a few minutes, depends on a computer performance."));
+        questionString.append("</span><br />");
+    }
 
     SendConfirmationDialog confirmDialog(tr("Confirm send message"),
         questionString, SEND_CONFIRM_DELAY, this);
