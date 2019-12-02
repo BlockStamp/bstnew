@@ -16,6 +16,7 @@
 #include "pow.h"
 #include "chainparams.h"
 #include "shutdown.h"
+#include "chain.h"
 
 #include <boost/thread.hpp>
 
@@ -35,6 +36,55 @@ namespace internal_miner
 // nonce is 0xffff0000 or above, the block is rebuilt and nNonce starts over at
 // zero.
 //
+
+bool RecentMsgTxnsCache::CheckMsgTransaction(const uint256& txn) const {
+    return m_recentMsgTxns.find(txn) == m_recentMsgTxns.end();
+}
+
+bool RecentMsgTxnsCache::LoadRecentMsgTxns(const CChain& pchainActive) {
+    AssertLockHeld(cs_main);
+    const int lastToReadHeight = (pchainActive.Height() > MSG_TXN_ACCEPTED_DEPTH) ? (pchainActive.Height() - MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+    for (int height=pchainActive.Height(); height > lastToReadHeight; --height){
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pchainActive[height], Params().GetConsensus())) {
+            std::cout << "Failed to read block in loadRecentMsgTxns!!!\n";
+            return false;
+        }
+
+        for (const CTransactionRef& txn : block.vtx) {
+            if (txn->IsMsgTx()) {
+                m_recentMsgTxns.insert({txn->GetHash(), height});
+            }
+        }
+    }
+
+    return true;
+}
+
+void RecentMsgTxnsCache::UpdateMsgTxns(std::vector<CTransactionRef> txns, const CChain& pchainActive) {
+    AssertLockHeld(cs_main);
+    const int lastToReadHeight = (pchainActive.Height() > MSG_TXN_ACCEPTED_DEPTH) ? (pchainActive.Height() - MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+    //Remove too old msg transactions
+    auto it = m_recentMsgTxns.begin();
+    while (it != m_recentMsgTxns.end()) {
+        if (it->second <= lastToReadHeight) {
+            it = m_recentMsgTxns.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    //Add msg transactions from a new block
+    for (const CTransactionRef& txn : txns) {
+        if (txn->IsMsgTx()) {
+            m_recentMsgTxns.insert({txn->GetHash(), pchainActive.Height()});
+        }
+    }
+}
+
 bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std::vector<unsigned char>& opReturnData)
 {
     while (true)
@@ -182,21 +232,22 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
     }
 
     // When verifying txn in mempool or block, check txn was added during the last 6 blocks
-    if (powCheck == FOR_BLOCK || powCheck == FOR_MEMPOOL ) {
+    // and is not already added to blockchain
+    if (powCheck == FOR_BLOCK || powCheck == FOR_MEMPOOL) {
         //TODO: Check if depth of 6 is correct for all places this function is called
         const uint32_t currHeight = chainActive.Height();
         const uint32_t minAcceptedHeight =
             (currHeight > MSG_TXN_ACCEPTED_DEPTH) ? (currHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;
 
         if (extNonce.tip_block_height < minAcceptedHeight) {
-            std::cout << "\tError: verifyTransactionHash - failed - TXN TOO OLD!!!!" << std::endl;
+            std::cout << "\tTxn " << txn.GetHash().ToString() << " too old!!!!\n";
             return false;
         }
-    }
 
-    //Additionally, when verifying txn in block, check if this txn wasn't added during the last 6 blocks
-    if (powCheck == FOR_BLOCK) {
-        //TODO: Add checks for replay attack
+        if (!precentMsgTxnCache->CheckMsgTransaction(txn.GetHash())) {
+            std::cout << "\t!!!!Txn " << txn.GetHash().ToString() << " among recent transactions!!!!\n";
+            return false;
+        }
     }
 
     return true;

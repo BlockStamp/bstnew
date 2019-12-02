@@ -31,7 +31,7 @@
 
 class CBlockIndex;
 extern CCriticalSection cs_main;
-extern uint32_t MSG_TXN_ACCEPTED_DEPTH;
+extern const int MSG_TXN_ACCEPTED_DEPTH;
 
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
 static const uint32_t MEMPOOL_HEIGHT = 0x7FFFFFFF;
@@ -586,7 +586,7 @@ public:
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     void removeConflicts(const CTransaction &tx) EXCLUSIVE_LOCKS_REQUIRED(cs);
     void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight);
-    void removeTooOldMsgTxns(uint32_t newTipHeight);
+    void removeTooOldMsgTxns(int newTipHeight);
 
     void clear();
     void _clear() EXCLUSIVE_LOCKS_REQUIRED(cs); //lock free

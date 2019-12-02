@@ -3506,11 +3506,11 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
         {
             // Broadcast
             if (!wtx.AcceptToMemoryPool(maxTxFee, state)) {
-                std::cout << "Not accepted to mempool in CommitTransaction" << std::endl;
+                std::cout << GetTime() << "Not accepted to mempool in CommitTransaction" << std::endl;
                 WalletLogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", FormatStateMessage(state));
                 // TODO: if we expect the failure to be long term or permanent, instead delete wtx from the wallet and return failure.
             } else {
-                std::cout << "Accepted to mempool" << std::endl;
+                std::cout << GetTime() << "Accepted to mempool" << std::endl;
                 wtx.RelayWalletTransaction(connman);
             }
         }

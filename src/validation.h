@@ -491,8 +491,6 @@ bool InvalidateBlock(CValidationState& state, const CChainParams& chainparams, C
 /** Remove invalidity status from a block and its descendants. */
 void ResetBlockFailureFlags(CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
-extern std::vector<CTransaction>& makeBets;
-
 /** The currently-connected chain of blocks (protected by cs_main). */
 extern CChain& chainActive;
 
@@ -504,6 +502,9 @@ extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern std::unique_ptr<CBlockTreeDB> pblocktree;
+
+/** Global variable that stores msg txn hashes of recent blocks (protected by cs_main) */
+extern std::unique_ptr<internal_miner::RecentMsgTxnsCache> precentMsgTxnCache;
 
 /**
  * Return the spend height, which is one more than the inputs.GetBestBlock().

@@ -47,6 +47,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 #include <walletinitinterface.h>
+#include <internal_miner.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -1456,6 +1457,8 @@ bool AppInitMain()
                 pblocktree.reset();
                 pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, false, fReset));
 
+                precentMsgTxnCache.reset(new internal_miner::RecentMsgTxnsCache());
+
                 if (fReset) {
                     pblocktree->WriteReindexing(true);
                     //If we're reindexing in prune mode, wipe away unusable block files and all undo data files
@@ -1596,6 +1599,12 @@ bool AppInitMain()
                 return InitError(strLoadError);
             }
         }
+
+        if (!precentMsgTxnCache->LoadRecentMsgTxns(chainActive)) {
+            LogPrintf("Failed to load recent message transactions. Exiting.\n");
+            return false;
+        }
+        precentMsgTxnCache->print();
     }
 
     // As LoadBlockIndex can take several minutes, it's possible the user

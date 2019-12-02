@@ -295,6 +295,7 @@ CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& loc
 std::unique_ptr<CCoinsViewDB> pcoinsdbview;
 std::unique_ptr<CCoinsViewCache> pcoinsTip;
 std::unique_ptr<CBlockTreeDB> pblocktree;
+std::unique_ptr<internal_miner::RecentMsgTxnsCache> precentMsgTxnCache;
 
 enum class FlushStateMode {
     NONE,
@@ -2662,6 +2663,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     int64_t nTime5 = GetTimeMicros(); nTimeChainState += nTime5 - nTime4;
     LogPrint(BCLog::BENCH, "  - Writing chainstate: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime5 - nTime4) * MILLI, nTimeChainState * MICRO, nTimeChainState * MILLI / nBlocksTotal);
     // Remove conflicting transactions from the mempool.;
+    //TODO: Check if cs_main is locked
     mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight);
     mempool.removeExpireConflicts(expiredNames);
     mempool.removeTooOldMsgTxns(pindexNew->nHeight);
@@ -2669,6 +2671,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
     UpdateTip(pindexNew, chainparams);
+    precentMsgTxnCache->UpdateMsgTxns(blockConnecting.vtx, chainActive);
     CheckNameDB (false);
 
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
@@ -3319,6 +3322,7 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
 }
 
 bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, internal_miner::TxPoWCheck powCheck) {
+    //TODO: Should there be a check for txn uniqueness?
     for (const CTransactionRef& txn : block.vtx) {
         if (txn->IsMsgTx() && !internal_miner::verifyTransactionHash(*txn, powCheck)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn", false, "failed to verify hash of message transaction");

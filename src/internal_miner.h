@@ -9,6 +9,7 @@
 #include "primitives/block.h"
 
 #include <stdint.h>
+#include <map>
 #include <txmempool.h>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -20,9 +21,11 @@ class CChainParams;
 class CReserveKey;
 class CScript;
 class CWallet;
+class CChain;
 
 namespace internal_miner
 {
+
 enum TxPoWCheck {
     FOR_BLOCK,      // checks performed to verify txn in new block
     FOR_MEMPOOL,    // checks performed to verify if txn should remain in mempool or be discarded
@@ -44,6 +47,28 @@ bool getTxnCost(const CTransaction& txn, CAmount& cost);
 CAmount getMsgFee(const CTransaction& txn);
 bool verifyTransactionHash(const CTransaction &txn, TxPoWCheck powCheck);
 bool readExtNonce(const CTransaction& txn, ExtNonce& extNonce);
+
+class RecentMsgTxnsCache {
+    std::map<uint256, int> m_recentMsgTxns;
+public:
+    RecentMsgTxnsCache() {
+    }
+    ~RecentMsgTxnsCache() {
+    }
+    RecentMsgTxnsCache(const RecentMsgTxnsCache&) = delete;
+    RecentMsgTxnsCache& operator=(const RecentMsgTxnsCache&) = delete;
+
+    bool CheckMsgTransaction(const uint256& txn) const;
+    bool LoadRecentMsgTxns(const CChain& pchainActive);
+    void UpdateMsgTxns(std::vector<CTransactionRef> txns, const CChain& pchainActive);
+    void print() const {
+        std::cout << "\n\nPrinting RecentMsgTxnsCache:\n";
+        for (const auto& txn : m_recentMsgTxns) {
+            std::cout << "\t" << txn.first.ToString() << ", " << txn.second << std::endl;
+        }
+        std::cout << std::endl;
+    }
+};
 
 class Miner {
     CWallet& m_wallet;

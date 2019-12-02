@@ -20,7 +20,7 @@
 #include <utiltime.h>
 #include <internal_miner.h>
 
-uint32_t MSG_TXN_ACCEPTED_DEPTH = 6;
+const int MSG_TXN_ACCEPTED_DEPTH = 6;
 
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                                  int64_t _nTime, unsigned int _entryHeight,
@@ -513,6 +513,7 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx, MemPoolRemovalReaso
     }
 }
 
+//TODO: check what to do with msg txns when reorg happens
 void CTxMemPool::removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags)
 {
     // Remove transactions spending a coinbase which are now immature and no-longer-final transactions
@@ -603,7 +604,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
 }
 
 //TODO: Review this implementation
-void CTxMemPool::removeTooOldMsgTxns(uint32_t newTipHeight)
+void CTxMemPool::removeTooOldMsgTxns(int newTipHeight)
 {
     LOCK(cs);
     internal_miner::ExtNonce extNonce{};
