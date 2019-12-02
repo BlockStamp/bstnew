@@ -69,7 +69,7 @@ void RecentMsgTxnsCache::UpdateMsgTxns(std::vector<CTransactionRef> txns, const 
     //Remove too old msg transactions
     auto it = m_recentMsgTxns.begin();
     while (it != m_recentMsgTxns.end()) {
-        if (it->second <= lastToReadHeight) {
+        if (it->second < lastToReadHeight) {
             it = m_recentMsgTxns.erase(it);
         }
         else {
@@ -215,23 +215,24 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
 
     if (((uint8_t*)&hash)[31] != 0x80) {
-        std::cout << "\tError: verifyTransactionHash - hash does not start with 0x80" << std::endl;
+        std::cout << "Error: verifyTransactionHash - hash does not start with 0x80" << std::endl;
         return false;
     }
     if (UintToArith256(hash) > hashTarget) {
-        std::cout << "\tError: verifyTransactionHash - hash > hashTarget " << std::endl;
+        std::cout << "Error: verifyTransactionHash - hash > hashTarget " << std::endl;
         return false;
     }
     if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
-        printf("\tError: verifyTransactionHash - height not correct. prevBlock.height:%d, tip_block_height:%u \n", prevBlock->nHeight, extNonce.tip_block_height);
+        printf("Error: verifyTransactionHash - height not correct. prevBlock.height:%d, tip_block_height:%u \n", prevBlock->nHeight, extNonce.tip_block_height);
         return false;
     }
     if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {
-        std::cout << "\tError: verifyTransactionHash - hash part not correct " << std::endl;
+        std::cout << "Error: verifyTransactionHash - hash part not correct " << std::endl;
         return false;
     }
 
-    // When verifying txn in mempool or block, check txn was added during the last 6 blocks
+
+    // When verifying txn in mempool or block, check that txn was added during the last 6 blocks
     // and is not already added to blockchain
     if (powCheck == FOR_BLOCK || powCheck == FOR_MEMPOOL) {
         //TODO: Check if depth of 6 is correct for all places this function is called
@@ -240,12 +241,12 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
             (currHeight > MSG_TXN_ACCEPTED_DEPTH) ? (currHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;
 
         if (extNonce.tip_block_height < minAcceptedHeight) {
-            std::cout << "\tTxn " << txn.GetHash().ToString() << " too old!!!!\n";
+            std::cout << "Txn " << txn.GetHash().ToString() << " too old!!!!\n";
             return false;
         }
 
         if (!precentMsgTxnCache->CheckMsgTransaction(txn.GetHash())) {
-            std::cout << "\t!!!!Txn " << txn.GetHash().ToString() << " among recent transactions!!!!\n";
+            std::cout << "!!!!Txn " << txn.GetHash().ToString() << " among recent transactions!!!!\n";
             return false;
         }
     }

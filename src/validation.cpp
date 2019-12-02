@@ -3322,10 +3322,23 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
 }
 
 bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, internal_miner::TxPoWCheck powCheck) {
-    //TODO: Should there be a check for txn uniqueness?
+    //TODO: use std::unordered_set
+    //TODO: is check for duplicates needed?
+    std::set<uint256> msgTxs;
+
     for (const CTransactionRef& txn : block.vtx) {
-        if (txn->IsMsgTx() && !internal_miner::verifyTransactionHash(*txn, powCheck)) {
-            return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn", false, "failed to verify hash of message transaction");
+        if (txn->IsMsgTx()) {
+            auto result = msgTxs.insert(txn->GetHash());
+
+            if (!result.second) {
+                std::cout << "CheckMsgTxnsInBlock - duplicate check FAILED\n";
+                return state.DoS(100, false, REJECT_INVALID, "duplicate-msg-txns-in-block", false, "block with duplicate msg txns");
+            }
+
+            if (!internal_miner::verifyTransactionHash(*txn, powCheck)) {
+                std::cout << "CheckMsgTxnsInBlock - verifyTransactionHash FAILED\n";
+                return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn-in-block", false, "failed to verify hash of message transaction in block");
+            }
         }
     }
 
@@ -3902,7 +3915,6 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
         std::cout << "CheckBlock ERROR" << std::endl;
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     }
-    //TODO: should this function be called with FOR_BLOCK?
     if (!CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK)) {
         std::cout << "CheckMsgTxnsInBlock ERROR in TestBlockValidity" << std::endl;
         return error("%s: Consensus::CheckMsgTxnsInBlock: %s", __func__, FormatStateMessage(state));
