@@ -69,7 +69,7 @@ void RecentMsgTxnsCache::UpdateMsgTxns(std::vector<CTransactionRef> txns, const 
     //Remove too old msg transactions
     auto it = m_recentMsgTxns.begin();
     while (it != m_recentMsgTxns.end()) {
-        if (it->second < lastToReadHeight) {
+        if (it->second <= lastToReadHeight) {
             it = m_recentMsgTxns.erase(it);
         }
         else {
@@ -230,7 +230,6 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
         std::cout << "Error: verifyTransactionHash - hash part not correct " << std::endl;
         return false;
     }
-
 
     // When verifying txn in mempool or block, check that txn was added during the last 6 blocks
     // and is not already added to blockchain
