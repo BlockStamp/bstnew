@@ -37,7 +37,7 @@ namespace internal_miner
 // zero.
 //
 
-bool RecentMsgTxnsCache::CheckMsgTransaction(const uint256& txn) const {
+bool RecentMsgTxnsCache::VerifyMsgTxn(const uint256& txn) const {
     return m_recentMsgTxns.find(txn) == m_recentMsgTxns.end();
 }
 
@@ -244,7 +244,7 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
             return false;
         }
 
-        if (!precentMsgTxnCache->CheckMsgTransaction(txn.GetHash())) {
+        if (!precentMsgTxnCache->VerifyMsgTxn(txn.GetHash())) {
             std::cout << "!!!!Txn " << txn.GetHash().ToString() << " among recent transactions!!!!\n";
             return false;
         }

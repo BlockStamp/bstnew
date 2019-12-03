@@ -58,7 +58,7 @@ public:
     RecentMsgTxnsCache(const RecentMsgTxnsCache&) = delete;
     RecentMsgTxnsCache& operator=(const RecentMsgTxnsCache&) = delete;
 
-    bool CheckMsgTransaction(const uint256& txn) const;
+    bool VerifyMsgTxn(const uint256& txn) const;
     bool LoadRecentMsgTxns(const CChain& pchainActive);
     void UpdateMsgTxns(std::vector<CTransactionRef> txns, const CChain& pchainActive);
     void print() const {
