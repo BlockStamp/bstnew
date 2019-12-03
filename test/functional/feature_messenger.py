@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Test messenger functionalities
+Test messenger functionalities (sendmessage, listmsgsinceblock, readmessage, exportmsgkey, importmsgkey, getmsgkey)
 """
 
 from test_framework.test_framework import BitcoinTestFramework
@@ -70,12 +70,35 @@ class MessengerTest(BitcoinTestFramework):
         nodeB_msgs = self.get_msgs_for_node(self.nodeB)
         assert len(nodeB_msgs) == 0
 
+    def test_import_msg_keys(self):
+        self.generate_block()
+        assert self.nodeA.getmsgkey() != self.nodeB.getmsgkey()
+
+        path = "my_keys"
+        self.nodeA.exportmsgkey(destination_path=path)
+        self.nodeB.importmsgkey(source_path=path, rescan=True)
+        assert self.nodeA.getmsgkey() == self.nodeB.getmsgkey()
+
+        nodeB_msgs = self.get_msgs_for_node(self.nodeB)
+        nodeB_msgs.sort()
+        assert len(nodeB_msgs) == 2
+        self.check_msg_txn(sender_key=self.nodeC.getmsgkey(),
+                           subject="Message from node C to A",
+                           content="Some content",
+                           msg_str=str(nodeB_msgs[0]))
+
+        self.check_msg_txn(sender_key=self.nodeC.getmsgkey(),
+                           subject="Second message from node C to A",
+                           content="Yet another content",
+                           msg_str=str(nodeB_msgs[1]))
+
     def run_test(self):
         self.nodeA = self.nodes[0]
         self.nodeB = self.nodes[1]
         self.nodeC = self.nodes[2]
 
         self.test_sending_msgs()
+        self.test_import_msg_keys()
 
 if __name__ == '__main__':
     MessengerTest().main()

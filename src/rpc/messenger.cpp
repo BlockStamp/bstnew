@@ -373,7 +373,7 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
     std::ofstream file(request.params[0].get_str().c_str(), std::ofstream::trunc);
     file << publicRsaKey.toString() << KEY_SEPARATOR << privateRsaKey.toString();
 
-    return UniValue(UniValue::VSTR, std::string("Keys exported successful."));
+    return UniValue(UniValue::VSTR, std::string("Keys exported successfully."));
 }
 
 UniValue importmsgkey(const JSONRPCRequest& request)
@@ -461,7 +461,7 @@ UniValue importmsgkey(const JSONRPCRequest& request)
         }
     }
 
-    return UniValue(UniValue::VSTR, std::string("Keys imported successful."));
+    return UniValue(UniValue::VSTR, std::string("Keys imported successfully."));
 }
 
 static UniValue messengerpassphrase(const JSONRPCRequest& request)
