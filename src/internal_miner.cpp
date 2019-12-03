@@ -244,7 +244,7 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
             return false;
         }
 
-        if (!precentMsgTxnCache->VerifyMsgTxn(txn.GetHash())) {
+        if (!recentMsgTxnCache.VerifyMsgTxn(txn.GetHash())) {
             std::cout << "!!!!Txn " << txn.GetHash().ToString() << " among recent transactions!!!!\n";
             return false;
         }

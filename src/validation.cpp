@@ -243,6 +243,8 @@ CBlockPolicyEstimator feeEstimator;
 CTxMemPool mempool(&feeEstimator);
 std::atomic_bool g_is_mempool_loaded{false};
 
+internal_miner::RecentMsgTxnsCache recentMsgTxnCache;
+
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
 
@@ -295,7 +297,6 @@ CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& loc
 std::unique_ptr<CCoinsViewDB> pcoinsdbview;
 std::unique_ptr<CCoinsViewCache> pcoinsTip;
 std::unique_ptr<CBlockTreeDB> pblocktree;
-std::unique_ptr<internal_miner::RecentMsgTxnsCache> precentMsgTxnCache;
 
 enum class FlushStateMode {
     NONE,
@@ -2671,7 +2672,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
     UpdateTip(pindexNew, chainparams);
-    precentMsgTxnCache->UpdateMsgTxns(blockConnecting.vtx, chainActive);
+    recentMsgTxnCache.UpdateMsgTxns(blockConnecting.vtx, chainActive);
     CheckNameDB (false);
 
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;

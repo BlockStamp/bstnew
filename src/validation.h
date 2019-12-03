@@ -169,6 +169,7 @@ extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
 extern CBlockPolicyEstimator feeEstimator;
 extern CTxMemPool mempool;
+extern internal_miner::RecentMsgTxnsCache recentMsgTxnCache;
 extern std::atomic_bool g_is_mempool_loaded;
 typedef std::unordered_map<uint256, CBlockIndex*, BlockHasher> BlockMap;
 extern BlockMap& mapBlockIndex;
@@ -502,9 +503,6 @@ extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern std::unique_ptr<CBlockTreeDB> pblocktree;
-
-/** Global variable that stores msg txn hashes of recent blocks (protected by cs_main) */
-extern std::unique_ptr<internal_miner::RecentMsgTxnsCache> precentMsgTxnCache;
 
 /**
  * Return the spend height, which is one more than the inputs.GetBestBlock().
