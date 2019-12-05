@@ -150,20 +150,26 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
         LogPrintf("Error: Failed to calculate message transaction cost\n");
         return false;
     }
+
     const uint32_t ratio = blockReward / txnCost;
 
-    std::cout << "blockReward: " << blockReward << std::endl;
-    std::cout << "txnCost: " << txnCost << std::endl;
-    std::cout << "ratio: " << ratio << std::endl;
+    // Only for regtest
+    if (Params().GetConsensus().fPowAllowMinDifficultyBlocks) {
+        arith_uint256 dummyTxTarget = arith_uint256("000000000ffff000000000000000000000000000000000000000000000000000") * ratio;
+
+        uint256 txnTargetUint256 = ArithToUint256(dummyTxTarget);
+        txnTargetUint256.flip_bit(PICO_BIT_POS);
+
+        target = UintToArith256(txnTargetUint256);
+        LogPrintf("Dummy target: %s\n", dummyTxTarget.ToString());
+        return true;
+    }
 
     arith_uint256 blockTarget = arith_uint256().SetCompact(indexPrev->nBits);
     arith_uint256 txnTarget = blockTarget * ratio;
 
     uint256 txnTargetUint256 = ArithToUint256(txnTarget);
     txnTargetUint256.flip_bit(PICO_BIT_POS);
-
-    std::cout << "Target for block = " << blockTarget.ToString() << " = " << blockTarget.getdouble() << std::endl;
-    std::cout << "Target for txn = "<< txnTarget.ToString() << " = " << txnTarget.getdouble() << std::endl;
 
     target = UintToArith256(txnTargetUint256);
     return true;

@@ -771,6 +771,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
     CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
 
     if (!tx) {
+        LogPrintf("Transaction not mined");
         return "Transaction not mined";
     }
 

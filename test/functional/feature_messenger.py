@@ -5,7 +5,7 @@ Test messenger functionalities (sendmessage, listmsgsinceblock, readmessage, exp
 """
 import os
 from test_framework.test_framework import BitcoinTestFramework
-
+from test_framework.messengertools import get_msgs_for_node, check_msg_txn
 
 class MessengerTest(BitcoinTestFramework):
     def set_test_params(self):
@@ -14,20 +14,6 @@ class MessengerTest(BitcoinTestFramework):
     def generate_block(self):
         self.nodeA.generate(nblocks=1)
         self.sync_all()
-
-    def get_msgs_for_node(self, node):
-        res = []
-        txns = node.listmsgsinceblock()['transactions']
-
-        for tx in txns:
-            msg = node.readmessage(txid=tx['txid'])
-            res.append(msg[1:-2])
-
-        return res
-
-    def check_msg_txn(self, sender_key, subject, content, msg_str):
-        expected_str = sender_key + "\n" + subject + "\n" + content
-        assert expected_str == msg_str
 
     def test_sending_msgs(self):
         nodeA_key = self.nodeA.getmsgkey()
@@ -47,27 +33,27 @@ class MessengerTest(BitcoinTestFramework):
 
         self.generate_block()
 
-        nodeA_msgs = self.get_msgs_for_node(self.nodeA)
+        nodeA_msgs = get_msgs_for_node(self.nodeA)
         nodeA_msgs.sort()
         assert len(nodeA_msgs) == 2
-        self.check_msg_txn(sender_key=nodeC_key,
-                           subject="Message from node C to A",
-                           content="Some content",
-                           msg_str=str(nodeA_msgs[0]))
+        check_msg_txn(sender_key=nodeC_key,
+                      subject="Message from node C to A",
+                      content="Some content",
+                      msg_str=str(nodeA_msgs[0]))
 
-        self.check_msg_txn(sender_key=nodeC_key,
-                           subject="Second message from node C to A",
-                           content="Yet another content",
-                           msg_str=str(nodeA_msgs[1]))
+        check_msg_txn(sender_key=nodeC_key,
+                      subject="Second message from node C to A",
+                      content="Yet another content",
+                      msg_str=str(nodeA_msgs[1]))
 
-        nodeC_msgs = self.get_msgs_for_node(self.nodeC)
+        nodeC_msgs = get_msgs_for_node(self.nodeC)
         assert len(nodeC_msgs) == 1
-        self.check_msg_txn(sender_key=nodeA_key,
-                           subject="Message from node A to C",
-                           content="Another content",
-                           msg_str=str(nodeC_msgs[0]))
+        check_msg_txn(sender_key=nodeA_key,
+                      subject="Message from node A to C",
+                      content="Another content",
+                      msg_str=str(nodeC_msgs[0]))
 
-        nodeB_msgs = self.get_msgs_for_node(self.nodeB)
+        nodeB_msgs = get_msgs_for_node(self.nodeB)
         assert len(nodeB_msgs) == 0
 
     def test_import_msg_keys(self):
@@ -79,18 +65,18 @@ class MessengerTest(BitcoinTestFramework):
         self.nodeB.importmsgkey(source_path=path, rescan=True)
         assert self.nodeA.getmsgkey() == self.nodeB.getmsgkey()
 
-        nodeB_msgs = self.get_msgs_for_node(self.nodeB)
+        nodeB_msgs = get_msgs_for_node(self.nodeB)
         nodeB_msgs.sort()
         assert len(nodeB_msgs) == 2
-        self.check_msg_txn(sender_key=self.nodeC.getmsgkey(),
-                           subject="Message from node C to A",
-                           content="Some content",
-                           msg_str=str(nodeB_msgs[0]))
+        check_msg_txn(sender_key=self.nodeC.getmsgkey(),
+                      subject="Message from node C to A",
+                      content="Some content",
+                      msg_str=str(nodeB_msgs[0]))
 
-        self.check_msg_txn(sender_key=self.nodeC.getmsgkey(),
-                           subject="Second message from node C to A",
-                           content="Yet another content",
-                           msg_str=str(nodeB_msgs[1]))
+        check_msg_txn(sender_key=self.nodeC.getmsgkey(),
+                      subject="Second message from node C to A",
+                      content="Yet another content",
+                      msg_str=str(nodeB_msgs[1]))
 
         os.remove(path)
 
