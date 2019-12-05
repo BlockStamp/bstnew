@@ -137,7 +137,7 @@ bool getTxnCost(const CTransaction& txn, CAmount& cost) {
     }
 
     //TODO: Find what feePerByte should be
-    constexpr CAmount feePerByte = 10;
+    constexpr CAmount feePerByte = 1;
     cost = txSize * feePerByte;
     return true;
 }
@@ -155,13 +155,14 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
 
     // Only for regtest
     if (Params().GetConsensus().fPowAllowMinDifficultyBlocks) {
-        arith_uint256 dummyTxTarget = arith_uint256("000000000ffff000000000000000000000000000000000000000000000000000") * ratio;
+        arith_uint256 dummyBlockTarget= arith_uint256("000000000ffff000000000000000000000000000000000000000000000000000");
+        arith_uint256 dummyTxnTarget = dummyBlockTarget * ratio;
 
-        uint256 txnTargetUint256 = ArithToUint256(dummyTxTarget);
+        uint256 txnTargetUint256 = ArithToUint256(dummyTxnTarget);
         txnTargetUint256.flip_bit(PICO_BIT_POS);
 
         target = UintToArith256(txnTargetUint256);
-        LogPrintf("Dummy target: %s\n", dummyTxTarget.ToString());
+        LogPrintf("Dummy target: %s\n", dummyTxnTarget.ToString());
         return true;
     }
 
