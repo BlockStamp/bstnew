@@ -3,7 +3,7 @@
 """
 Test messenger functionalities (sendmessage, listmsgsinceblock, readmessage, exportmsgkey, importmsgkey, getmsgkey)
 """
-
+import os
 from test_framework.test_framework import BitcoinTestFramework
 
 
@@ -91,6 +91,8 @@ class MessengerTest(BitcoinTestFramework):
                            subject="Second message from node C to A",
                            content="Yet another content",
                            msg_str=str(nodeB_msgs[1]))
+
+        os.remove(path)
 
     def run_test(self):
         self.nodeA = self.nodes[0]
