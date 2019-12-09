@@ -151,6 +151,9 @@ UniValue sendmessage(const JSONRPCRequest& request)
     return txid;
 }
 
+// TODO: This command requires node to be started with -txindex parameter
+// Perhaps it could try to read msgs from msg_wallet (they should be there)
+// when no -txindex used
 UniValue readmessage(const JSONRPCRequest& request)
 {
     RPCTypeCheck(request.params, {UniValue::VSTR});

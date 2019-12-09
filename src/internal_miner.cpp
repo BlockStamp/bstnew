@@ -155,7 +155,7 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
 
     // Only for regtest
     if (Params().GetConsensus().fPowAllowMinDifficultyBlocks) {
-        arith_uint256 dummyBlockTarget= arith_uint256("000000000ffff000000000000000000000000000000000000000000000000000");
+        arith_uint256 dummyBlockTarget= arith_uint256("0000000000ffff00000000000000000000000000000000000000000000000000");
         arith_uint256 dummyTxnTarget = dummyBlockTarget * ratio;
 
         uint256 txnTargetUint256 = ArithToUint256(dummyTxnTarget);
