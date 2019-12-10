@@ -7,14 +7,18 @@ Test message transactions functionalities
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.messengertools import get_msgs_for_node, check_msg_txn, get_low_32_bits, get_txn_cost
 from test_framework.blocktools import create_block, create_coinbase
-from test_framework.messages import uint256_from_str, hex_str_to_bytes, CTransaction, CTxOut, CTxIn, COutPoint
+from test_framework.messages import uint256_from_str, hex_str_to_bytes, CTransaction, CTxOut, CTxIn, COutPoint, ToHex
 from test_framework.script import CScript, OP_RETURN
+from test_framework.util import assert_equal
 from test_framework.mininode import (
     P2PInterface,
     msg_block,
     msg_getdata,
 )
+
 import struct
+import copy
+import time
 
 
 class MessengerTest(BitcoinTestFramework):
@@ -36,7 +40,7 @@ class MessengerTest(BitcoinTestFramework):
         self.nodeA.waitforblock(tip)
         self.sync_all()
 
-    def send_block_with_msgs(self, txns=[]):
+    def create_block_with_msgs(self, txns=[]):
         coinbase = create_coinbase(self.nodeA.getblockcount() + 1)
         block = create_block(int(self.nodeA.getbestblockhash(), 16),
                              coinbase,
@@ -45,34 +49,40 @@ class MessengerTest(BitcoinTestFramework):
         block.hashMerkleRoot = block.calc_merkle_root()
         block.rehash()
         block.solve()
+
+        return block
+
+    def send_block_with_msgs(self, block):
         block_message = msg_block(block)
         self.nodeA.p2p.send_message(block_message)
 
+        print("!!!sending block with hash: ", block.hash)
         return block.hash
 
     def test_mining_msg_txns(self):
         nodeA_key = self.nodeA.getmsgkey()
         nodeC_key = self.nodeC.getmsgkey()
 
-        self.nodeC.createmsgtransaction(subject="Message from node C to A",
+        print(self.nodeC.createmsgtransaction(subject="Message from node C to A",
                                         message="Some content",
                                         public_key=nodeA_key,
-                                        threads=4)
+                                        threads=4))
 
-        self.nodeA.createmsgtransaction(subject="Message from node A to C",
+        print(self.nodeA.createmsgtransaction(subject="Message from node A to C",
                                         message="Another content",
                                         public_key=nodeC_key,
-                                        threads=4)
+                                        threads=4))
 
-        self.nodeC.createmsgtransaction(subject="Second message from node C to A",
+        print(self.nodeC.createmsgtransaction(subject="Second message from node C to A",
                                         message="Yet another content",
                                         public_key=nodeA_key,
-                                        threads=4)
+                                        threads=4))
 
         self.sync_all()
 
-        new_block = self.nodes[0].generate(nblocks=1)[0]
-        self.sync_all_till_block(new_block)
+        self.curr_tip = self.nodes[0].generate(nblocks=1)[0]
+        print("new_block", self.curr_tip)
+        self.sync_all_till_block(self.curr_tip)
 
         nodeA_msgs = get_msgs_for_node(self.nodeA)
         nodeA_msgs.sort()
@@ -108,7 +118,9 @@ class MessengerTest(BitcoinTestFramework):
         target = block_target * ratio
         return target
 
-    def create_msg_txn(self, tip_height, tip_hash):
+    def create_msg_txn(self, tip_height, tip_hash, bad_target=False):
+        print("tip_height", tip_height)
+        print("tip_hash", tip_hash)
         nonce = 0
 
         op_return_data = bytearray()
@@ -131,20 +143,65 @@ class MessengerTest(BitcoinTestFramework):
             tx.vout[0] = CTxOut(0, CScript([OP_RETURN, op_return_data]))
             tx.rehash()
 
+        print("Found nonce", nonce, "\tCurrent txn hash", tx.hash)
         return tx
 
-    def send_correct_msg_txn(self):
+    def send_correct_block_with_msg_txn(self):
         tip_height = self.nodeA.getblockcount()
         tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
 
         msg_txn = self.create_msg_txn(tip_height, tip_hash)
-        tip = self.send_block_with_msgs([msg_txn])
-        self.sync_all_till_block(tip)
+        correct_block = self.create_block_with_msgs([msg_txn])
+        assert_equal(None, self.nodeA.submitblock(ToHex(correct_block)))
+        self.curr_tip = correct_block.hash
+        self.sync_all_till_block(self.curr_tip)
+
+        print(self.nodeA.getbestblockhash())
+        print(self.nodeB.getbestblockhash())
+        print(self.nodeC.getbestblockhash())
+        print(self.nodeD.getbestblockhash())
+
+        print(self.nodeA.getrawmempool())
+        print(self.nodeB.getrawmempool())
+        print(self.nodeC.getrawmempool())
+        print(self.nodeD.getrawmempool())
+
+    def send_block_with_duplicated_txns(self):
+        tip_height = self.nodeA.getblockcount()
+        tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
+
+        msg_txn = self.create_msg_txn(tip_height, tip_hash)
+        msg_txn_copy = copy.deepcopy(msg_txn)
+        print("duplicated msg", msg_txn.hash)
+
+        block_duplicated_msgs = self.create_block_with_msgs([msg_txn, msg_txn_copy])
+        assert_equal("duplicate-msg-txns-in-block", self.nodeA.submitblock(ToHex(block_duplicated_msgs)))
+        self.sync_all_till_block(self.curr_tip)
+
+    def send_block_with_msg_transactions_incorrect_tip_height(self):
+        tip_height = self.nodeA.getblockcount()
+        tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
+
+        msg_txn = self.create_msg_txn(tip_height+1, tip_hash)
+        bad_block = self.create_block_with_msgs([msg_txn])
+        print("too high tip msg", msg_txn.hash)
+        print("block with too high tip", bad_block.hash)
+        assert_equal("bad-msg-txn-in-block", self.nodeA.submitblock(ToHex(bad_block)))
+
+        msg_txn = self.create_msg_txn(tip_height-1, tip_hash)
+        bad_block = self.create_block_with_msgs([msg_txn])
+        print("too low tip msg", msg_txn.hash)
+        print("block with too low tip", bad_block.hash)
+        assert_equal("bad-msg-txn-in-block", self.nodeA.submitblock(ToHex(bad_block)))
+
+        self.sync_all_till_block(self.curr_tip)
 
     def run_test(self):
         self.init_test()
         self.test_mining_msg_txns()
-        self.send_correct_msg_txn()
+        self.send_correct_block_with_msg_txn()
+        self.send_block_with_duplicated_txns()
+        self.send_block_with_msg_transactions_incorrect_tip_height()
 
 
 if __name__ == '__main__':
