@@ -12,6 +12,7 @@
 #include "timedata.h"
 #include "txmempool.h"
 #include "util.h"
+#include "consensus/validation.h"
 #include "validation.h"
 #include "pow.h"
 #include "chainparams.h"
@@ -191,29 +192,26 @@ bool readExtNonce(const CTransaction& txn, ExtNonce& extNonce)
     return true;
 }
 
-bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
+bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxPoWCheck powCheck)
 {
-    if (!txn.IsMsgTx()) {
-        LogPrintf("Error: proof-of-work verification failed, non message transaction\n");
-        return false;
-    }
+    assert(txn.IsMsgTx());
 
     ExtNonce extNonce;
     if (!readExtNonce(txn, extNonce)) {
         std::cout << "Could not read extNonce\n";
-        return false;
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-extra-nonce", false, "Msg txn with incorrect ext nonce");
     }
 
     CBlockIndex* prevBlock = chainActive[extNonce.tip_block_height];
     if (!prevBlock) {
         std::cout << "Error: verifyTransactionHash - prevBlock is null\n";
-        return false;
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-with-bad-prev-block", false, "Msg txn with bad prev block");
     }
 
     arith_uint256 hashTarget;
     if (!getTarget(txn, prevBlock, hashTarget)) {
         LogPrintf("proof-of-work verification failed, could not calculate target\n");
-        return false;
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-no-get-target", false, "Could not get target of msg txn");
     }
 
     uint256 hash = txn.GetHash();
@@ -223,19 +221,19 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
 
     if (((uint8_t*)&hash)[31] != 0x80) {
         std::cout << "Error: verifyTransactionHash - hash does not start with 0x80" << std::endl;
-        return false;
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-hash", false, "Msg txn with bad hash");
     }
     if (UintToArith256(hash) > hashTarget) {
         std::cout << "Error: verifyTransactionHash - hash > hashTarget " << std::endl;
-        return false;
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-hash-above-target", false, "Msg txn with bad hash");
     }
     if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
-        printf("Error: verifyTransactionHash - height not correct. prevBlock.height:%d, tip_block_height:%u \n", prevBlock->nHeight, extNonce.tip_block_height);
-        return false;
+        std::cout << "Error: verifyTransactionHash - prevBlock->nHeight != extNonce.tip_block_height" << std::endl;
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-prev-block-height", false, "Msg txn with bad previous block height");
     }
     if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {
         std::cout << "Error: verifyTransactionHash - hash part not correct " << std::endl;
-        return false;
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-prev-block-hash", false, "Msg txn with bad previous block hash");
     }
 
     // When verifying txn in mempool or block, check that txn was added during the last 6 blocks
@@ -248,12 +246,12 @@ bool verifyTransactionHash(const CTransaction& txn, TxPoWCheck powCheck)
 
         if (extNonce.tip_block_height < minAcceptedHeight) {
             std::cout << "Txn " << txn.GetHash().ToString() << " too old!!!!\n";
-            return false;
+            return state.DoS(100, false, REJECT_INVALID, "msg-txn-too-old", false, "Msg txn is too old");
         }
 
         if (!recentMsgTxnCache.VerifyMsgTxn(txn.GetHash())) {
             std::cout << "!!!!Txn " << txn.GetHash().ToString() << " among recent transactions!!!!\n";
-            return false;
+            return state.DoS(100, false, REJECT_INVALID, "msg-txn-among-recent", false, "Msg txn is among recent msg transactions");
         }
     }
 

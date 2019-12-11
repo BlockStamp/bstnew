@@ -3333,12 +3333,21 @@ bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, internal_
 
             if (!result.second) {
                 std::cout << "CheckMsgTxnsInBlock - duplicate check FAILED\n";
-                return state.DoS(100, false, REJECT_INVALID, "duplicate-msg-txns-in-block", false, "block with duplicate msg txns");
+
+                return state.DoS(100, false, REJECT_INVALID, "duplicate-msg-txns-in-block", false,
+                                 strprintf("%s: duplicate msg txns %s in block %s",
+                                           __func__,
+                                           txn->GetHash().ToString().c_str(),
+                                           block.GetHash().ToString().c_str()));
             }
 
-            if (!internal_miner::verifyTransactionHash(*txn, powCheck)) {
+            if (!internal_miner::verifyTransactionHash(*txn, state, powCheck)) {
                 std::cout << "CheckMsgTxnsInBlock - verifyTransactionHash FAILED\n";
-                return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn-in-block", false, "failed to verify hash of message transaction in block");
+
+                return error("%s: Incorrect message transaction %s in block %s",
+                             __func__,
+                             txn->GetHash().ToString().c_str(),
+                             block.GetHash().ToString().c_str());
             }
         }
     }

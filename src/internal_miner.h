@@ -43,9 +43,9 @@ struct ExtNonce
     }
 };
 
-bool getTxnCost(const CTransaction& txn, CAmount& cost);
 CAmount getMsgFee(const CTransaction& txn);
-bool verifyTransactionHash(const CTransaction &txn, TxPoWCheck powCheck);
+bool getTxnCost(const CTransaction& txn, CAmount& cost);
+bool verifyTransactionHash(const CTransaction &txn, CValidationState& state, TxPoWCheck powCheck);
 bool readExtNonce(const CTransaction& txn, ExtNonce& extNonce);
 
 class RecentMsgTxnsCache {

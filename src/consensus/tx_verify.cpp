@@ -237,9 +237,10 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
+//TODO: This functions is used in AcceptToMempool - check if this should ban peer, maybe it's not needed
 bool CheckMsgTransaction(const CTransaction& tx, CValidationState& state, internal_miner::TxPoWCheck powCheck) {
-    if (!internal_miner::verifyTransactionHash(tx, powCheck)) {
-        return state.DoS(100, false, REJECT_INVALID, "bad-msg-txn");
+    if (!internal_miner::verifyTransactionHash(tx, state, powCheck)) {
+        return error("Incorrect message transaction %s", tx.GetHash().ToString().c_str());
     }
 
     return true;
