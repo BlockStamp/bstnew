@@ -45,6 +45,7 @@
 #include <future>
 #include <sstream>
 #include <map>
+#include <unordered_set>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
@@ -3323,9 +3324,7 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
 }
 
 bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, internal_miner::TxPoWCheck powCheck) {
-    //TODO: use std::unordered_set
-    //TODO: is check for duplicates needed?
-    std::set<uint256> msgTxs;
+    std::unordered_set<uint256, BlockHasher> msgTxs;
 
     for (const CTransactionRef& txn : block.vtx) {
         if (txn->IsMsgTx()) {
