@@ -89,6 +89,7 @@ BASE_SCRIPTS = [
     'feature_bip68_sequence.py',
     'p2p_feefilter.py',
     'feature_reindex.py',
+    'feature_msg_transactions.py',
     # vv Tests less than 30s vv
     'wallet_keypool_topup.py',
     'interface_zmq.py',
@@ -182,6 +183,7 @@ BASE_SCRIPTS = [
     'p2p_node_network_limited.py',
     'feature_blocksdir.py',
     'feature_config_args.py',
+    'feature_messenger.py',
     'rpc_help.py',
     'feature_help.py',
     # Don't append tests at the end to avoid merge conflicts
