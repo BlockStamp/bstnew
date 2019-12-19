@@ -11,10 +11,15 @@ from test_framework.messengertools import get_msgs_for_node, check_msg_txn, get_
 from test_framework.blocktools import create_block, create_coinbase
 from test_framework.messages import uint256_from_str, hex_str_to_bytes, CTransaction, CTxOut, CTxIn, COutPoint, ToHex
 from test_framework.script import CScript, OP_RETURN
-from test_framework.util import assert_equal, connect_nodes_bi
+from test_framework.util import assert_equal, connect_nodes_bi, disconnect_nodes
 import struct
 import copy
 import time
+
+
+def tx_hash(tx):
+    return "%s..." % tx[0: 10]
+
 
 class MessengerTest(BitcoinTestFramework):
     def set_test_params(self):
@@ -28,6 +33,10 @@ class MessengerTest(BitcoinTestFramework):
         self.nodeC = self.nodes[2]
         self.nodeD = self.nodes[3]
         self.nodeA.generate(nblocks=1000)
+
+    def sync_group_till_block(self, nodes, tip):
+        nodes[0].waitforblock(tip)
+        self.sync_all([nodes])
 
     def sync_all_till_block(self, tip):
         self.nodeA.waitforblock(tip)
@@ -290,6 +299,155 @@ class MessengerTest(BitcoinTestFramework):
 
         self.log.info("Current blockchain height is %d\n" % self.nodeA.getblockcount())
 
+    def send_block_with_copied_msg_after_reorg(self):
+        """Checks handling of msg txns after reorg"""
+
+        self.log.info("Splitting network into two groups: A<->B and C<->D")
+        disconnect_nodes(self.nodeB, 2)
+        disconnect_nodes(self.nodeC, 1)
+
+        self.log.info("Generate 10 blocks in A<->B network")
+        A_B_branch_blocks = list(self.nodeA.generate(nblocks=2))
+
+        # 3rd block
+        tip_height = self.nodeA.getblockcount()
+        tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
+        msg_txn_1st = self.mine_msg_txn(tip_height, tip_hash)
+        block = self.create_block_with_msgs([msg_txn_1st])
+        self.nodeA.submitblock(ToHex(block))
+        A_B_branch_blocks.append(block.hash)
+
+        # 4th block
+        tip_height = self.nodeA.getblockcount()
+        tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
+        msg_txn_2nd = self.mine_msg_txn(tip_height, tip_hash)
+        block = self.create_block_with_msgs([msg_txn_2nd])
+        self.nodeA.submitblock(ToHex(block))
+        A_B_branch_blocks.append(block.hash)
+
+        # 5th block
+        tip_height = self.nodeA.getblockcount()
+        tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
+        msg_txn_3rd = self.mine_msg_txn(tip_height, tip_hash)
+        print("msg_txn_2nd", msg_txn_2nd.hash)
+        block = self.create_block_with_msgs([msg_txn_3rd])
+        # block = self.create_block_with_msgs([])
+        self.nodeA.submitblock(ToHex(block))
+        A_B_branch_blocks.append(block.hash)
+
+        A_B_branch_blocks.extend(self.nodeA.generate(nblocks=5))
+        tip_A_B = A_B_branch_blocks[-1]
+        print("tip_A_B", tip_A_B)
+        self.sync_group_till_block([self.nodeA, self.nodeB], tip_A_B)
+        print("A_B_branch_blocks", A_B_branch_blocks)
+
+        self.log.info("Generate 3 blocks in C<->D network")
+        C_D_branch_blocks = list(self.nodeC.generate(nblocks=3))
+        tip_C_D = C_D_branch_blocks[-1]
+        self.sync_group_till_block([self.nodeC, self.nodeD], tip_C_D)
+        assert self.nodeC.getblockcount() != self.nodeB.getblockcount()
+
+        print("Printing tips after reorg\n")
+        print("nodeA:", self.nodeA.getblockcount(), self.nodeA.getbestblockhash())
+        print("nodeB:", self.nodeB.getblockcount(), self.nodeB.getbestblockhash())
+        print("nodeC:", self.nodeC.getblockcount(), self.nodeC.getbestblockhash())
+        print("nodeD:", self.nodeD.getblockcount(), self.nodeD.getbestblockhash())
+
+        print("\nC_D_branch_blocks")
+        for i, tx in enumerate(C_D_branch_blocks):
+            print("%d: %s" % (i, tx_hash(tx)))
+
+        print("\nA_B_branch_blocks")
+        for i, tx in enumerate(A_B_branch_blocks):
+            print("%d: %s" % (i, tx_hash(tx)))
+
+        self.log.info("Reconnecting networks A<->B and C<->D")
+        connect_nodes_bi(self.nodes, 1, 2)
+        self.sync_all_till_block(tip_A_B)
+
+        print("Printing current tips\n")
+        print("nodeA:", self.nodeA.getblockcount(), self.nodeA.getbestblockhash())
+        print("nodeB:", self.nodeB.getblockcount(), self.nodeB.getbestblockhash())
+        print("nodeC:", self.nodeC.getblockcount(), self.nodeC.getbestblockhash())
+        print("nodeD:", self.nodeD.getblockcount(), self.nodeD.getbestblockhash())
+
+    # def create_empty_block(self, height, prev_hash, block_time):
+    #     coinbase = create_coinbase(height)
+    #     block = create_block(int(prev_hash, 16),
+    #                          coinbase,
+    #                          block_time)
+    #     block.hashMerkleRoot = block.calc_merkle_root()
+    #     block.rehash()
+    #     block.solve()
+    #
+    #     return block
+
+    # def test_blocks_out_of_order(self):
+        # time.sleep(5)
+        #
+        # prev_hash = self.nodeA.getbestblockhash()
+        # height = self.nodeA.getblockcount() + 1
+        # block_time = self.nodeA.getblock(self.nodeA.getbestblockhash())['time'] + 1
+        #
+        # block_1 = self.create_empty_block(height, prev_hash, block_time)
+        # block_1a = self.create_empty_block(height, prev_hash, block_time+20)
+        #
+        # prev_hash = block_1.hash
+        # height += 1
+        # block_time += 1
+        # block_2 = self.create_empty_block(height, prev_hash, block_time)
+        # block_2a = self.create_empty_block(height, block_1a.hash, block_time + 20)
+        #
+        # prev_hash = block_2.hash
+        # height += 1
+        # block_time += 1
+        # block_3 = self.create_empty_block(height, prev_hash, block_time)
+        # block_3a = self.create_empty_block(height, block_2a.hash, block_time + 20)
+        #
+        # height += 1
+        # block_time += 1
+        # block_4a = self.create_empty_block(height, block_3a.hash, block_time + 20)
+        #
+        # print("block_1:", tx_hash(block_1.hash))
+        # print("block_2:", tx_hash(block_2.hash))
+        # print("block_3:", tx_hash(block_3.hash))
+        # self.nodeA.submitblock(ToHex(block_1))
+        # resp = self.nodeA.submitblock(ToHex(block_1a))
+        # print("resp", resp)
+        # self.nodeA.submitblock(ToHex(block_2))
+        # self.nodeA.submitblock(ToHex(block_2a))
+        # self.nodeA.submitblock(ToHex(block_3))
+        # self.nodeA.submitblock(ToHex(block_3a))
+        #
+        # curr_tip = self.nodeA.generate(nblocks=1000)[999]
+        # print("Curr tip after mining 1000 new blocks:", curr_tip)
+        # self.sync_all_till_block(curr_tip)
+        #
+        # print("Printing current branches 1\n")
+        # print("nodeA:", self.nodeA.getchaintips(), "\n")
+        # print("nodeB:", self.nodeB.getchaintips(), "\n")
+        # print("nodeC:", self.nodeC.getchaintips(), "\n")
+        # print("nodeD:", self.nodeD.getchaintips(), "\n")
+        #
+        # print("block_1a:", tx_hash(block_1a.hash))
+        # print("block_2a:", tx_hash(block_2a.hash))
+        # print("block_3a:", tx_hash(block_3a.hash))
+        # print("block_4a:", tx_hash(block_4a.hash))
+        # self.nodeA.submitblock(ToHex(block_4a))
+        # time.sleep(10)
+        #
+        # print("Printing current tips\n")
+        # print("nodeA:", self.nodeA.getblockcount(), self.nodeA.getbestblockhash())
+        # print("nodeB:", self.nodeB.getblockcount(), self.nodeB.getbestblockhash())
+        # print("nodeC:", self.nodeC.getblockcount(), self.nodeC.getbestblockhash())
+        # print("nodeD:", self.nodeD.getblockcount(), self.nodeD.getbestblockhash())
+        #
+        # print("Printing current branches 2\n")
+        # print("nodeA:", self.nodeA.getchaintips())
+        # print("nodeB:", self.nodeB.getchaintips())
+        # print("nodeC:", self.nodeC.getchaintips())
+        # print("nodeD:", self.nodeD.getchaintips())
+
     def run_test(self):
         self.init_test()
         self.test_mining_msg_txns()
@@ -299,6 +457,7 @@ class MessengerTest(BitcoinTestFramework):
         self.send_block_with_msg_transactions_with_hash_above_target()
         self.send_blocks_with_copied_msg_from_recent_transactions()
         self.send_blocks_with_copied_msg_from_old_transactions()
+        self.send_block_with_copied_msg_after_reorg()
 
 
 if __name__ == '__main__':
