@@ -14,6 +14,7 @@
 #include <version.h>
 
 #include <vector>
+#include <openssl/sha.h>
 
 typedef uint256 ChainCode;
 
@@ -146,6 +147,45 @@ public:
     }
 };
 
+class CObjHash
+{
+private:
+    SHA256_CTX m_ctx;
+    std::vector<unsigned char> m_data;
+    std::vector<unsigned char> m_hash;
+
+public:
+    int GetType() const { return SER_GETHASH; }
+    int GetVersion() const { return PROTOCOL_VERSION; }
+
+    void write(const char *pch, size_t size) {
+        for (size_t i=0; i<size; ++i) {
+            m_data.push_back(pch[i]);
+        }
+    }
+
+    template<typename T>
+    CObjHash& operator<<(const T& obj) {
+        // Serialize to this stream
+        ::Serialize(*this, obj);
+        return (*this);
+    }
+
+    std::vector<unsigned char> getData() {
+        return m_data;
+    }
+
+    bool updateNonce(uint32_t nNonce, uint32_t target);
+    void updateBlockInfo(uint32_t height, uint32_t hash);
+    void update();
+
+    uint256 getHash() {
+        if (m_hash.empty())
+            update();
+        return uint256(m_hash);
+    }
+};
+
 /** Reads data from an underlying stream, while hashing the read data. */
 template<typename Source>
 class CHashVerifier : public CHashWriter
@@ -188,6 +228,14 @@ uint256 SerializeHash(const T& obj, int nType=SER_GETHASH, int nVersion=PROTOCOL
     CHashWriter ss(nType, nVersion);
     ss << obj;
     return ss.GetHash();
+}
+
+template<typename T>
+uint256 SerializeMsgHash(const T& obj)
+{
+    CObjHash cHash;
+    obj.SerializeMsg(cHash);
+    return cHash.getHash();
 }
 
 unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char>& vDataToHash);

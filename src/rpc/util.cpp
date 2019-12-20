@@ -234,8 +234,8 @@ CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned 
     CScript scriptPubKey;
     std::vector<unsigned char> extData;
     extData.insert(extData.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
-    extData.insert(extData.end(), 12, 0); // placehoder for additional data info (block and nonce).
     extData.insert(extData.end(), data.begin() + ENCR_MARKER_SIZE, data.end()); // skip default ENCR_MARKER tag (already added).
+    extData.insert(extData.end(), 12, 0); // placehoder for additional data info (block and nonce).
     scriptPubKey << OP_RETURN << extData;
 
     txNew.vin.resize(1);

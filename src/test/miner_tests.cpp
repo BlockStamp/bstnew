@@ -652,8 +652,8 @@ BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
 
     std::vector<unsigned char> extData;
     extData.insert(extData.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
+    extData.resize(1070);
     extData.insert(extData.end(), 12, 0);
-    extData.resize(1078);
 
     CMutableTransaction txn{};
     txn.vin.resize(1);
@@ -670,7 +670,7 @@ BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
 
     internal_miner::ExtNonce ext_nonce;
     internal_miner::Miner(wallet, 1).mineTransaction(txn, ext_nonce);
-    BOOST_CHECK_EQUAL(ext_nonce.nonce, 1754);
+    BOOST_CHECK_EQUAL(ext_nonce.nonce, 39814);
 
     CTransactionRef tx = MakeTransactionRef(std::move(txn));
 

@@ -278,6 +278,22 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     s << tx.nLockTime;
 }
 
+template<typename Stream, typename TxType>
+inline void UnserializeMsgTransaction(TxType& tx, Stream& s) {
+    s >> tx.nVersion;
+    tx.vin.clear();
+    tx.vout.clear();
+    s >> tx.vin;
+    s >> tx.vout;
+}
+
+template<typename Stream, typename TxType>
+inline void SerializeMsgTransaction(const TxType& tx, Stream& s) {
+    s << tx.nVersion;
+    s << tx.vin;
+    s << tx.vout;
+}
+
 /** The basic transaction that is broadcasted on the network and contained in
  * blocks.  A transaction can contain multiple inputs and outputs.
  */
@@ -477,10 +493,19 @@ struct CMutableTransaction
         SerializeTransaction(*this, s);
     }
 
-
     template <typename Stream>
     inline void Unserialize(Stream& s) {
         UnserializeTransaction(*this, s);
+    }
+
+    template <typename Stream>
+    inline void SerializeMsg(Stream& s) const {
+        SerializeMsgTransaction(*this, s);
+    }
+
+    template <typename Stream>
+    inline void UnserializeMsg(Stream& s) const {
+        UnserializeMsgTransaction(*this, s);
     }
 
     template <typename Stream>
@@ -492,6 +517,7 @@ struct CMutableTransaction
      * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
      */
     uint256 GetHash() const;
+    uint256 GetMsgHash() const;
 
     bool HasWitness() const
     {

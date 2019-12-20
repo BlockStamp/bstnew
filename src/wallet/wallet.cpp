@@ -1276,10 +1276,9 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
     if (IsFreeEncryptedMsg(opReturn)) {
         // modify op return
         assert(opReturn.size() >= 12);
-        // remove additional block info data
-        opReturn.erase(opReturn.begin(), opReturn.begin() + ENCR_MARKER_SIZE + (3 * sizeof(uint32_t)));
         // replace ENCR_MARKER text
-        opReturn.insert(opReturn.begin(), ENCR_MARKER.begin(), ENCR_MARKER.end());
+        std::memcpy(opReturn.data(), ENCR_MARKER.data(), ENCR_MARKER_SIZE);
+        opReturn.erase(opReturn.end()-12, opReturn.end());
     }
 
     CMessengerKey privateRsaKey, publicRsaKey;

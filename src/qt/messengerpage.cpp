@@ -578,10 +578,9 @@ void MessengerPage::read(const std::string& txnId)
             if (wallet.get()->IsFreeEncryptedMsg(OPreturnData))
             {
                 assert(OPreturnData.size() >= 12);
-                // remove additional block info data
-                OPreturnData.erase(OPreturnData.begin(), OPreturnData.begin() + ENCR_MARKER_SIZE + (3 * sizeof(uint32_t)));
                 // replace ENCR_MARKER text
-                OPreturnData.insert(OPreturnData.begin(), ENCR_MARKER.begin(), ENCR_MARKER.end());
+                std::memcpy(OPreturnData.data(), ENCR_MARKER.data(), ENCR_MARKER_SIZE);
+                OPreturnData.erase(OPreturnData.end()-12, OPreturnData.end());
             }
 
             std::string from, subject, body;
@@ -833,15 +832,11 @@ void MessengerPage::sendByMining()
         }
         catch(std::exception const& e)
         {
-            QMessageBox msgBox;
-            msgBox.setText(e.what());
-            msgBox.exec();
+            LogPrintf("Send by minig exception: %s\n", e.what());
         }
         catch(...)
         {
-            QMessageBox msgBox;
-            msgBox.setText("Unknown exception occured");
-            msgBox.exec();
+            LogPrintf("Send by minig exception.\n");
         }
     }
     unlockUISending();

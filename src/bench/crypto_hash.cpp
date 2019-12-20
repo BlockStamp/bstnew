@@ -26,7 +26,7 @@ static void RIPEMD160(benchmark::State& state)
         CRIPEMD160().Write(in.data(), in.size()).Finalize(hash);
 }
 
-static void SHA1(benchmark::State& state)
+static void SSHA1(benchmark::State& state)
 {
     uint8_t hash[CSHA1::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -34,7 +34,7 @@ static void SHA1(benchmark::State& state)
         CSHA1().Write(in.data(), in.size()).Finalize(hash);
 }
 
-static void SHA256(benchmark::State& state)
+static void SSHA256(benchmark::State& state)
 {
     uint8_t hash[CSHA256::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -60,7 +60,7 @@ static void SHA256D64_1024(benchmark::State& state)
     }
 }
 
-static void SHA512(benchmark::State& state)
+static void SSHA512(benchmark::State& state)
 {
     uint8_t hash[CSHA512::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -94,9 +94,9 @@ static void FastRandom_1bit(benchmark::State& state)
 }
 
 BENCHMARK(RIPEMD160, 440);
-BENCHMARK(SHA1, 570);
-BENCHMARK(SHA256, 340);
-BENCHMARK(SHA512, 330);
+BENCHMARK(SSHA1, 570);
+BENCHMARK(SSHA256, 340);
+BENCHMARK(SSHA512, 330);
 
 BENCHMARK(SHA256_32b, 4700 * 1000);
 BENCHMARK(SipHash_32b, 40 * 1000 * 1000);

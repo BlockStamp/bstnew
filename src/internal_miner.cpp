@@ -20,6 +20,7 @@
 #include "chain.h"
 
 #include <boost/thread.hpp>
+#include <openssl/sha.h>
 
 using namespace std;
 
@@ -86,31 +87,23 @@ void RecentMsgTxnsCache::UpdateMsgTxns(std::vector<CTransactionRef> txns, const 
     }
 }
 
-bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std::vector<unsigned char>& opReturnData)
+bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash)
 {
+    CObjHash cHash;
+    txn.SerializeMsg(cHash);
+    cHash.updateBlockInfo(extNonce.tip_block_height, extNonce.tip_block_hash);
+
     while (true)
     {
         ++extNonce.nonce;
-
-        CScript& txn_script = txn.vout[0].scriptPubKey;
-        auto it = std::search(txn_script.begin(), txn_script.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
-        if (it != txn_script.end())
+        if (cHash.updateNonce(extNonce.nonce, 0x8000))
         {
-            int extNonceShift = std::distance(txn_script.begin(), it) + ENCR_MARKER_SIZE;
-            if (txn_script.size() >= extNonceShift+sizeof(ExtNonce))
-            {
-                std::memcpy(txn_script.data()+extNonceShift,   &extNonce.tip_block_height, sizeof(uint32_t));
-                std::memcpy(txn_script.data()+extNonceShift+4, &extNonce.tip_block_hash,  sizeof(uint32_t));
-                std::memcpy(txn_script.data()+extNonceShift+8, &extNonce.nonce, sizeof(uint32_t));
-            }
-        }
 
-        *phash = txn.GetHash();
-
-         // Return the nonce if the hash has at least some zero bits,
-        // caller will check if it has enough to reach the target
-        if (((uint8_t*)phash)[31] == 0x80)
+            // Return the nonce if the hash has at least some zero bits,
+            // caller will check if it has enough to reach the target
+            *phash = cHash.getHash();
             return true;
+        }
 
         // If nothing found after trying for a while, return -1
         if ((extNonce.nonce & 0xfff) == 0)
@@ -122,7 +115,7 @@ bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash, std:
 CAmount getMsgFee(const CTransaction& txn) {
     CAmount fee = 0;
     getTxnCost(txn, fee);
-    return fee*0.5;
+    return fee*0.25;
 }
 
 bool getTxnCost(const CTransaction& txn, CAmount& cost) {
@@ -152,7 +145,7 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
         return false;
     }
 
-    const uint32_t ratio = blockReward / txnCost;
+    const uint32_t ratio = (blockReward / txnCost);
 
     // Only for regtest
     if (Params().GetConsensus().fPowAllowMinDifficultyBlocks) {
@@ -181,14 +174,15 @@ bool readExtNonce(const CTransaction& txn, ExtNonce& extNonce)
 {
     //TODO: there should be a faster way of getting tx height
     std::vector<char> opReturn = txn.loadOpReturn();
+    size_t size = opReturn.size();
 
     const uint32_t minSize = ENCR_MARKER_SIZE + 3 * sizeof(uint32_t);
-    if (opReturn.size() < minSize)
+    if (size < minSize)
         return false;
 
-    std::memcpy(&extNonce.tip_block_height, opReturn.data()+ENCR_MARKER_SIZE, sizeof(uint32_t));
-    std::memcpy(&extNonce.tip_block_hash, opReturn.data()+ENCR_MARKER_SIZE+4, sizeof(uint32_t));
-    std::memcpy(&extNonce.nonce, opReturn.data()+ENCR_MARKER_SIZE+8, sizeof(uint32_t));
+    std::memcpy(&extNonce.tip_block_height, opReturn.data()+size-12, sizeof(uint32_t));
+    std::memcpy(&extNonce.tip_block_hash, opReturn.data()+size-8, sizeof(uint32_t));
+    std::memcpy(&extNonce.nonce, opReturn.data()+size-4, sizeof(uint32_t));
     return true;
 }
 
@@ -214,7 +208,7 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-no-get-target", false, "Could not get target of msg txn");
     }
 
-    uint256 hash = txn.GetHash();
+    uint256 hash = CMutableTransaction(txn).GetMsgHash();
     LogPrintf("proof-of-work verification  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", extNonce.tip_block_hash, extNonce.tip_block_height);
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
@@ -262,7 +256,6 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
 
 void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner::ExtNonce& inputExtNonce, uint32_t nonceStart)
 {
-    SetThreadPriority(THREAD_PRIORITY_LOWEST);
     RenameThread("bst-msg-txn-miner");
 
     CMutableTransaction txn;
@@ -281,10 +274,10 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
         return;
     }
 
-    std::vector<unsigned char> opReturn = txn.loadOpReturn();
+    int start = GetTime();
+    CScript& txn_script = txn.vout[0].scriptPubKey;
 
     while (true) {
-
         CBlockIndex *prevBlock = chainActive.Tip();
         LogPrintf("block hash: %s, height: %u\n", prevBlock->GetBlockHash().ToString().c_str(), prevBlock->nHeight);
 
@@ -295,26 +288,36 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
 
         uint256 hash;
         ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(0), nonceStart};
+        std::memcpy(txn_script.data()+txn_script.size() - 12, &extNonce.tip_block_height, sizeof(extNonce.tip_block_height));
+        std::memcpy(txn_script.data()+txn_script.size() - 8, &extNonce.tip_block_hash, sizeof(extNonce.tip_block_hash));
 
         while (true) {
             // Check if something found
-            if (ScanHash(txn, extNonce, &hash, opReturn))
-            {
-                if (UintToArith256(txn.GetHash()) <= hashTarget)
+            try {
+                if (ScanHash(txn, extNonce, &hash))
                 {
-                    // Found a solution
-                    boost::lock_guard<boost::mutex> lock(m_minerMutex);
-                    if (!m_foundHash) {
-                        m_foundHash = true;
-                        inputTxn = txn;
-                        inputExtNonce = extNonce;
+                    if (UintToArith256(hash) <= hashTarget)
+                    {
+                        // Found a solution
+                        std::memcpy(txn_script.data()+txn_script.size() - 4, &extNonce.nonce, sizeof(extNonce.nonce));
+                        boost::lock_guard<boost::mutex> lock(m_minerMutex);
+                        if (!m_foundHash) {
+                            m_foundHash = true;
+                            inputTxn = txn;
+                            inputExtNonce = extNonce;
 
-                        LogPrintf("InternalMiner:\n");
-                        LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-                        LogPrintf("Block height:%u Block hash:%u nonce:%u\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
+                            LogPrintf("InternalMiner:\n");
+                            LogPrintf("proof-of-work for transaction found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+                            LogPrintf("Block height:%u Block hash:%u nonce:%u\n", extNonce.tip_block_height, extNonce.tip_block_hash, extNonce.nonce);
+                            LogPrintf("Duration: %ldseconds\n", GetTime() - start);
+                        }
+                        return;
                     }
-                    return;
                 }
+            } catch (std::exception& e)
+            {
+                LogPrintf("Internal Miner Exception: %s\n", e.what());
+                return;
             }
 
             {

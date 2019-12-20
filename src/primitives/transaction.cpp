@@ -71,6 +71,11 @@ uint256 CMutableTransaction::GetHash() const
     return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
 }
 
+uint256 CMutableTransaction::GetMsgHash() const
+{
+    return SerializeMsgHash(*this);
+}
+
 void CMutableTransaction::SetNamecoin()
 {
     assert (nVersion == CTransaction::CURRENT_VERSION);
