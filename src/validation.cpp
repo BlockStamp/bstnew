@@ -1952,11 +1952,6 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     }
 
-    if (!CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK)) {
-        std::cout << "CheckMsgTxnsInBlock failed in ConnectBlock\n";
-        return error("%s: Consensus::CheckMsgTxnsInBlock: %s", __func__, FormatStateMessage(state));
-    }
-
     // verify that the view's current state corresponds to the previous block
     uint256 hashPrevBlock = pindex->pprev == nullptr ? uint256() : pindex->pprev->GetBlockHash();
     assert(hashPrevBlock == view.GetBestBlock());
@@ -1973,6 +1968,17 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     if (!modulo::ver_2::txGetBetVerify(hashPrevBlock, block, chainparams.GetConsensus(), getBetFee)) {
         return state.DoS(100, error("ConnectBlock(): txGetBetVerify failed"),
                          REJECT_INVALID, "bad-getbet-verify");
+    }
+
+    for (const auto& tx : block.vtx) {
+        if (tx->IsMsgTx() && !internal_miner::verifyTransactionHash(*tx, state, internal_miner::TxPoWCheck::FOR_BLOCK)) {
+            std::cout << "ConnectBlock - verifyTransactionHash FAILED\n";
+
+            return error("%s: Incorrect message transaction %s in block %s",
+                         __func__,
+                         tx->GetHash().ToString().c_str(),
+                         block.GetHash().ToString().c_str());
+        }
     }
 
     nBlocksTotal++;
@@ -2526,6 +2532,7 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
     chainActive.SetTip(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
+    recentMsgTxnCache.ReloadRecentMsgTxns(chainActive);
     CheckNameDB (true);
     // Let wallets know transactions went from 1-confirmed to
     // 0-confirmed or conflicted:
@@ -3323,37 +3330,6 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     return true;
 }
 
-bool CheckMsgTxnsInBlock(const CBlock& block, CValidationState& state, internal_miner::TxPoWCheck powCheck) {
-    std::unordered_set<uint256, BlockHasher> msgTxs;
-
-    for (const CTransactionRef& txn : block.vtx) {
-        if (txn->IsMsgTx()) {
-            auto result = msgTxs.insert(txn->GetHash());
-
-            if (!result.second) {
-                std::cout << "CheckMsgTxnsInBlock - duplicate check FAILED\n";
-
-                return state.DoS(100, false, REJECT_INVALID, "duplicate-msg-txns-in-block", false,
-                                 strprintf("%s: duplicate msg txns %s in block %s",
-                                           __func__,
-                                           txn->GetHash().ToString().c_str(),
-                                           block.GetHash().ToString().c_str()));
-            }
-
-            if (!internal_miner::verifyTransactionHash(*txn, state, powCheck)) {
-                std::cout << "CheckMsgTxnsInBlock - verifyTransactionHash FAILED\n";
-
-                return error("%s: Incorrect message transaction %s in block %s",
-                             __func__,
-                             txn->GetHash().ToString().c_str(),
-                             block.GetHash().ToString().c_str());
-            }
-        }
-    }
-
-    return true;
-}
-
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
@@ -3408,6 +3384,22 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
         if (!CheckTransaction(*tx, state, true))//bioinfo, duplicate inputs check applied due to exchange question
             return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(),
                                  strprintf("Transaction check failed (tx hash %s) %s", tx->GetHash().ToString(), state.GetDebugMessage()));
+
+    // Check msg transactions for duplicates
+    std::set<uint256> msgTxns;
+    for (const auto& tx : block.vtx) {
+        if (tx->IsMsgTx()) {
+            auto result = msgTxns.insert(tx->GetHash());
+            if (!result.second) {
+                std::cout << "CheckBlock - duplicate check FAILED\n";
+                return state.DoS(100, false, REJECT_INVALID, "duplicate-msg-txns-in-block", false,
+                                 strprintf("%s: duplicate msg txns %s in block %s",
+                                           __func__,
+                                           tx->GetHash().ToString().c_str(),
+                                           block.GetHash().ToString().c_str()));
+            }
+        }
+    }
 
     // Check if bet transactions included in block don't give total potential reward greater than a limit
     if(fCheckPOW)
@@ -3826,9 +3818,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     }
 
     if (!CheckBlock(block, state, chainparams.GetConsensus()) ||
-        !CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK) ||
         !ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev)) {
-        std::cout << "CheckMsgTxnsInBlock probably failed in AcceptBlock\n";
 
         if (state.IsInvalid() && !state.CorruptionPossible()) {
             pindex->nStatus |= BLOCK_FAILED_VALID;
@@ -3871,12 +3861,10 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         CValidationState state;
         // Ensure that CheckBlock() passes before calling AcceptBlock, as
         // belt-and-suspenders.
-        bool ret = CheckBlock(*pblock, state, chainparams.GetConsensus());
 
-        if (ret) {
-            ret = CheckMsgTxnsInBlock(*pblock, state, internal_miner::TxPoWCheck::FOR_BLOCK);
-            if (!ret)
-                std::cout << "CheckMsgTxnsInBlock failed in ProcessNewBlock\n";
+        bool ret = CheckBlock(*pblock, state, chainparams.GetConsensus());
+        if (!ret) {
+            std::cout << "CheckBlock failed: " << state.GetRejectReason() << std::endl;
         }
 
         LOCK(cs_main);
@@ -3923,10 +3911,6 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot)) {
         std::cout << "CheckBlock ERROR" << std::endl;
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
-    }
-    if (!CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_BLOCK)) {
-        std::cout << "CheckMsgTxnsInBlock ERROR in TestBlockValidity" << std::endl;
-        return error("%s: Consensus::CheckMsgTxnsInBlock: %s", __func__, FormatStateMessage(state));
     }
     if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev)) {
         std::cout << "ContextualCheckBlock ERROR" << std::endl;
@@ -4373,10 +4357,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
                          pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
         }
 
-        if (nCheckLevel >= 1 && !CheckMsgTxnsInBlock(block, state, internal_miner::TxPoWCheck::FOR_DB)) {
-            return error("%s: *** found bad block at %d, hash=%s (%s)\n", __func__,
-                pindex->nHeight, pindex->GetBlockHash().ToString(), FormatStateMessage(state));
-        }
+        //TODO: Consider adding checks for msg txns here
 
         // check level 2: verify undo validity
         if (nCheckLevel >= 2 && pindex) {

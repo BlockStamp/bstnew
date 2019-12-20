@@ -51,15 +51,14 @@ bool readExtNonce(const CTransaction& txn, ExtNonce& extNonce);
 class RecentMsgTxnsCache {
     std::map<uint256, int> m_recentMsgTxns;
 public:
-    RecentMsgTxnsCache() {
-    }
-    ~RecentMsgTxnsCache() {
-    }
+    RecentMsgTxnsCache() = default;
+    ~RecentMsgTxnsCache() = default;
     RecentMsgTxnsCache(const RecentMsgTxnsCache&) = delete;
     RecentMsgTxnsCache& operator=(const RecentMsgTxnsCache&) = delete;
 
     bool VerifyMsgTxn(const uint256& txn) const;
     bool LoadRecentMsgTxns(const CChain& pchainActive);
+    bool ReloadRecentMsgTxns(const CChain& pchainActive);
     void UpdateMsgTxns(std::vector<CTransactionRef> txns, const CChain& pchainActive);
     void print() const {
         std::cout << "\n\nPrinting RecentMsgTxnsCache:\n";

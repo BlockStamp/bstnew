@@ -157,8 +157,8 @@ public:
             0
         };
 
-        /* disable fallback fee on mainnet */
-        m_fallback_fee_enabled = false;
+        /* Bioinfo: enable fallback fee on mainnet */
+        m_fallback_fee_enabled = true;
     }
     
     int DefaultCheckNameDB () const
