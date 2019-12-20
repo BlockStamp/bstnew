@@ -63,6 +63,18 @@ bool RecentMsgTxnsCache::LoadRecentMsgTxns(const CChain& pchainActive) {
     return true;
 }
 
+bool RecentMsgTxnsCache::ReloadRecentMsgTxns(const CChain& pchainActive) {
+    AssertLockHeld(cs_main);
+    m_recentMsgTxns.clear();
+    if (!LoadRecentMsgTxns(pchainActive)) {
+        StartShutdown();
+        LogPrintf("Failed to read recent msg txn during disconnecting tip, new tip\n");
+        return false;
+    }
+    return true;
+}
+
+
 void RecentMsgTxnsCache::UpdateMsgTxns(std::vector<CTransactionRef> txns, const CChain& pchainActive) {
     AssertLockHeld(cs_main);
     const int lastToReadHeight = (pchainActive.Height() > MSG_TXN_ACCEPTED_DEPTH) ? (pchainActive.Height() - MSG_TXN_ACCEPTED_DEPTH) : 0;
