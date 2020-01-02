@@ -169,7 +169,9 @@ class MessengerTest(BitcoinTestFramework):
         self.msg_txns_so_far.extend([txn1, txn2, txn3])
         self.sync_all_till_block(self.curr_tip)
 
-        self.log.info("New block created %s with three msg txns: %s, %s, %s" % (self.curr_tip, txn1, txn2, txn3))
+        self.log.info("New block created %s with three msg txns: %s, %s, %s" %
+                      (self.curr_tip, tx_hash(txn1), tx_hash(txn2), tx_hash(txn3)))
+
         self.log.info("Current blockchain height is %d" % self.nodeA.getblockcount())
 
         nodeA_msgs = get_msgs_for_node(self.nodeA)
@@ -212,7 +214,7 @@ class MessengerTest(BitcoinTestFramework):
         self.correct_msg_txn = msg_txn
 
         self.sync_all_till_block(self.curr_tip)
-        self.log.info("Correct txn %s created in block %s" % (msg_txn.hash, correct_block.hash))
+        self.log.info("Correct txn %s created in block %s" % (tx_hash(msg_txn.hash), tx_hash(correct_block.hash)))
         self.log.info("Current blockchain height is %d\n" % self.nodeA.getblockcount())
 
     def send_block_with_duplicated_txns(self):
@@ -224,7 +226,7 @@ class MessengerTest(BitcoinTestFramework):
         msg_txn_copy = copy.deepcopy(msg_txn)
 
         block_duplicated_msgs = self.create_block_with_msgs([msg_txn, msg_txn_copy])
-        self.log.info("Txn %s duplicated in block %s" % (msg_txn.hash, block_duplicated_msgs.hash))
+        self.log.info("Txn %s duplicated in block %s" % (tx_hash(msg_txn.hash), tx_hash(block_duplicated_msgs.hash)))
 
         assert_equal("duplicate-msg-txns-in-block", self.nodeA.submitblock(ToHex(block_duplicated_msgs)))
         self.sync_all_till_block(self.curr_tip)
@@ -238,12 +240,14 @@ class MessengerTest(BitcoinTestFramework):
 
         msg_txn = self.mine_msg_txn(tip_height+1, tip_hash)
         bad_block = self.create_block_with_msgs([msg_txn])
-        self.log.info("Txn %s with too high prev block height in block %s\n" % (msg_txn.hash, bad_block.hash))
+        self.log.info("Txn %s with too high prev block height in block %s\n" %
+                      (tx_hash(msg_txn.hash), tx_hash(bad_block.hash)))
         assert_equal("msg-txn-with-bad-prev-block", self.nodeA.submitblock(ToHex(bad_block)))
 
         msg_txn = self.mine_msg_txn(tip_height-1, tip_hash)
         bad_block = self.create_block_with_msgs([msg_txn])
-        self.log.info("Txn %s with too low prev block height in block %s" % (msg_txn.hash, bad_block.hash))
+        self.log.info("Txn %s with too low prev block height in block %s" %
+                      (tx_hash(msg_txn.hash), tx_hash(bad_block.hash)))
 
         assert_equal("msg-txn-bad-prev-block-hash", self.nodeA.submitblock(ToHex(bad_block)))
         self.sync_all_till_block(self.curr_tip)
@@ -257,7 +261,8 @@ class MessengerTest(BitcoinTestFramework):
 
         msg_txn = self.mine_msg_txn_incorrectly(tip_height, tip_hash)
         bad_block = self.create_block_with_msgs([msg_txn])
-        self.log.info("Txn %s with too hash above target in block %s" % (msg_txn.hash, bad_block.hash))
+        self.log.info("Txn %s with too hash above target in block %s" %
+                      (tx_hash(msg_txn.hash), tx_hash(bad_block.hash)))
 
         assert_equal("msg-txn-hash-above-target", self.nodeA.submitblock(ToHex(bad_block)))
         self.sync_all_till_block(self.curr_tip)
@@ -273,7 +278,7 @@ class MessengerTest(BitcoinTestFramework):
         bad_block = self.create_block_with_msgs([copied_msg_txn])
         assert_equal("msg-txn-among-recent", self.nodeB.submitblock(ToHex(bad_block)))
         self.sync_all_till_block(self.curr_tip)
-        self.log.info("Copied msg txn %s in block %s" % (copied_msg_txn.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s" % (tx_hash(copied_msg_txn.hash), tx_hash(bad_block.hash)))
         self.log.info("Current blockchain height is %d\n" % self.nodeA.getblockcount())
 
         self.curr_tip = self.nodes[0].generate(nblocks=5)[4]
@@ -286,11 +291,11 @@ class MessengerTest(BitcoinTestFramework):
         self.log.info("Restarted nodeD to check if it loads recent transactions correctly")
 
         bad_block = self.create_block_with_msgs([copied_msg_txn])
-        self.log.info("Copied msg txn %s in block %s\n" % (copied_msg_txn.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s\n" % (tx_hash(copied_msg_txn.hash), tx_hash(bad_block.hash)))
         assert_equal("msg-txn-among-recent", self.nodeA.submitblock(ToHex(bad_block)))
 
         bad_block = self.create_block_with_msgs([copied_msg_txn])
-        self.log.info("Copied msg txn %s in block %s" % (copied_msg_txn.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s" % (tx_hash(copied_msg_txn.hash), tx_hash(bad_block.hash)))
 
         assert_equal("msg-txn-among-recent", self.nodeD.submitblock(ToHex(bad_block)))
         self.sync_all_till_block(self.curr_tip)
@@ -312,11 +317,11 @@ class MessengerTest(BitcoinTestFramework):
         self.log.info("Restarted nodeD to check if it loads recent transactions correctly")
 
         bad_block = self.create_block_with_msgs([copied_msg_txn])
-        self.log.info("Copied msg txn %s in block %s\n" % (copied_msg_txn.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s\n" % (tx_hash(copied_msg_txn.hash), tx_hash(bad_block.hash)))
         assert_equal("msg-txn-too-old", self.nodeA.submitblock(ToHex(bad_block)))
 
         bad_block = self.create_block_with_msgs([copied_msg_txn])
-        self.log.info("Copied msg txn %s in block %s" % (copied_msg_txn.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s" % (tx_hash(copied_msg_txn.hash), tx_hash(bad_block.hash)))
         assert_equal("msg-txn-too-old", self.nodeD.submitblock(ToHex(bad_block)))
 
         self.log.info("Current blockchain height is %d\n" % self.nodeA.getblockcount())
@@ -335,7 +340,7 @@ class MessengerTest(BitcoinTestFramework):
         tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
         msg_txn_1st = self.mine_msg_txn(tip_height, tip_hash)
         block = self.create_block_with_msgs([msg_txn_1st])
-        self.log.info("Created msg txn %s in block %s\n" % (msg_txn_1st.hash, block.hash))
+        self.log.info("Created msg txn %s in block %s\n" % (tx_hash(msg_txn_1st.hash), tx_hash(block.hash)))
         self.nodeA.submitblock(ToHex(block))
         A_B_branch_blocks.append(block.hash)
         self.msg_txns_so_far.append(msg_txn_1st.hash)
@@ -345,7 +350,8 @@ class MessengerTest(BitcoinTestFramework):
         tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
         msg_txn_2nd = self.mine_msg_txn(tip_height, tip_hash)
         block = self.create_block_with_msgs([msg_txn_2nd])
-        self.log.info("Created msg txn %s in block %s\n" % (msg_txn_2nd.hash, block.hash))
+        self.log.info("Created msg txn %s in block %s\n" %
+                      (tx_hash(msg_txn_2nd.hash), tx_hash(block.hash)))
         self.nodeA.submitblock(ToHex(block))
         A_B_branch_blocks.append(block.hash)
         self.msg_txns_so_far.append(msg_txn_2nd.hash)
@@ -355,7 +361,8 @@ class MessengerTest(BitcoinTestFramework):
         tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
         msg_txn_3rd = self.mine_msg_txn(tip_height, tip_hash)
         block = self.create_block_with_msgs([msg_txn_3rd])
-        self.log.info("Created msg txn %s in block %s\n" % (msg_txn_3rd.hash, block.hash))
+        self.log.info("Created msg txn %s in block %s\n" %
+                      (tx_hash(msg_txn_3rd.hash), tx_hash(block.hash)))
         self.nodeA.submitblock(ToHex(block))
         A_B_branch_blocks.append(block.hash)
         self.msg_txns_so_far.append(msg_txn_3rd.hash)
@@ -379,17 +386,17 @@ class MessengerTest(BitcoinTestFramework):
         self.curr_tip = tip_A_B
 
         bad_block = self.create_block_with_msgs([msg_txn_1st])
-        self.log.info("Copied msg txn %s in block %s" % (msg_txn_1st.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s" % (tx_hash(msg_txn_1st.hash), tx_hash(bad_block.hash)))
         assert_equal("msg-txn-too-old", self.nodeB.submitblock(ToHex(bad_block)))
         assert_equal("msg-txn-too-old", self.nodeD.submitblock(ToHex(bad_block)))
 
         bad_block = self.create_block_with_msgs([msg_txn_2nd])
-        self.log.info("Copied msg txn %s in block %s" % (msg_txn_2nd.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s" % (tx_hash(msg_txn_2nd.hash), tx_hash(bad_block.hash)))
         assert_equal("msg-txn-too-old", self.nodeB.submitblock(ToHex(bad_block)))
         assert_equal("msg-txn-too-old", self.nodeD.submitblock(ToHex(bad_block)))
 
         bad_block = self.create_block_with_msgs([msg_txn_3rd])
-        self.log.info("Copied msg txn %s in block %s" % (msg_txn_3rd.hash, bad_block.hash))
+        self.log.info("Copied msg txn %s in block %s" % (tx_hash(msg_txn_3rd.hash), tx_hash(bad_block.hash)))
         assert_equal("msg-txn-among-recent", self.nodeB.submitblock(ToHex(bad_block)))
         assert_equal("msg-txn-among-recent", self.nodeD.submitblock(ToHex(bad_block)))
 
@@ -417,13 +424,13 @@ class MessengerTest(BitcoinTestFramework):
         height = self.nodeA.getblockcount()
         tip_hash = get_low_32_bits(int(self.nodeA.getbestblockhash(), 16))
         msg_1st = self.mine_msg_txn(height, tip_hash)
-        self.log.info("Sending raw msg txn %s\n" % msg_1st.hash)
+        self.log.info("Sending raw msg txn %s\n" % tx_hash(msg_1st.hash))
         self.nodeD.sendrawtransaction(ToHex(msg_1st))
 
         height = self.nodeA.getblockcount() - MSG_TXN_ACCEPTED_DEPTH
         tip_hash = get_low_32_bits(int(self.nodeA.getblockhash(height), 16))
         msg_2nd = self.mine_msg_txn(height, tip_hash)
-        self.log.info("Sending raw msg txn %s\n" % msg_2nd.hash)
+        self.log.info("Sending raw msg txn %s\n" % tx_hash(msg_2nd.hash))
         self.nodeD.sendrawtransaction(ToHex(msg_2nd))
         self.sync_all_till_txns_in_mempool([msg_1st.hash, msg_2nd.hash])
 
