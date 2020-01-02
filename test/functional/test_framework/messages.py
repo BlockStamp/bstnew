@@ -63,6 +63,9 @@ def ripemd160(s):
 def hash256(s):
     return sha256(sha256(s))
 
+def hash256msg(s):
+    return sha256(s)
+
 def ser_compact_size(l):
     r = b""
     if l < 253:
@@ -404,6 +407,8 @@ class CTransaction():
             self.wit = CTxWitness()
             self.nLockTime = 0
             self.sha256 = None
+            self.sha256s = None
+            self.msg_hash = None
             self.hash = None
         else:
             self.nVersion = tx.nVersion
@@ -411,6 +416,8 @@ class CTransaction():
             self.vout = copy.deepcopy(tx.vout)
             self.nLockTime = tx.nLockTime
             self.sha256 = tx.sha256
+            self.sha256s = tx.sha256s
+            self.msg_hash = tx.msg_hash
             self.hash = tx.hash
             self.wit = copy.deepcopy(tx.wit)
 
@@ -442,6 +449,13 @@ class CTransaction():
         r += struct.pack("<I", self.nLockTime)
         return r
 
+    def serialize_msg_txn(self):
+        r = b""
+        r += struct.pack("<i", self.nVersion)
+        r += ser_vector(self.vin)
+        r += ser_vector(self.vout)
+        return r
+
     # Only serialize with witness when explicitly called for
     def serialize_with_witness(self):
         flags = 0
@@ -469,6 +483,10 @@ class CTransaction():
     # call serialize_without_witness to exclude witness data.
     def serialize(self):
         return self.serialize_with_witness()
+
+    def mine(self):
+        self.sha256s = uint256_from_str(hash256msg(self.serialize_msg_txn()))
+        self.msg_hash = encode(hash256msg(self.serialize_msg_txn())[::-1], 'hex_codec').decode('ascii')
 
     # Recalculate the txid (transaction hash without witness)
     def rehash(self):

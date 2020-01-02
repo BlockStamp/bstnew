@@ -88,10 +88,10 @@ class MessengerTest(BitcoinTestFramework):
 
     def create_op_return_data(self, tip_height, tip_hash, nonce):
         op_return_data = bytearray("MSGFREE:", "utf-8")
-        op_return_data += struct.pack("<I", tip_height)
-        op_return_data += struct.pack("<I", tip_hash)
-        op_return_data += struct.pack("<I", nonce)  # placeholder for additional info
         op_return_data += bytearray(1200)  # placeholder for encrypted msg
+        op_return_data += struct.pack("<I", tip_height) # placeholder for ext nonce
+        op_return_data += struct.pack("<I", tip_hash)
+        op_return_data += struct.pack("<I", nonce)
         return op_return_data
 
     def mine_msg_txn(self, tip_height, tip_hash):
@@ -103,16 +103,19 @@ class MessengerTest(BitcoinTestFramework):
         tx.vin.append(CTxIn(COutPoint(0, 0xfffffffe), b"", 0xffffffff))
         tx.vout.append(CTxOut(0, CScript([OP_RETURN, op_return_data])))
         tx.nLockTime = self.tx_time
+        tx.mine()
         tx.rehash()
 
         self.tx_time += 1
         target = self.get_target(tx)
 
-        while tx.sha256 ^ 0x8000000000000000000000000000000000000000000000000000000000000000 > target:
+        while tx.sha256s ^ 0x8000000000000000000000000000000000000000000000000000000000000000 > target:
             nonce += 1
-            op_return_data[16:20] = struct.pack("<I", nonce)
+            op_return_data[-4:] = struct.pack("<I", nonce)
             tx.vout[0] = CTxOut(0, CScript([OP_RETURN, op_return_data]))
-            tx.rehash()
+            tx.mine()
+
+        tx.rehash()
         return tx
 
     def mine_msg_txn_incorrectly(self, tip_height, tip_hash):
@@ -122,19 +125,23 @@ class MessengerTest(BitcoinTestFramework):
         tx = CTransaction()
         tx.vin.append(CTxIn(COutPoint(0, 0xfffffffe), b"", 0xffffffff))
         tx.vout.append(CTxOut(0, CScript([OP_RETURN, op_return_data])))
+        tx.nLockTime = self.tx_time
+        tx.mine()
         tx.rehash()
 
+        self.tx_time += 1
         lower_bound = self.get_target(tx)
         upper_bound = uint256_from_str(
             hex_str_to_bytes("00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")[::-1])
 
-        while tx.sha256 ^ 0x8000000000000000000000000000000000000000000000000000000000000000 <= lower_bound or \
-            tx.sha256 ^ 0x8000000000000000000000000000000000000000000000000000000000000000 > upper_bound:
-                nonce += 1
-                op_return_data[16:20] = struct.pack("<I", nonce)
-                tx.vout[0] = CTxOut(0, CScript([OP_RETURN, op_return_data]))
-                tx.rehash()
+        while tx.sha256s ^ 0x8000000000000000000000000000000000000000000000000000000000000000 <= lower_bound or \
+            tx.sha256s ^ 0x8000000000000000000000000000000000000000000000000000000000000000 > upper_bound:
+            nonce += 1
+            op_return_data[-4:] = struct.pack("<I", nonce)
+            tx.vout[0] = CTxOut(0, CScript([OP_RETURN, op_return_data]))
+            tx.mine()
 
+        tx.rehash()
         return tx
 
     def test_mining_msg_txns(self):
