@@ -563,6 +563,15 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
             packageSigOpsCost = modit->nSigOpCostWithAncestors;
         }
 
+        if (iter->tx->IsMsgTx()) {
+            const CTransaction& tx = *iter->tx;
+            CValidationState state;
+            if (!CheckMsgTransaction(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
+                std::cout << "SKIPPING tx " << tx.GetHash().ToString() << " - this should not happen!!!!!\n";
+                continue;
+            }
+        }
+
         if (!iter->tx->IsMsgTx() && packageFees < blockMinFeeRate.GetFee(packageSize)) {
             // Everything else we might consider has a lower fee rate
             return;

@@ -576,7 +576,6 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return false; // state filled in by CheckTransaction
     }
 
-    //TODO: Check if we can accept txn to mempool that was not created in last block
     if (tx.IsMsgTx() && !CheckMsgTransaction(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
         std::cout << "MSG TX: " << tx.GetHash().ToString() << ", VERIFICATION FAILED\n";
         return false; // state filled in by CheckMsgTransaction
