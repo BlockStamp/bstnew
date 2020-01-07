@@ -1320,6 +1320,8 @@ bool CWallet::SaveMsgToHistory(
         return false;
     }
 
+    LOCK(cs_wallet);
+
     if (!WalletBatch(*msgDatabase).WriteMsgTxToHistory(hash, toAddress, subject, encrypted, time)) {
         LogPrintf("Failed to wrtie encrypted message to db\n");
         return false;
