@@ -36,7 +36,8 @@ class MessengerTest(BitcoinTestFramework):
         self.nodeD = self.nodes[3]
         self.msg_txns_so_far = []
         self.tx_time = 0
-        self.nodeA.generate(nblocks=1000)
+        self.curr_tip = self.nodes[0].generate(nblocks=1000)[999]
+        self.sync_all_till_block(self.curr_tip)
 
     def print_blocks(self, name, branch):
         self.log.info("\n\nBlocks from branch %s:" % name)
