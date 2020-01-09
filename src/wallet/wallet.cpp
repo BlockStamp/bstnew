@@ -1305,7 +1305,7 @@ bool CWallet::SaveMsgToHistory(
     const std::string& fromAddress,
     const std::string& toAddress)
 {
-    bool saveHistoryEnabled = gArgs.GetArg("-msgsavehistory", DEFAULT_MSG_SAVE_HISTORY);
+    bool saveHistoryEnabled = gArgs.GetArg("-disablemsghistory", DEFAULT_MSG_SAVE_HISTORY);
     if (saveHistoryEnabled == false)
     {
         LogPrintf("Disabled saving communicatior message history\n");
