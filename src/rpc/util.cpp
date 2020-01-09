@@ -261,11 +261,6 @@ CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned 
     assert(!tx->IsCoinBase());
     assert(tx->IsMsgTx());
 
-//    if (!pwallet->CreateTransaction(/*vecSend, withInput,*/ tx/*, reservekey, nFeeRequired, nChangePosRet, strError, coin_control*/)) {
-//        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
-//            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
-//        throw JSONRPCError(RPC_WALLET_ERROR, strError);
-//    }
     CReserveKey reservekey(pwallet);
 
     CValidationState state;

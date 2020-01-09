@@ -49,7 +49,7 @@ UniValue sendmessage(const JSONRPCRequest& request)
         "\nArguments:\n"
         "1. \"subject\"                     (string, required) A user message string\n"
         "2. \"message\"                     (string, required) A user message string\n"
-        "3. \"public_key\"                  (string, required) Receiver public key (length: 1024, 2048 or 4096)\n"
+        "3. \"public_key\"                  (string, required) Receiver public key (length: 2048)\n"
         "4. replaceable                     (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
         "5. conf_target                     (numeric, optional) Confirmation target (in blocks)\n"
         "6. \"estimate_mode\"               (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
@@ -151,9 +151,6 @@ UniValue sendmessage(const JSONRPCRequest& request)
     return txid;
 }
 
-// TODO: This command requires node to be started with -txindex parameter
-// Perhaps it could try to read msgs from msg_wallet (they should be there)
-// when no -txindex used
 UniValue readmessage(const JSONRPCRequest& request)
 {
     RPCTypeCheck(request.params, {UniValue::VSTR});
@@ -685,13 +682,14 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                 "createmsgtransaction \"subject\" \"string\" \"public_key\" \"threads\" \n"
                 "\nStores encrypted message in a blockchain.\n"
                 "Before this command walletpassphrase is required. \n"
-                "Message is free (no fee) but user needs to perform the job for send. \n"
-                "Note! Job will take some time, depends on cpu speed. When job is done, sending next message will be available. \n"
+                "Message is free (no fee paid), but user needs to perform some work to send it. \n"
+                "Note! The work will take some time, depending on the cpu speed."
+                "When it's done, sending next message will be available. \n"
 
                 "\nArguments:\n"
                 "1. \"subject\"                     (string, required) A user message string\n"
                 "2. \"message\"                     (string, required) A user message string\n"
-                "3. \"public_key\"                  (string, required) Receiver public key (length: 1024, 2048 or 4096)\n"
+                "3. \"public_key\"                  (string, required) Receiver public key (length: 2048)\n"
                 "4. \"threads\"                     (numeric, optional, default=1) The number of threads to be used for mining tx\n"
 
                 "\nResult:\n"
@@ -753,7 +751,6 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
             + subject
             + MSG_DELIMITER
             + message;
-//            + std::to_string(GetTime()); /// TODO to fix, unique data
 
     if(msg.length()>maxDataSize)
     {

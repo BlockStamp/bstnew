@@ -1345,6 +1345,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
 
     {
         AssertLockHeld(cs_wallet);
+
         if (pIndex != nullptr) {
             for (const CTxIn& txin : tx.vin) {
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
@@ -2233,7 +2234,6 @@ bool CWalletTx::RelayWalletTransaction(CConnman* connman)
             }
         }
     }
-
     return false;
 }
 

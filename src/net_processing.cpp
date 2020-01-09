@@ -1983,7 +1983,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
             }
         }
-
         return true;
     }
 
@@ -3570,7 +3569,6 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                 for (std::set<uint256>::iterator it = pto->setInventoryTxToSend.begin(); it != pto->setInventoryTxToSend.end(); it++) {
                     vInvTx.push_back(it);
                 }
-
                 CAmount filterrate = 0;
                 {
                     LOCK(pto->cs_feeFilter);

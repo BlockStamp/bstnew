@@ -24,7 +24,6 @@ static const int MAX_MSG_TXN_SIZE = 2182;
 bool CheckMsgTxnSize(const CTransaction& tx) {
     const unsigned int txSize = tx.GetTotalSize();
     if (txSize < MIN_MSG_TXN_SIZE || txSize > MAX_MSG_TXN_SIZE) {
-        std::cout << "ERROR txn: " << tx.GetHash().ToString() << ", incorrect size: " << txSize << std::endl;
         return false;
     }
     return true;
@@ -180,10 +179,8 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     // Basic checks that don't depend on any context
     if (tx.vin.empty())
         return state.DoS(10, false, REJECT_INVALID, "bad-txns-vin-empty");
-
     if (tx.vout.empty())
         return state.DoS(10, false, REJECT_INVALID, "bad-txns-vout-empty");
-
     // Size limits (this doesn't take the witness into account, as that hasn't been checked for malleability)
     if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-oversize");
@@ -206,10 +203,8 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
         std::set<COutPoint> vInOutPoints;
         for (const auto& txin : tx.vin)
         {
-            if (!vInOutPoints.insert(txin.prevout).second) {
-                std::cout << "\nERROR - Duplicate inputs\n";
+            if (!vInOutPoints.insert(txin.prevout).second)
                 return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputs-duplicate");
-            }
         }
     }
 

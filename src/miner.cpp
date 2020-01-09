@@ -238,8 +238,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
     pblocktemplate->vTxFees[0] = -nFees;
 
-//    printf("Create new block, height: %d\t current fees: %ld\n", nHeight, nFees);
-//    LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
+    LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
 
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
@@ -395,7 +394,6 @@ bool BlockAssembler::hasNameNew() const
 
 void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
-    printf("Adding to block txn:%s, fee:%ld, weight:%ld\n", iter->GetTx().GetHash().ToString().c_str(), iter->GetFee(), iter->GetTxWeight());
     pblock->vtx.emplace_back(iter->GetSharedTx());
     pblocktemplate->vTxFees.push_back(iter->GetFee());
     pblocktemplate->vTxSigOpsCost.push_back(iter->GetSigOpCost());

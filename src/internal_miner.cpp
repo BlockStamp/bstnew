@@ -237,7 +237,6 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
     // When verifying txn in mempool or block, check that txn was added during the last 6 blocks
     // and is not already added to blockchain
     if (powCheck == FOR_BLOCK || powCheck == FOR_MEMPOOL) {
-        //TODO: Check if depth of 6 is correct for all places this function is called
         const uint32_t currHeight = chainActive.Height();
         const uint32_t minAcceptedHeight =
             (currHeight > MSG_TXN_ACCEPTED_DEPTH) ? (currHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;

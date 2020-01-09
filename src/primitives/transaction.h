@@ -11,7 +11,6 @@
 #include <script/script.h>
 #include <serialize.h>
 #include <uint256.h>
-#include <iostream>
 
 constexpr int32_t MAKE_MODULO_GAME_INDICATOR=0x40000000;
 constexpr int32_t MAKE_MODULO_NEW_GAME_INDICATOR=0x20000000;
