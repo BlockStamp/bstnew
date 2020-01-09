@@ -1955,7 +1955,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 return true;
 
             bool fAlreadyHave = AlreadyHave(inv);
-            //std::cout << "GOT inv: " << inv.ToString() << (fAlreadyHave ? " have " : " new ") << " peer = " << pfrom->GetId() << std::endl;
             LogPrint(BCLog::NET, "got inv: %s  %s peer=%d\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom->GetId());
 
             if (inv.type == MSG_TX) {
@@ -1978,7 +1977,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             {
                 pfrom->AddInventoryKnown(inv);
                 if (fBlocksOnly) {
-                    std::cout << "Error - blocks only\n";
                     LogPrint(BCLog::NET, "transaction (%s) inv sent in violation of protocol peer=%d\n", inv.hash.ToString(), pfrom->GetId());
                 } else if (!fAlreadyHave && !fImporting && !fReindex && !IsInitialBlockDownload()) {
                     pfrom->AskFor(inv);

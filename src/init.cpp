@@ -1565,7 +1565,6 @@ bool AppInitMain()
 
                     if (!CVerifyDB().VerifyDB(chainparams, pcoinsdbview.get(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL),
                                   gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS))) {
-                        std::cout << "VerifyDB ERROR!\n";
                         strLoadError = _("Corrupted block database detected");
                         break;
                     }
@@ -1603,8 +1602,6 @@ bool AppInitMain()
             LogPrintf("Failed to load recent message transactions. Exiting.\n");
             return false;
         }
-
-        recentMsgTxnCache.print();
     }
 
     // As LoadBlockIndex can take several minutes, it's possible the user

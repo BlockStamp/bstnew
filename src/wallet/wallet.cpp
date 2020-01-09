@@ -1234,20 +1234,17 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
         // Merge
         if (!wtxIn.hashUnset() && wtxIn.hashBlock != wtx.hashBlock)
         {
-            std::cout << "Updated because wtxIn.hashBlock != wtx.hashBlock\n";
             wtx.hashBlock = wtxIn.hashBlock;
             fUpdated = true;
         }
         // If no longer abandoned, update
         if (wtxIn.hashBlock.IsNull() && wtx.isAbandoned())
         {
-            std::cout << "Updated because wtxIn.hashBlock.IsNull() && wtx.isAbandoned()\n";
             wtx.hashBlock = wtxIn.hashBlock;
             fUpdated = true;
         }
         if (wtxIn.nIndex != -1 && (wtxIn.nIndex != wtx.nIndex))
         {
-            std::cout << "Updated because wtxIn.nIndex != -1 && (wtxIn.nIndex != wtx.nIndex)\n";
             wtx.nIndex = wtxIn.nIndex;
             fUpdated = true;
         }
@@ -2237,7 +2234,6 @@ bool CWalletTx::RelayWalletTransaction(CConnman* connman)
         }
     }
 
-    std::cout << "RelayWalletTransaction tx " << GetHash().ToString() << " FAILED\n";
     return false;
 }
 
@@ -3539,11 +3535,9 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
         {
             // Broadcast
             if (!wtx.AcceptToMemoryPool(maxTxFee, state)) {
-                std::cout << GetTime() << "Not accepted to mempool in CommitTransaction" << std::endl;
                 WalletLogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", FormatStateMessage(state));
                 // TODO: if we expect the failure to be long term or permanent, instead delete wtx from the wallet and return failure.
             } else {
-                std::cout << GetTime() << "Accepted to mempool" << std::endl;
                 wtx.RelayWalletTransaction(connman);
             }
         }

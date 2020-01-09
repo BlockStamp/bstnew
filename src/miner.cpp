@@ -250,7 +250,6 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     CValidationState state;
     if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false)) {
-        std::cout << "TestBlockValidity ERROR\n";
         throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
     }
     int64_t nTime2 = GetTimeMicros();
@@ -567,7 +566,6 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
             const CTransaction& tx = *iter->tx;
             CValidationState state;
             if (!CheckMsgTransaction(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
-                std::cout << "SKIPPING tx " << tx.GetHash().ToString() << " - this should not happen!!!!!\n";
                 continue;
             }
         }

@@ -60,13 +60,6 @@ public:
     bool LoadRecentMsgTxns(const CChain& pchainActive);
     bool ReloadRecentMsgTxns(const CChain& pchainActive);
     void UpdateMsgTxns(std::vector<CTransactionRef> txns, const CChain& pchainActive);
-    void print() const {
-        std::cout << "\n\nPrinting RecentMsgTxnsCache:\n";
-        for (const auto& txn : m_recentMsgTxns) {
-            std::cout << "\t" << txn.first.ToString() << ", " << txn.second << std::endl;
-        }
-        std::cout << std::endl;
-    }
 };
 
 class Miner {

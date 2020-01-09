@@ -618,15 +618,11 @@ void CTxMemPool::removeTooOldMsgTxns(int newTipHeight)
     for (auto it = mapTx.begin(); it != mapTx.end(); ++it) {
         const CTransaction& txn = *it->tx;
         if (txn.IsMsgTx() && (!readExtNonce(txn, extNonce) || extNonce.tip_block_height < minAcceptedHeight)) {
-            std::cout << "\tTx " << txn.GetHash().ToString() << " will be removed "
-                      << " (extNonce.tip_block_height < minAcceptedHeight) "
-                      << extNonce.tip_block_height << " < " << minAcceptedHeight << std::endl;
             remove.push_back(it);
         }
     }
 
     for (const auto& it : remove) {
-        std::cout << "\tRemoving txn: " << it->tx->GetHash().ToString() << std::endl;
         removeUnchecked(it, MemPoolRemovalReason::MSG_TX_EXPIRED);
     }
 }

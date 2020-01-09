@@ -50,7 +50,6 @@ bool RecentMsgTxnsCache::LoadRecentMsgTxns(const CChain& pchainActive) {
     for (int height=pchainActive.Height(); height > lastToReadHeight; --height){
         CBlock block;
         if (!ReadBlockFromDisk(block, pchainActive[height], Params().GetConsensus())) {
-            std::cout << "Failed to read block in loadRecentMsgTxns!!!\n";
             return false;
         }
 
@@ -138,7 +137,6 @@ bool getTxnCost(const CTransaction& txn, CAmount& cost) {
     constexpr unsigned int minSize = 1078, maxSize = 2182;
 
     if (txSize < minSize || txSize > maxSize) {
-        std::cout << "ERROR getTxnCost - size " << txSize << std::endl;
         return false;
     }
 
@@ -204,13 +202,11 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
 
     ExtNonce extNonce;
     if (!readExtNonce(txn, extNonce)) {
-        std::cout << "Could not read extNonce\n";
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-extra-nonce", false, "Msg txn with incorrect ext nonce");
     }
 
     CBlockIndex* prevBlock = chainActive[extNonce.tip_block_height];
     if (!prevBlock) {
-        std::cout << "Error: verifyTransactionHash - " << txn.GetHash().ToString().substr(0, 10) << " -prevBlock is null\n";
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-with-bad-prev-block", false, "Msg txn with bad prev block");
     }
 
@@ -226,19 +222,15 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
     LogPrintf("  tip_block hash: %u\t tip_block height: %d\n", (uint32_t)prevBlock->GetBlockHash().GetUint64(0), (uint32_t)prevBlock->nHeight);
 
     if (((uint8_t*)&hash)[31] != 0x80) {
-        std::cout << "Error: verifyTransactionHash - hash does not start with 0x80" << std::endl;
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-hash", false, "Msg txn with bad hash");
     }
     if (UintToArith256(hash) > hashTarget) {
-        std::cout << "Error: verifyTransactionHash - hash > hashTarget " << std::endl;
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-hash-above-target", false, "Msg txn with bad hash");
     }
     if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
-        std::cout << "Error: verifyTransactionHash - prevBlock->nHeight != extNonce.tip_block_height" << std::endl;
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-prev-block-height", false, "Msg txn with bad previous block height");
     }
     if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {
-        std::cout << "Error: verifyTransactionHash - hash part not correct " << std::endl;
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-prev-block-hash", false, "Msg txn with bad previous block hash");
     }
 
@@ -251,12 +243,10 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
             (currHeight > MSG_TXN_ACCEPTED_DEPTH) ? (currHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;
 
         if (extNonce.tip_block_height < minAcceptedHeight) {
-            std::cout << "Txn " << txn.GetHash().ToString() << " too old!!!!\n";
             return state.DoS(100, false, REJECT_INVALID, "msg-txn-too-old", false, "Msg txn is too old");
         }
 
         if (!recentMsgTxnCache.VerifyMsgTxn(txn.GetHash())) {
-            std::cout << "!!!!Txn " << txn.GetHash().ToString() << " among recent transactions!!!!\n";
             return state.DoS(100, false, REJECT_INVALID, "msg-txn-among-recent", false, "Msg txn is among recent msg transactions");
         }
     }
