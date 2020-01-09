@@ -24,6 +24,9 @@
 
 using namespace std;
 
+static const int MIN_MSG_TXN_SIZE = 1078;
+static const int MAX_MSG_TXN_SIZE = 2182;
+
 namespace internal_miner
 {
 
@@ -123,6 +126,17 @@ bool ScanHash(CMutableTransaction& txn, ExtNonce &extNonce, uint256 *phash)
     return false;
 }
 
+bool CheckMsgTxnSize(const CTransaction& txn) {
+    // Msg transaction can have at most 100 characters for subject
+    // and 1000 characters for content
+
+    const unsigned int txSize = txn.GetTotalSize();
+    if (txSize < MIN_MSG_TXN_SIZE || txSize > MAX_MSG_TXN_SIZE) {
+        return false;
+    }
+    return true;
+}
+
 CAmount getMsgFee(const CTransaction& txn) {
     CAmount fee = 0;
     getTxnCost(txn, fee);
@@ -132,11 +146,7 @@ CAmount getMsgFee(const CTransaction& txn) {
 bool getTxnCost(const CTransaction& txn, CAmount& cost) {
     const unsigned int txSize = txn.GetTotalSize();
 
-    // Msg transaction can have at most 100 characters for subject
-    // and 1000 characters for content
-    constexpr unsigned int minSize = 1078, maxSize = 2182;
-
-    if (txSize < minSize || txSize > maxSize) {
+    if (!CheckMsgTxnSize(txn)) {
         return false;
     }
 

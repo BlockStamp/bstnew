@@ -18,17 +18,6 @@
 #include <coins.h>
 #include <utilmoneystr.h>
 
-static const int MIN_MSG_TXN_SIZE = 1078;
-static const int MAX_MSG_TXN_SIZE = 2182;
-
-bool CheckMsgTxnSize(const CTransaction& tx) {
-    const unsigned int txSize = tx.GetTotalSize();
-    if (txSize < MIN_MSG_TXN_SIZE || txSize > MAX_MSG_TXN_SIZE) {
-        return false;
-    }
-    return true;
-}
-
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
 {
     if (tx.nLockTime == 0)
@@ -220,7 +209,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
                 return state.DoS(10, false, REJECT_INVALID, "bad-txns-prevout-null");
     }
 
-    if (tx.IsMsgTx() && !CheckMsgTxnSize(tx)) {
+    if (tx.IsMsgTx() && !internal_miner::CheckMsgTxnSize(tx)) {
         return state.DoS(10, false, REJECT_INVALID, "bad-msg-txn-size");
     }
 

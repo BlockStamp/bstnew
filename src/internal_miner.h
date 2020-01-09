@@ -43,6 +43,7 @@ struct ExtNonce
     }
 };
 
+bool CheckMsgTxnSize(const CTransaction& txn);
 CAmount getMsgFee(const CTransaction& txn);
 bool getTxnCost(const CTransaction& txn, CAmount& cost);
 bool verifyTransactionHash(const CTransaction &txn, CValidationState& state, TxPoWCheck powCheck);
