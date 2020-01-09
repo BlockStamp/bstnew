@@ -1305,6 +1305,13 @@ bool CWallet::SaveMsgToHistory(
     const std::string& fromAddress,
     const std::string& toAddress)
 {
+    bool saveHistoryEnabled = gArgs.GetArg("-disablemsghistory", DEFAULT_MSG_SAVE_HISTORY);
+    if (saveHistoryEnabled == false)
+    {
+        LogPrintf("Disabled saving communicatior message history\n");
+        return true;
+    }
+
     const int64_t time = GetTime();
     std::vector<unsigned char> encrypted;
 
@@ -1557,10 +1564,37 @@ void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx) {
 }
 
 void CWallet::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
+    using namespace internal_miner;
+
     LOCK(cs_wallet);
-    auto it = mapWallet.find(ptx->GetHash());
+
+    uint256 hash = ptx->GetHash();
+    auto it = mapWallet.find(hash);
     if (it != mapWallet.end()) {
         it->second.fInMempool = false;
+    }
+
+    if (ptx->IsMsgTx())
+    {
+        int tip = chainActive.Height();
+
+        const uint32_t minAcceptedHeight =
+            (tip > MSG_TXN_ACCEPTED_DEPTH) ? (tip-MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+        const CTransaction& txn = *ptx;
+        ExtNonce extNonce{};
+        if (!readExtNonce(txn, extNonce) || extNonce.tip_block_height < minAcceptedHeight)
+        {
+            LogPrintf("Removing msg transaction from database: %s\n", ptx->GetHash().ToString());
+
+            encrMsgMapWallet.erase(hash);
+            WalletBatch(*msgDatabase).EraseEncrMsgTx(hash);
+            NotifyEncrMsgTransactionChanged(this);
+
+            encrMsgHistory.erase(hash);
+            WalletBatch(*msgDatabase).EraseMsgTxToHistory(hash);
+            NotifyMsgSent(this);
+        }
     }
 }
 
