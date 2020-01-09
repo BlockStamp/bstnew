@@ -3,7 +3,7 @@ For more information, please visit --> [Project's Website](https://blockstamp.in
 
 # What is BlockStamp
 
-BlockStamp (BST) is a new digital currency intended to store user's data in blockchain. It is based on Bitcon peer-to-peer technology to operate with no central authority, and is a hardfork fromt he bitcoin blockchain. The goal was to create a new fast and effective blockchain that could be used for trusted timestamping of documents. Currently, BlockStamp blockchain is used as the core of an online gaming platform. Future uses will cover dedicated timestamping and domain naming. 
+BlockStamp (BST) is a new digital currency intended to store user's data in blockchain. It is based on Bitcon peer-to-peer technology to operate with no central authority, and is a hardfork from the bitcoin blockchain. The goal was to create a new fast and effective blockchain that could be used for trusted timestamping of documents. Currently, BlockStamp blockchain is used as the core of an online gaming platform. Future uses will cover dedicated timestamping and domain naming. 
 
 There are three areas where BlockStamp is going to be applied, which are gaming, document timestamping, domain naming. 
 

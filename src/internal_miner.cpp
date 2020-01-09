@@ -210,7 +210,7 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
 
     CBlockIndex* prevBlock = chainActive[extNonce.tip_block_height];
     if (!prevBlock) {
-        std::cout << "Error: verifyTransactionHash - prevBlock is null\n";
+        std::cout << "Error: verifyTransactionHash - " << txn.GetHash().ToString().substr(0, 10) << " -prevBlock is null\n";
         return state.DoS(100, false, REJECT_INVALID, "msg-txn-with-bad-prev-block", false, "Msg txn with bad prev block");
     }
 

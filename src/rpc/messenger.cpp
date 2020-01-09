@@ -724,9 +724,6 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
-
-    //TODO : uncomment the locks below
-    //LOCK2(cs_main, pwallet->cs_wallet);
     EnsureWalletIsUnlocked(pwallet);
     EnsureMsgWalletIsUnlocked(pwallet);
 
