@@ -151,7 +151,7 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
     const CAmount blockReward = GetBlockSubsidy(indexPrev->nHeight, Params().GetConsensus());
     CAmount txnCost = 0;
     if (!getTxnCost(txn, txnCost)) {
-        LogPrintf("Error: Failed to calculate message transaction cost\n");
+        LogPrintf("Error: Failed to calculate cost of txn %s\n", txn.GetHash().ToString());
         return false;
     }
 
@@ -284,12 +284,10 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
 
     while (true) {
         CBlockIndex *prevBlock = chainActive.Tip();
-        LogPrintf("block hash: %s, height: %u\n", prevBlock->GetBlockHash().ToString().c_str(), prevBlock->nHeight);
 
         arith_uint256 hashTarget;
         if (!getTarget(txn, prevBlock, hashTarget))
             throw std::runtime_error("Failed to mine transaction");
-        LogPrintf("Hash target: %s\n", hashTarget.GetHex().c_str());
 
         uint256 hash;
         ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(0), nonceStart};
@@ -344,7 +342,6 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
                 break;
             }
             if (prevBlock != chainActive.Tip()) {
-                printf("Internal miner: New block detected\n");
                 break;
             }
         }

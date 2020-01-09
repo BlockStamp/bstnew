@@ -767,8 +767,8 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
     CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
 
     if (!tx) {
-        LogPrintf("Transaction not mined");
-        return "Transaction not mined";
+        LogPrintf("Failed to mine transaction\n");
+        return "Failed to mine transaction";
     }
 
     if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))

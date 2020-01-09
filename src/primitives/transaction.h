@@ -286,8 +286,6 @@ inline void UnserializeMsgTransaction(TxType& tx, Stream& s) {
     s >> tx.vout;
 }
 
-//TODO: SerializeTransaction could probably be used here, it will work the same way
-//TODO: Consider adding nLockTime, like in SerializeTransaction
 template<typename Stream, typename TxType>
 inline void SerializeMsgTransaction(const TxType& tx, Stream& s) {
     s << tx.nVersion;

@@ -1305,7 +1305,7 @@ bool CWallet::SaveMsgToHistory(
     bool saveHistoryEnabled = gArgs.GetArg("-disablemsghistory", DEFAULT_MSG_SAVE_HISTORY);
     if (saveHistoryEnabled == false)
     {
-        LogPrintf("Disabled saving communicatior message history\n");
+        LogPrintf("Disabled saving communicator message history\n");
         return true;
     }
 
@@ -1583,8 +1583,6 @@ void CWallet::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
         ExtNonce extNonce{};
         if (!readExtNonce(txn, extNonce) || extNonce.tip_block_height < minAcceptedHeight)
         {
-            LogPrintf("Removing msg transaction from database: %s\n", ptx->GetHash().ToString());
-
             encrMsgMapWallet.erase(hash);
             WalletBatch(*msgDatabase).EraseEncrMsgTx(hash);
             NotifyEncrMsgTransactionChanged(this);
