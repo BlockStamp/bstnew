@@ -20,7 +20,6 @@ class CValidationState;
 
 /** Context-independent validity checks */
 bool CheckTransaction(const CTransaction& tx, CValidationState& state, bool fCheckDuplicateInputs=true);
-bool CheckMsgTransaction(const CTransaction& tx, CValidationState& state, internal_miner::TxPoWCheck powCheck);
 
 namespace Consensus {
 /**

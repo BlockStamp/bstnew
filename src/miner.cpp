@@ -563,7 +563,7 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
         if (iter->tx->IsMsgTx()) {
             const CTransaction& tx = *iter->tx;
             CValidationState state;
-            if (!CheckMsgTransaction(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
+            if (!internal_miner::verifyTransactionHash(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
                 continue;
             }
         }
