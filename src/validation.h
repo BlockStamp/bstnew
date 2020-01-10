@@ -17,6 +17,7 @@
 #include <policy/feerate.h>
 #include <script/script_error.h>
 #include <sync.h>
+#include <util.h>
 #include <versionbits.h>
 
 #include <algorithm>
@@ -132,7 +133,7 @@ static const bool DEFAULT_TXINDEX = false;
 static const bool DEFAULT_TXDATA = false;
 static const bool DEFAULT_TXFEE = false;
 
-static const unsigned int DEFAULT_MINING_THREADS = 2;
+static int DEFAULT_MINING_THREADS = GetNumCores();
 static const bool DEFAULT_MSG_SAVE_HISTORY = true;
 
 static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;

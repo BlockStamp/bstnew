@@ -690,7 +690,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                 "1. \"subject\"                     (string, required) A user message string\n"
                 "2. \"message\"                     (string, required) A user message string\n"
                 "3. \"public_key\"                  (string, required) Receiver public key (length: 2048)\n"
-                "4. \"threads\"                     (numeric, optional, default=1) The number of threads to be used for mining tx\n"
+                "4. \"threads\"                     (numeric, optional, default="+std::to_string(DEFAULT_MINING_THREADS)+") The number of threads to be used for mining tx\n"
 
                 "\nResult:\n"
                 "\"txid\"                           (string) A hex-encoded transaction id\n"
