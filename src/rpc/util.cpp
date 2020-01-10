@@ -245,7 +245,6 @@ CTransactionRef CreateMsgTx(CWallet * const pwallet, const std::vector<unsigned 
     txNew.vout[0].scriptPubKey = scriptPubKey;
     txNew.vout[0].nValue = 0;
 
-    printf("Hash before: %s\n", txNew.GetHash().GetHex().c_str());
     int64_t nStart = GetTime();
     internal_miner::ExtNonce extNonce{};
     internal_miner::Miner(*pwallet, numThreads).mineTransaction(txNew, extNonce);
