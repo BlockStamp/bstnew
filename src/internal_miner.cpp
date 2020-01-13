@@ -209,6 +209,11 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
 {
     assert(txn.IsMsgTx());
 
+    if (powCheck == TxPoWCheck::FOR_BLOCK && chainActive.Height() < Params().GetConsensus().MsgTxnsAllowed) {
+        LogPrintf("Error: msg txn %s in block when msg txns are not allowed yet\n", txn.GetHash().ToString());
+        return state.DoS(100, false, REJECT_INVALID, "msg-txn-not-allowed-yet", false, "Msg txn received when msg txns are not allowed yet");
+    }
+
     ExtNonce extNonce;
     if (!readExtNonce(txn, extNonce)) {
         LogPrintf("Error: msg txn %s with incorrect ext nonce\n", txn.GetHash().ToString());
@@ -248,7 +253,7 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
 
     // When verifying txn in mempool or block, check that txn was added during the last 6 blocks
     // and is not already added to blockchain
-    if (powCheck == FOR_BLOCK || powCheck == FOR_MEMPOOL) {
+    if (powCheck == TxPoWCheck::FOR_BLOCK || powCheck == TxPoWCheck::FOR_MEMPOOL) {
         const uint32_t currHeight = chainActive.Height();
         const uint32_t minAcceptedHeight =
             (currHeight > MSG_TXN_ACCEPTED_DEPTH) ? (currHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;

@@ -560,6 +560,10 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
             packageSigOpsCost = modit->nSigOpCostWithAncestors;
         }
 
+        if (iter->tx->IsMsgTx() && chainActive.Height() < Params().GetConsensus().MsgTxnsAllowed) {
+            continue;
+        }
+
         if (iter->tx->IsMsgTx()) {
             const CTransaction& tx = *iter->tx;
             CValidationState state;

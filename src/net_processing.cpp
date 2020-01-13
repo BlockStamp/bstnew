@@ -1063,8 +1063,11 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 static void RelayTransaction(const CTransaction& tx, CConnman* connman)
 {
     CInv inv(MSG_TX, tx.GetHash());
-    connman->ForEachNode([&inv](CNode* pnode)
+    connman->ForEachNode([&inv, &tx](CNode* pnode)
     {
+        if (tx.IsMsgTx() && pnode->nVersion < MSG_TXNS_SUPPORTED) {
+            return;
+        }
         pnode->PushInventory(inv);
     });
 }

@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <future>
+#include <version.h>
 
 #include <boost/algorithm/string/replace.hpp>
 
@@ -2200,8 +2201,11 @@ bool CWalletTx::RelayWalletTransaction(CConnman* connman)
             pwallet->WalletLogPrintf("Relaying wtx %s\n", GetHash().ToString());
             if (connman) {
                 CInv inv(MSG_TX, GetHash());
-                connman->ForEachNode([&inv](CNode* pnode)
+                connman->ForEachNode([&inv, this](CNode* pnode)
                 {
+                    if (IsMsgTx() && pnode->nVersion < MSG_TXNS_SUPPORTED) {
+                        return;
+                    }
                     pnode->PushInventory(inv);
                 });
                 return true;
