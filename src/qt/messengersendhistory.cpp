@@ -60,6 +60,7 @@ MessengerSendHistory::MessengerSendHistory(const PlatformStyle *_platformStyle, 
     ui->transactionsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->transactionsTable->setItemDelegateForColumn(0, &datedelegate);
     ui->transactionsTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->transactionsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     connect(ui->transactionsTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionsTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));

@@ -143,6 +143,7 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->transactionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->transactionTable->setItemDelegateForColumn(0, &dateDelegate);
     ui->transactionTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->transactionTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->messageViewEdit->setReadOnly(true);
     ui->fromLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
