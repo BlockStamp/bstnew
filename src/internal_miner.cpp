@@ -211,44 +211,44 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
 
     if (powCheck == TxPoWCheck::FOR_BLOCK && chainActive.Height() < Params().GetConsensus().MsgTxnsAllowed) {
         LogPrintf("Error: msg txn %s in block when msg txns are not allowed yet\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-not-allowed-yet", false, "Msg txn received when msg txns are not allowed yet");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-not-allowed-yet", false, "Msg txn received when msg txns are not allowed yet");
     }
 
     ExtNonce extNonce;
     if (!readExtNonce(txn, extNonce)) {
         LogPrintf("Error: msg txn %s with incorrect ext nonce\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-extra-nonce", false, "Msg txn with incorrect ext nonce");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-bad-extra-nonce", false, "Msg txn with incorrect ext nonce");
     }
 
     CBlockIndex* prevBlock = chainActive[extNonce.tip_block_height];
     if (!prevBlock) {
         LogPrintf("Error: msg txn %s with bad prev block\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-with-bad-prev-block", false, "Msg txn with bad prev block");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-with-bad-prev-block", false, "Msg txn with bad prev block");
     }
 
     arith_uint256 hashTarget;
     if (!getTarget(txn, prevBlock, hashTarget)) {
         LogPrintf("Error: msg txn %s - could not get target\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-no-get-target", false, "Could not get target of msg txn");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-no-get-target", false, "Could not get target of msg txn");
     }
 
     uint256 hash = CMutableTransaction(txn).GetMsgHash();
 
     if (((uint8_t*)&hash)[31] != 0x80) {
         LogPrintf("Error: msg txn %s with hash not starting with 0x80\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-hash", false, "Msg txn with bad hash");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-bad-hash", false, "Msg txn with bad hash");
     }
     if (UintToArith256(hash) > hashTarget) {
         LogPrintf("Error: msg txn %s with hash above target\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-hash-above-target", false, "Msg txn with bad hash");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-hash-above-target", false, "Msg txn with bad hash");
     }
     if ((uint32_t)prevBlock->nHeight != extNonce.tip_block_height) {
         LogPrintf("Error: msg txn %s with bad previous block height\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-prev-block-height", false, "Msg txn with bad previous block height");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-bad-prev-block-height", false, "Msg txn with bad previous block height");
     }
     if ((uint32_t)prevBlock->GetBlockHash().GetUint64(0) != extNonce.tip_block_hash) {
         LogPrintf("Error: msg txn %s with bad previous block hash\n", txn.GetHash().ToString());
-        return state.DoS(100, false, REJECT_INVALID, "msg-txn-bad-prev-block-hash", false, "Msg txn with bad previous block hash");
+        return state.DoS(10, false, REJECT_INVALID, "msg-txn-bad-prev-block-hash", false, "Msg txn with bad previous block hash");
     }
 
     // When verifying txn in mempool or block, check that txn was added during the last 6 blocks
@@ -260,12 +260,12 @@ bool verifyTransactionHash(const CTransaction& txn, CValidationState& state, TxP
 
         if (extNonce.tip_block_height < minAcceptedHeight) {
             LogPrintf("Error: msg txn %s is too old\n", txn.GetHash().ToString());
-            return state.DoS(100, false, REJECT_INVALID, "msg-txn-too-old", false, "Msg txn is too old");
+            return state.DoS(10, false, REJECT_INVALID, "msg-txn-too-old", false, "Msg txn is too old");
         }
 
         if (!recentMsgTxnCache.VerifyMsgTxn(txn.GetHash())) {
             LogPrintf("Error: msg txn %s is among recent msg transactions\n", txn.GetHash().ToString());
-            return state.DoS(100, false, REJECT_INVALID, "msg-txn-among-recent", false, "Msg txn is among recent msg transactions");
+            return state.DoS(10, false, REJECT_INVALID, "msg-txn-among-recent", false, "Msg txn is among recent msg transactions");
         }
     }
 
