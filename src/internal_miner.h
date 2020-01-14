@@ -14,8 +14,6 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
-#define THREAD_PRIORITY_LOWEST 20
-
 class CBlockIndex;
 class CChainParams;
 class CReserveKey;
