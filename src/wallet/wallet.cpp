@@ -1563,11 +1563,34 @@ void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx) {
 }
 
 void CWallet::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
+    using namespace internal_miner;
     LOCK(cs_wallet);
-    auto it = mapWallet.find(ptx->GetHash());
+
+    uint256 hash = ptx->GetHash();
+    auto it = mapWallet.find(hash);
 
     if (it != mapWallet.end()) {
         it->second.fInMempool = false;
+    }
+
+    if (ptx->IsMsgTx())
+    {
+        int tip = chainActive.Height();
+
+        const uint32_t minAcceptedHeight =
+            (tip > MSG_TXN_ACCEPTED_DEPTH) ? (tip-MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+        const CTransaction& txn = *ptx;
+        ExtNonce extNonce{};
+        if (!readExtNonce(txn, extNonce) || extNonce.tip_block_height < minAcceptedHeight)
+        {
+            // abandon transaction from mapWallet
+            if (TransactionCanBeAbandoned(hash))
+            {
+                LogPrintf("Abandon message transaction: %s\n", hash.ToString());
+                AbandonTransaction(hash);
+            }
+        }
     }
 }
 
