@@ -24,6 +24,7 @@
 #include <messages/message_utils.h>
 #include <data/retrievedatatxs.h>
 #include <internal_miner.h>
+#include <util.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -690,7 +691,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                 "1. \"subject\"                     (string, required) A user message string\n"
                 "2. \"message\"                     (string, required) A user message string\n"
                 "3. \"public_key\"                  (string, required) Receiver public key (length: 2048)\n"
-                "4. \"threads\"                     (numeric, optional, default="+std::to_string(DEFAULT_MINING_THREADS)+") The number of threads to be used for mining tx\n"
+                "4. \"threads\"                     (numeric, optional, default="+std::to_string(GetNumCores())+") The number of threads to be used for mining tx\n"
 
                 "\nResult:\n"
                 "\"txid\"                           (string) A hex-encoded transaction id\n"
@@ -752,8 +753,10 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
     if (!checkRSApublicKey(toAddress))
         throw std::runtime_error("public key is incorrect");
 
-    int numThreads = gArgs.GetArg("-msgminingthreads", DEFAULT_MINING_THREADS);
-    if (!request.params[3].isNull())
+    int numThreads = gArgs.GetArg("-msgminingthreads", GetNumCores());
+    if (numThreads < 1)
+        numThreads = GetNumCores();
+    if (!request.params[3].isNull() && request.params[3].get_int() > 0)
     {
         numThreads = request.params[3].get_int();
     }

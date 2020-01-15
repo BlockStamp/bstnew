@@ -767,6 +767,8 @@ void MessengerPage::unlockUISending()
 void MessengerPage::sendByMining()
 {
 #ifdef ENABLE_WALLET
+    QString error;
+
     if (walletModel)
     {
         try
@@ -825,7 +827,10 @@ void MessengerPage::sendByMining()
                     lockUISending();
                 }
 
-                const int numThreads = gArgs.GetArg("-msgminingthreads", DEFAULT_MINING_THREADS);
+                int numThreads = gArgs.GetArg("-msgminingthreads", GetNumCores());
+                if (numThreads < 1)
+                    numThreads = GetNumCores();
+
                 CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
 
                 if (!tx) {
@@ -847,17 +852,19 @@ void MessengerPage::sendByMining()
         catch(std::exception const& e)
         {
             LogPrintf("Send by minig exception: %s\n", e.what());
-            QMessageBox msgBox;
-            msgBox.setText(e.what());
-            msgBox.exec();
+            error = e.what();
         }
         catch(...)
         {
-            LogPrintf("Send by minig exception.\n");
-            QMessageBox msgBox;
-            msgBox.setText("Unknown exception occured");
-            msgBox.exec();
+            LogPrintf("Send by minig unkwnown exception.\n");
+            error = "Send by minig unkwnown exception.";
         }
+    }
+
+    if (!error.isEmpty()) {
+        QMessageBox msgBox;
+        msgBox.setText(error);
+        msgBox.exec();
     }
 
     unlockUISending();
