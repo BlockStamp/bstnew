@@ -677,7 +677,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() < 3 || request.params.size() > 4 || !checkRSApublicKey(request.params[2].get_str()))
+    if (request.fHelp || request.params.size() < 3 || request.params.size() > 4)
         throw std::runtime_error(
                 "createmsgtransaction \"subject\" \"string\" \"public_key\" \"threads\" \n"
                 "\nStores encrypted message in a blockchain.\n"
@@ -736,6 +736,22 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
     const std::string subject = request.params[0].get_str();
     const std::string message = request.params[1].get_str();
     const std::string toAddress = request.params[2].get_str();
+
+    if (subject.empty())
+        throw std::runtime_error("subject cannot be empty");
+
+    if (subject.size() > 100)
+        throw std::runtime_error("subject cannot be longer than 100 letters");
+
+    if (message.empty())
+        throw std::runtime_error("message cannot be empty");
+
+    if (message.size() > 1000)
+        throw std::runtime_error("message cannot be longer than 1000 letters");
+
+    if (!checkRSApublicKey(toAddress))
+        throw std::runtime_error("public key is incorrect");
+
     int numThreads = gArgs.GetArg("-msgminingthreads", DEFAULT_MINING_THREADS);
     if (!request.params[3].isNull())
     {
@@ -765,10 +781,9 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
                 public_key.toString().c_str());
 
     CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
-
     if (!tx) {
         LogPrintf("Failed to mine transaction\n");
-        return "Failed to mine transaction";
+        return "Could not mine transaction. An error occurred or txn cancelled.";
     }
 
     if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))

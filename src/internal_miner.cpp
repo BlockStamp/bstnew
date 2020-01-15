@@ -281,10 +281,6 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
     CMutableTransaction txn;
     {
         boost::lock_guard<boost::mutex> lock(m_minerMutex);
-        if (m_foundHash) {
-            return;
-        }
-
         // work on copy
         txn = inputTxn;
     }
@@ -301,8 +297,9 @@ void Miner::mineTransactionWorker(CMutableTransaction& inputTxn, internal_miner:
         CBlockIndex *prevBlock = chainActive.Tip();
 
         arith_uint256 hashTarget;
-        if (!getTarget(txn, prevBlock, hashTarget))
-            throw std::runtime_error("Failed to mine transaction");
+        if (!getTarget(txn, prevBlock, hashTarget)) {
+            return;
+        }
 
         uint256 hash;
         ExtNonce extNonce{(uint32_t)prevBlock->nHeight, (uint32_t)prevBlock->GetBlockHash().GetUint64(0), nonceStart};

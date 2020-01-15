@@ -787,20 +787,31 @@ void MessengerPage::sendByMining()
 
                     WalletModel::MessengerUnlockContext msgCtx(walletModel->requestMessengerUnlock());
                     if (!msgCtx.isValid())
-                    {
-                        return;
-                    }
+                        throw std::runtime_error("Could not unlock messenger");
 
                     CMessengerKey privateRsaKey, publicRsaKey;
                     if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
-                    {
-                        return;
-                    }
+                        throw std::runtime_error("No RSA keys found");
 
                     fromAddress = publicRsaKey.toString();
+
                     toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
+                    if (!checkRSApublicKey(toAddress))
+                        throw std::runtime_error("public key is incorrect");
+
                     subject = ui->subjectEdit->text().toUtf8().constData();
+                    if (subject.empty())
+                        throw std::runtime_error("subject cannot be empty");
+
+                    if (subject.size() > 100)
+                        throw std::runtime_error("subject cannot be longer than 100 letters");
+
                     message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+                    if (message.empty())
+                        throw std::runtime_error("message cannot be empty");
+
+                    if (message.size() > 1000)
+                        throw std::runtime_error("message cannot be longer than 1000 letters");
 
                     const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
 
@@ -818,28 +829,37 @@ void MessengerPage::sendByMining()
                 CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
 
                 if (!tx) {
-                    throw std::runtime_error("Transaction not mined");
+                    LogPrintf("Could not mine transaction. An error occurred or txn cancelled.\n");
+                    throw std::runtime_error("Could not mine transaction. An error occurred or txn cancelled.");
                 }
 
                 if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))
                 {
                     LogPrintf("Error while saving history\n");
+                    throw std::runtime_error("Txn created, but an error occurred while saving history.");
                 }
             }
             else
             {
-                throw std::runtime_error(std::string("No wallet found"));
+                throw std::runtime_error("No wallet found");
             }
         }
         catch(std::exception const& e)
         {
             LogPrintf("Send by minig exception: %s\n", e.what());
+            QMessageBox msgBox;
+            msgBox.setText(e.what());
+            msgBox.exec();
         }
         catch(...)
         {
             LogPrintf("Send by minig exception.\n");
+            QMessageBox msgBox;
+            msgBox.setText("Unknown exception occured");
+            msgBox.exec();
         }
     }
+
     unlockUISending();
 #endif
 }
