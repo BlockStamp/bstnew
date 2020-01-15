@@ -616,6 +616,8 @@ void MessengerPage::read(const std::string& txnId)
 void MessengerPage::send()
 {
 #ifdef ENABLE_WALLET
+    QString error;
+
     if (walletModel)
     {
         try
@@ -648,6 +650,15 @@ void MessengerPage::send()
                 const std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
                 const std::string subject = ui->subjectEdit->text().toUtf8().constData();
                 const std::string message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+
+                if (!checkRSApublicKey(toAddress))
+                    throw std::runtime_error("public key is incorrect");
+
+                if (subject.empty())
+                    throw std::runtime_error("subject cannot be empty");
+
+                if (message.empty())
+                    throw std::runtime_error("message cannot be empty");
 
                 const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
 
@@ -726,17 +737,18 @@ void MessengerPage::send()
         }
         catch(std::exception const& e)
         {
-            QMessageBox msgBox;
-            msgBox.setText(e.what());
-            msgBox.exec();
+            error = e.what();
         }
         catch(...)
         {
-            QMessageBox msgBox;
-            msgBox.setText("Unknown exception occured");
-            msgBox.exec();
+            error = "Sending message unkwnown exception.";
         }
     }
+
+    if (!error.isEmpty()) {
+        QMessageBox::critical(this, tr("Error"), error);
+    }
+
 #endif
 }
 
@@ -862,11 +874,8 @@ void MessengerPage::sendByMining()
     }
 
     if (!error.isEmpty()) {
-        QMessageBox msgBox;
-        msgBox.setText(error);
-        msgBox.exec();
+        QMessageBox::critical(this, tr("Error"), error);
     }
-
     unlockUISending();
 #endif
 }

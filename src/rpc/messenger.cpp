@@ -100,6 +100,15 @@ UniValue sendmessage(const JSONRPCRequest& request)
     const std::string message = request.params[1].get_str();
     const std::string toAddress = request.params[2].get_str();
 
+    if (subject.empty())
+        throw std::runtime_error("subject cannot be empty");
+
+    if (message.empty())
+        throw std::runtime_error("message cannot be empty");
+
+    if (!checkRSApublicKey(toAddress))
+        throw std::runtime_error("public key is incorrect");
+
     const std::string signature = signMessage(rsaPrivateKey.toString(), fromAddress);
 
     std::string msg=MSG_RECOGNIZE_TAG
