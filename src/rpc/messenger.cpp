@@ -266,31 +266,31 @@ static UniValue encryptmessenger(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "encryptmessenger \"passphrase\"\n"
-            "\nEncrypts the messenger with 'passphrase'. This is for first time encryption.\n"
+            "encryptcommunicator \"passphrase\"\n"
+            "\nEncrypts the communicator with 'passphrase'. This is for first time encryption.\n"
             "After this, any calls that interact with messages such as sending or reading\n"
             "will require the passphrase to be set prior the making these calls.\n"
-            "Use the messengerpassphrase call for this, and then messengerlock call.\n"
-            "If the messenger is already encrypted, use the messengerpassphrasechange call.\n"
+            "Use the communicatorpassphrase call for this, and then communicatorlock call.\n"
+            "If the communicator is already encrypted, use the communicatorpassphrasechange call.\n"
             "\nArguments:\n"
-            "1. \"passphrase\"    (string) The pass phrase to encrypt the messenger with. It must be at least 1 character, but should be long.\n"
+            "1. \"passphrase\"    (string) The pass phrase to encrypt the communicator with. It must be at least 1 character, but should be long.\n"
             "\nExamples:\n"
-            "\nEncrypt your messenger\n"
-            + HelpExampleCli("encryptmessenger", "\"my pass phrase\"") +
-            "\nNow set the passphrase to use the messenger, such as for sending messages\n"
-            + HelpExampleCli("messengerpassphrase", "\"my pass phrase\"") +
+            "\nEncrypt your communicator\n"
+            + HelpExampleCli("encryptcommunicator", "\"my pass phrase\"") +
+            "\nNow set the passphrase to use the communicator, such as for sending messages\n"
+            + HelpExampleCli("communicatorpassphrase", "\"my pass phrase\"") +
             "\nNow we can do something like reading and sending messages\n"
-            "\nNow lock the messenger again by removing the passphrase\n"
-            + HelpExampleCli("messengerlock", "") +
+            "\nNow lock the communicator again by removing the passphrase\n"
+            + HelpExampleCli("communicatorlock", "") +
             "\nAs a json rpc call\n"
-            + HelpExampleRpc("encryptmessegner", "\"my pass phrase\"")
+            + HelpExampleRpc("encryptcommunicator", "\"my pass phrase\"")
         );
     }
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
     if (pwallet->IsMsgCrypted()) {
-        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an encrypted messenger, but encryptmessenger was called.");
+        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an encrypted communicator, but encryptcommunicator was called.");
     }
 
     // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
@@ -301,14 +301,14 @@ static UniValue encryptmessenger(const JSONRPCRequest& request)
 
     if (strWalletPass.length() < 1)
         throw std::runtime_error(
-            "encryptmessenger <passphrase>\n"
-            "Encrypts the messenger with <passphrase>.");
+            "encryptcommunicator <passphrase>\n"
+            "Encrypts the communicator with <passphrase>.");
 
     if (!pwallet->EncryptMessenger(strWalletPass)) {
-        throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: Failed to encrypt the messenger.");
+        throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: Failed to encrypt the communicator.");
     }
 
-    return "messenger encrypted.";
+    return "Communicator encrypted.";
 }
 
 static UniValue messengerlock(const JSONRPCRequest& request)
@@ -322,26 +322,26 @@ static UniValue messengerlock(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() != 0) {
         throw std::runtime_error(
-            "messengerlock\n"
-            "\nRemoves the messenger encryption key from memory, locking the messenger.\n"
-            "After calling this method, you will need to call messengerpassphrase again\n"
-            "before being able to call any methods which require the messenger to be unlocked.\n"
+            "communicatorlock\n"
+            "\nRemoves the communicator encryption key from memory, locking the communicator.\n"
+            "After calling this method, you will need to call communicatorpassphrase again\n"
+            "before being able to call any methods which require the communicator to be unlocked.\n"
             "\nExamples:\n"
-            "\nUnlock the messenger with messengerpassphrase (the messenger is unlocked till the end session\n"
-            "i.e. until the program is turned off or messengerlock is called)\n"
-            + HelpExampleCli("messengerpassphrase", "\"my pass phrase\"") +
-            "\nPerform a messenger command, e.g. getmsgkey (requires messenger passphrase set)\n"
+            "\nUnlock the communicator with communicatorpassphrase (the communicator is unlocked till the end session\n"
+            "i.e. until the program is turned off or communicatorlock is called)\n"
+            + HelpExampleCli("communicatorpassphrase", "\"my pass phrase\"") +
+            "\nPerform a communicator command, e.g. getmsgkey (requires communicator passphrase set)\n"
             "\nClear the passphrase since we are already done\n"
-            + HelpExampleCli("messengerlock", "") +
+            + HelpExampleCli("communicatorlock", "") +
             "\nAs json rpc call\n"
-            + HelpExampleRpc("messengerlock", "")
+            + HelpExampleRpc("communicatorlock", "")
         );
     }
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
     if (!pwallet->IsMsgCrypted()) {
-        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted messenger, but messengerlock was called.");
+        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted communicator, but communicatorlock was called.");
     }
 
     pwallet->MsgLock();
@@ -353,7 +353,7 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
     throw std::runtime_error(
         "exportmsgkey \n"
-        "\nExport pair of keys used in messenger to destination path.\n"
+        "\nExport pair of keys used in communicator to destination path.\n"
 
         "\nArguments:\n"
         "1. \"destination_path\"                        (string, required) The destination file path.\n"
@@ -376,7 +376,7 @@ UniValue exportmsgkey(const JSONRPCRequest& request)
 
     if (!pwallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
     {
-        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get communicator keys from wallet");
     }
 
     std::ofstream file(request.params[0].get_str().c_str(), std::ofstream::trunc);
@@ -390,15 +390,15 @@ UniValue importmsgkey(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
     throw std::runtime_error(
         "importmsgkey \n"
-        "\nImport a pair of RSA keys to use in messenger from source path.\n"
+        "\nImport a pair of RSA keys to use in communicator from source path.\n"
         "\nThe keys must be in clear text base64-encoded in OpenSSL format, e.g. contain headers BEGIN PUBLIC KEY/END PUBLIC KEY\n"
         "and BEGIN RSA PRIVATE KEY/END RSA PRIVATE KEY\n"
 
         "\nArguments:\n"
         "1. \"source_path\"                        (string, required) The source file path.\n"
-        "2. rescan                               (boolean, optional, default=false) Rescan the wallet for messenger transactions that can be decoded with these keys\n"
+        "2. rescan                               (boolean, optional, default=false) Rescan the wallet for communicator transactions that can be decoded with these keys\n"
         "\nNote: This call can take a long time to complete if rescan is true, during that time, other rpc calls may not work correctly"
-        "\nImporting new messenger keys will clear outgoing messages history, e.g. all sent messages will be removed\n"
+        "\nImporting new communicator keys will clear outgoing messages history, e.g. all sent messages will be removed\n"
         "\nExamples:\n"
         + HelpExampleCli("importmsgkey", "\"source_path\"")
         + HelpExampleRpc("importmsgkey", "\"source_path\"")
@@ -436,7 +436,7 @@ UniValue importmsgkey(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_ERROR, "Rescan is disabled in pruned mode");
 
         if (fRescan && !reserver.reserve()) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Messenger is currently rescanning. Abort existing rescan or wait.");
+            throw JSONRPCError(RPC_WALLET_ERROR, "Communicator is currently rescanning. Abort existing rescan or wait.");
         }
 
         if (!pwallet->SetMessengerKeys(privateRsaKey.get(), publicRsaKey.get()))
@@ -484,18 +484,18 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "messengerpassphrase \"passphrase\"\n"
-            "\nStores the messenger decryption key in memory until the node is shutdown\n"
-            "This is needed prior to performing transactions related to messenger keys such as sendmessage\n"
+            "communicatorpassphrase \"passphrase\"\n"
+            "\nStores the communicator decryption key in memory until the node is shutdown\n"
+            "This is needed prior to performing transactions related to communicator keys such as sendmessage\n"
             "\nArguments:\n"
-            "1. \"passphrase\"     (string, required) The messenger passphrase\n"
+            "1. \"passphrase\"     (string, required) The communicator passphrase\n"
             "\nExamples:\n"
-            "\nUnlock messenger\n"
-            + HelpExampleCli("messengerpassphrase", "\"my pass phrase\"") +
-            "\nLock messenger again\n"
-            + HelpExampleCli("messengerlock", "") +
+            "\nUnlock communicator\n"
+            + HelpExampleCli("communicatorpassphrase", "\"my pass phrase\"") +
+            "\nLock communicator again\n"
+            + HelpExampleCli("communicatorlock", "") +
             "\nAs json rpc call\n"
-            + HelpExampleRpc("messengerpassphrase", "\"my pass phrase\"")
+            + HelpExampleRpc("communicatorpassphrase", "\"my pass phrase\"")
         );
     }
 
@@ -505,14 +505,14 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
         LOCK2(cs_main, pwallet->cs_wallet);
 
         if (!pwallet->IsMsgCrypted()) {
-            throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted messenger, but messengerpassphrase was called.");
+            throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted communicator, but communicatorpassphrase was called.");
         }
 
         if (!reserver.reserve()) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Messenger is currently rescanning. Abort unlocking messenger and wait.");
+            throw JSONRPCError(RPC_WALLET_ERROR, "Communicator is currently rescanning. Abort unlocking communicator and wait.");
         }
 
-        // Note that the messengerpassphrase is stored in request.params[0] which is not mlock()ed
+        // Note that the communicatorpassphrase is stored in request.params[0] which is not mlock()ed
         SecureString strMsgPass;
         strMsgPass.reserve(100);
         // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
@@ -522,13 +522,13 @@ static UniValue messengerpassphrase(const JSONRPCRequest& request)
         if (strMsgPass.length() > 0)
         {
             if (!pwallet->MsgUnlock(strMsgPass)) {
-                throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The messenger passphrase entered was incorrect.");
+                throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The communicator passphrase entered was incorrect.");
             }
         }
         else
             throw std::runtime_error(
-                "messengerpassphrase <passphrase>\n"
-                "Stores the messenger decryption key in memory until the node is shutdown");
+                "communicatorpassphrase <passphrase>\n"
+                "Stores the communicator decryption key in memory until the node is shutdown");
 
         pwallet->ScanForMessagesSinceLastScan(reserver);
     }
@@ -547,21 +547,21 @@ static UniValue messengerpassphrasechange(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() != 2) {
         throw std::runtime_error(
-            "messengerpassphrasechange \"oldpassphrase\" \"newpassphrase\"\n"
-            "\nChanges the messenger passphrase from 'oldpassphrase' to 'newpassphrase'.\n"
+            "communicatorpassphrasechange \"oldpassphrase\" \"newpassphrase\"\n"
+            "\nChanges the communicator passphrase from 'oldpassphrase' to 'newpassphrase'.\n"
             "\nArguments:\n"
             "1. \"oldpassphrase\"      (string) The current passphrase\n"
             "2. \"newpassphrase\"      (string) The new passphrase\n"
             "\nExamples:\n"
-            + HelpExampleCli("messengerpassphrasechange", "\"old one\" \"new one\"")
-            + HelpExampleRpc("messengerpassphrasechange", "\"old one\", \"new one\"")
+            + HelpExampleCli("communicatorpassphrasechange", "\"old one\" \"new one\"")
+            + HelpExampleRpc("communicatorpassphrasechange", "\"old one\", \"new one\"")
         );
     }
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
     if (!pwallet->IsMsgCrypted()) {
-        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted messenger, but messengerpassphrasechange was called.");
+        throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an unencrypted communicator, but communicatorpassphrasechange was called.");
     }
 
     // TODO: get rid of these .c_str() calls by implementing SecureString::operator=(std::string)
@@ -576,11 +576,11 @@ static UniValue messengerpassphrasechange(const JSONRPCRequest& request)
 
     if (strOldWalletPass.length() < 1 || strNewWalletPass.length() < 1)
         throw std::runtime_error(
-            "messengerpassphrasechange <oldpassphrase> <newpassphrase>\n"
-            "Changes the messenger passphrase from <oldpassphrase> to <newpassphrase>.");
+            "communicatorpassphrasechange <oldpassphrase> <newpassphrase>\n"
+            "Changes the communicator passphrase from <oldpassphrase> to <newpassphrase>.");
 
     if (!pwallet->ChangeMessengerPassphrase(strOldWalletPass, strNewWalletPass)) {
-        throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The messenger passphrase entered was incorrect.");
+        throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The communicator passphrase entered was incorrect.");
     }
 
     return NullUniValue;
@@ -591,7 +591,7 @@ UniValue listmsgsinceblock(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 2)
     throw std::runtime_error(
         "listmsgsinceblock ( \"blockhash\" )\n"
-        "\nGet all messenger transactions in blocks since block [blockhash].\n"
+        "\nGet all communicator transactions in blocks since block [blockhash].\n"
         "\nArguments:\n"
         "1. \"blockhash\"            (string, optional) The block hash to list transactions since\n"
         "\nResult:\n"
@@ -739,7 +739,7 @@ static UniValue createmsgtransaction(const JSONRPCRequest& request)
 
     if (!pwallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey))
     {
-        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get messenger keys from wallet");
+        throw JSONRPCError(RPC_DATABASE_ERROR, "Could not get communicator keys from wallet");
     }
 
     const std::string fromAddress = rsaPublicKey.toString();
@@ -847,18 +847,18 @@ UniValue cancelmsgtransaction(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
-    { "messenger",         "sendmessage",                  &sendmessage,               {"subject", "message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
-    { "messenger",         "readmessage",                  &readmessage,               {"txid"} },
-    { "messenger",         "getmsgkey",                    &getmsgkey,                 {} },
-    { "messenger",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
-    { "messenger",         "importmsgkey",                 &importmsgkey,              {"source_path", "rescan"} },
-    { "messenger",         "encryptmessenger",             &encryptmessenger,          {"passphrase"} },
-    { "messenger",         "messengerpassphrase",          &messengerpassphrase,       {"passphrase", "timeout"} },
-    { "messenger",         "messengerlock",                &messengerlock,             {} },
-    { "messenger",         "messengerpassphrasechange",    &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
-    { "messenger",         "listmsgsinceblock",            &listmsgsinceblock,         {"blockhash"} },
-    { "messenger",         "createmsgtransaction",         &createmsgtransaction,      {"subject", "message", "public_key", "threads"} },
-    { "messenger",         "cancelmsgtransaction",         &cancelmsgtransaction,      {} },
+    { "communicator",         "sendmessage",                  &sendmessage,               {"subject", "message", "public_key", "replaceable", "conf_target", "estimate_mode"} },
+    { "communicator",         "readmessage",                  &readmessage,               {"txid"} },
+    { "communicator",         "getmsgkey",                    &getmsgkey,                 {} },
+    { "communicator",         "exportmsgkey",                 &exportmsgkey,              {"destination_path"} },
+    { "communicator",         "importmsgkey",                 &importmsgkey,              {"source_path", "rescan"} },
+    { "communicator",         "encryptcommunicator",          &encryptmessenger,          {"passphrase"} },
+    { "communicator",         "communicatorpassphrase",       &messengerpassphrase,       {"passphrase", "timeout"} },
+    { "communicator",         "communicatorlock",             &messengerlock,             {} },
+    { "communicator",         "communicatorpassphrasechange", &messengerpassphrasechange, {"oldpassphrase","newpassphrase"} },
+    { "communicator",         "listmsgsinceblock",            &listmsgsinceblock,         {"blockhash"} },
+    { "communicator",         "createmsgtransaction",         &createmsgtransaction,      {"subject", "message", "public_key", "threads"} },
+    { "communicator",         "cancelmsgtransaction",         &cancelmsgtransaction,      {} },
 };
 
 void RegisterMessengerRPCCommands(CRPCTable &t)

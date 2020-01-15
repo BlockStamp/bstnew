@@ -162,32 +162,32 @@
     <message>
         <location filename="../askmessengerpassphrasedialog.cpp" line="+48"/>
         <source>Enter the new passphrase to the messenger.&lt;br/&gt;Please use a passphrase of &lt;b&gt;ten or more random characters&lt;/b&gt;, or &lt;b&gt;eight or more words&lt;/b&gt;.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Enter the new passphrase to the communicator.&lt;br/&gt;Please use a passphrase of &lt;b&gt;ten or more random characters&lt;/b&gt;, or &lt;b&gt;eight or more words&lt;/b&gt;.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Encrypt messenger</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Encrypt communicator</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>This operation needs your messenger passphrase to unlock the messenger.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">This operation needs your communicator passphrase to unlock the communicator.</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Unlock messenger</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Unlock communicator</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>This operation needs your messenger passphrase to decrypt the messenger.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">This operation needs your communicator passphrase to decrypt the communicator.</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Decrypt messenger</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Decrypt communicator</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -197,33 +197,33 @@
     <message>
         <location line="+1"/>
         <source>Enter the old passphrase and new passphrase to the messenger.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Enter the old passphrase and new passphrase to the communicator.</translation>
     </message>
     <message>
         <location line="+45"/>
         <source>Confirm messenger encryption</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Confirm communicator encryption</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Warning: If you encrypt the messenger and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR MESSENGER COMMUNICATION&lt;/b&gt;!</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Warning: If you encrypt the communicator and lose your passphrase, you will &lt;b&gt;LOSE ACCESS TO YOUR COMMUNICATOR &lt;/b&gt;!</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Are you sure you wish to encrypt the messenger?</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Are you sure you wish to encrypt the communicator?</translation>
     </message>
     <message>
         <location line="+9"/>
         <location line="+53"/>
         <source>Messenger encrypted</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator encrypted</translation>
     </message>
     <message>
         <location line="-51"/>
         <source>IMPORTANT: Any previous backups you have made of your messenger wallet file should be replaced with the newly generated, encrypted messenger wallet file. For security reasons, previous backups of the unencrypted messenger walet file will become useless as soon as you start using the new, encrypted messenger wallet.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">IMPORTANT: Any previous backups you have made of your communicator wallet file should be replaced with the newly generated, encrypted communicator wallet file. For security reasons, previous backups of the unencrypted communicator walet file will become useless as soon as you start using the new, encrypted communicator wallet.</translation>
     </message>
     <message>
         <location line="+8"/>
@@ -231,12 +231,12 @@
         <location line="+42"/>
         <location line="+6"/>
         <source>Messenger encryption failed</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator encryption failed</translation>
     </message>
     <message>
         <location line="-54"/>
         <source>Messenger encryption failed due to an internal error. The messenger was not encrypted.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator encryption failed due to an internal error. The communicator was not encrypted.</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -247,24 +247,24 @@
     <message>
         <location line="-37"/>
         <source>Messenger unlock failed</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator unlock failed</translation>
     </message>
     <message>
         <location line="+1"/>
         <location line="+11"/>
         <location line="+19"/>
         <source>The passphrase entered for the messenger decryption was incorrect.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">The passphrase entered for the communicator decryption was incorrect.</translation>
     </message>
     <message>
         <location line="-20"/>
         <source>Messenger decryption failed</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator decryption failed</translation>
     </message>
     <message>
         <location line="+14"/>
         <source>Messenger passphrase was successfully changed.</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator passphrase was successfully changed.</translation>
     </message>
     <message>
         <location line="+47"/>
@@ -502,7 +502,7 @@
     <message>
         <location line="+10"/>
         <source>&amp;Messenger</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">&amp;Communicator</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -557,12 +557,12 @@
     <message>
         <location line="+5"/>
         <source>Encrypt Messenger...</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Encrypt Communicator...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Encrypt the private RSA key used by messenger</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Encrypt the private RSA key used by communicator</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -577,12 +577,12 @@
     <message>
         <location line="+2"/>
         <source>Change Messenger Passphrase...</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Change Communicator Passphrase...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Change the passphrase used for messenger encryption</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Change the passphrase used for communicator encryption</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -670,20 +670,20 @@
     <message>
         <location line="+227"/>
         <source>Messenger is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt;</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Messenger is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Communicator is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</translation>
     </message>
     <message>
-        <location line="+49"/>
+        <location line="+46"/>
         <source>Proxy is &lt;b&gt;enabled&lt;/b&gt;: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-908"/>
+        <location line="-905"/>
         <source>Backup wallet to another location</source>
         <translation>Backup wallet to another location</translation>
     </message>
@@ -1374,7 +1374,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation>Check File Signature</translation>
     </message>
     <message>
-        <location filename="../datapage.cpp" line="+70"/>
+        <location filename="../datapage.cpp" line="+71"/>
         <source>Copy quantity</source>
         <translation>Copy quantity</translation>
     </message>
@@ -1454,15 +1454,40 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     <message>
         <location line="+44"/>
         <location line="+107"/>
-        <location line="+296"/>
+        <location line="+329"/>
         <source>Open File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-403"/>
+        <location line="-436"/>
         <location line="+107"/>
-        <location line="+296"/>
+        <location line="+329"/>
         <source>Files (*.*)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-124"/>
+        <source>Are you sure you want to store data?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Please, review your transaction.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Total Amount</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>or</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Confirm store data</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2072,7 +2097,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     <message>
         <location line="+2"/>
         <source>These are addresses for use in messenger</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">These are addresses for use in communicator</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -2090,7 +2115,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+215"/>
+        <location line="+214"/>
         <source>Export Address List</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2224,12 +2249,12 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     </message>
     <message>
         <location line="+3"/>
-        <location line="+798"/>
+        <location line="+811"/>
         <source>...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-773"/>
+        <location line="-786"/>
         <source>Enter recipient public key.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2345,6 +2370,12 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     </message>
     <message>
         <location line="+20"/>
+        <location filename="../messengerpage.cpp" line="+764"/>
+        <source>Send by Mining</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+13"/>
         <source>Display history of sent messages.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2409,7 +2440,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../messengerpage.cpp" line="+94"/>
+        <location filename="../messengerpage.cpp" line="-668"/>
         <source>Copy quantity</source>
         <translation type="unfinished">Copy quantity</translation>
     </message>
@@ -2444,7 +2475,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished">Copy change</translation>
     </message>
     <message>
-        <location line="+100"/>
+        <location line="+102"/>
         <source>Pay only the required fee of %1</source>
         <translation type="unfinished">Pay only the required fee of %1</translation>
     </message>
@@ -2487,7 +2518,12 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+367"/>
+        <location line="+284"/>
+        <source>Mining...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+200"/>
         <source>Reply</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2499,6 +2535,41 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     <message>
         <location line="+6"/>
         <source>Add to address book</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+50"/>
+        <source>Are you sure you want to send message?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Please, review your transaction.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Message to: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Total Amount</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>or</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Message is totally free but user node will have to mine the transaction which can take a few minutes, depends on a computer performance.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Confirm send message</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2537,6 +2608,11 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     <message>
         <location line="+51"/>
         <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../messengersendhistory.cpp" line="+192"/>
+        <source>Message not included in a blockchain</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -5130,17 +5206,22 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+2"/>
+        <source>Message</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+29"/>
         <source>watch-only</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+16"/>
         <source>(n/a)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+208"/>
+        <location line="+209"/>
         <source>(no label)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5226,6 +5307,11 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     <message>
         <location line="+2"/>
         <source>To yourself</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Message</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5377,7 +5463,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
 <context>
     <name>UnitDisplayStatusBarControl</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+203"/>
+        <location filename="../bitcoingui.cpp" line="+200"/>
         <source>Unit to show amounts in. Click to select another unit.</source>
         <translation type="unfinished"></translation>
     </message>
