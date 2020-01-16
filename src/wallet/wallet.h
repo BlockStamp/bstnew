@@ -1177,6 +1177,11 @@ public:
             ChangeType status)> NotifyMessengerAddressBookChanged;
 
     /**
+     * Started or finished mining process transaction
+     */
+    boost::signals2::signal<void (CWallet *wallet, bool started)> NotifyMiningTxn;
+
+    /**
      * Wallet transaction added, removed or updated.
      * @note called with lock cs_wallet held.
      */

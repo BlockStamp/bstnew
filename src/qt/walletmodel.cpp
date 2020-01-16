@@ -136,6 +136,10 @@ void WalletModel::updateMessengerAddressBook(const QString &address, const QStri
         messengerBookModel->updateEntry(address, label, status);
 }
 
+void WalletModel::updateMsgTxnMining(bool started) {
+    Q_EMIT notifyMiningTxn(started);
+}
+
 void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
 {
     fHaveWatchOnly = fHaveWatchonly;
@@ -494,6 +498,11 @@ static void NotifyMessengerAddressBookChanged(WalletModel *walletmodel,
                               Q_ARG(int, status));
 }
 
+static void NotifyTxnMining(WalletModel *walletmodel, bool started)
+{
+    QMetaObject::invokeMethod(walletmodel, "updateMsgTxnMining", Qt::QueuedConnection, Q_ARG(bool, started));
+}
+
 static void NotifyTransactionChanged(WalletModel *walletmodel, const uint256 &hash, ChangeType status)
 {
     Q_UNUSED(hash);
@@ -533,6 +542,7 @@ void WalletModel::subscribeToCoreSignals()
     m_handler_messenger_status_changed = m_wallet->handleMessengerStatusChanged(boost::bind(&NotifyMessengerKeyStoreStatusChanged, this));
     m_handler_address_book_changed = m_wallet->handleAddressBookChanged(boost::bind(NotifyAddressBookChanged, this, _1, _2, _3, _4, _5));
     m_handler_messenger_address_book_changed = m_wallet->handleMessengerAddressBookChanged(boost::bind(NotifyMessengerAddressBookChanged, this, _1, _2, _3));
+    m_handler_msg_txn_mining = m_wallet->handleMessengerTxnMining(boost::bind(NotifyTxnMining, this, _1));
     m_handler_transaction_changed = m_wallet->handleTransactionChanged(boost::bind(NotifyTransactionChanged, this, _1, _2));
     m_handler_encr_msg_transaction_changed = m_wallet->handleMsgTransactionChanged(boost::bind(NotifyEncrMsgTransactionChanged, this));
     m_handler_msg_transaction_send = m_wallet->handleMsgTransactionSent(boost::bind(NotifyMsgSent, this));
@@ -547,6 +557,7 @@ void WalletModel::unsubscribeFromCoreSignals()
     m_handler_status_changed->disconnect();
     m_handler_messenger_status_changed->disconnect();
     m_handler_address_book_changed->disconnect();
+    m_handler_msg_txn_mining->disconnect();
     m_handler_messenger_address_book_changed->disconnect();
     m_handler_transaction_changed->disconnect();
     m_handler_encr_msg_transaction_changed->disconnect();

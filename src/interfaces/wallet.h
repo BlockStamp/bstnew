@@ -314,6 +314,10 @@ public:
         ChangeType status)>;
     virtual std::unique_ptr<Handler> handleMessengerAddressBookChanged(MessengerAddressBookChangedFn fn) = 0;
 
+    //! Register handler for messenger txn mining started or finished
+    using MessengerTxnMiningFn = std::function<void(bool started)>;
+    virtual std::unique_ptr<Handler> handleMessengerTxnMining(MessengerTxnMiningFn fn) = 0;
+
     //! Register handler for transaction changed messages.
     using TransactionChangedFn = std::function<void(const uint256& txid, ChangeType status)>;
     virtual std::unique_ptr<Handler> handleTransactionChanged(TransactionChangedFn fn) = 0;

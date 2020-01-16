@@ -302,8 +302,8 @@ void MessengerPage::setModel(WalletModel *model)
     interfaces::WalletBalances balances = walletModel->wallet().getBalances();
     setBalance(balances);
     connect(walletModel, SIGNAL(balanceChanged(interfaces::WalletBalances)), this, SLOT(setBalance(interfaces::WalletBalances)));
+    connect(walletModel, SIGNAL(notifyMiningTxn(bool)), this, SLOT(setUiMining(bool)));
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
-
     for (const int n : confTargets) {
         ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPowTargetSpacing)).arg(n));
     }
@@ -752,16 +752,115 @@ void MessengerPage::send()
 #endif
 }
 
-void MessengerPage::on_sendByMining_clicked()
+void MessengerPage::sendByMining(
+    std::shared_ptr<CWallet> pwallet,
+    std::vector<unsigned char> data,
+    std::string subject,
+    std::string message,
+    std::string fromAddress,
+    std::string toAddress,
+    int numThreads)
 {
-    const std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
-    if (!confirmWindow(0, toAddress))
-    {
-        return;
+    pwallet->NotifyMiningTxn(pwallet.get(), true);
+    CTransactionRef tx = CreateMsgTx(pwallet.get(), data, numThreads);
+    if (tx) {
+        if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))
+        {
+            LogPrintf("Error while saving history\n");
+        }
+    }
+    else {
+        LogPrintf("Could not mine transaction. An error occurred or txn cancelled.\n");
     }
 
-    boost::thread t(boost::bind(&MessengerPage::sendByMining, this));
-    unlockUISending();
+    pwallet->NotifyMiningTxn(pwallet.get(), false);
+}
+
+void MessengerPage::on_sendByMining_clicked()
+{
+#ifdef ENABLE_WALLET
+
+    if (!walletModel)
+        return;
+
+    try {
+        interfaces::Wallet& wlt = walletModel->wallet();
+        std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
+        if (!wallet)
+            throw std::runtime_error("No wallet found");
+
+        wallet->BlockUntilSyncedToCurrentChain();
+
+        WalletModel::MessengerUnlockContext msgCtx(walletModel->requestMessengerUnlock());
+        if (!msgCtx.isValid())
+            throw std::runtime_error("Could not unlock messenger");
+
+        CMessengerKey privateRsaKey, publicRsaKey;
+        if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
+            throw std::runtime_error("No RSA keys found");
+
+        std::string fromAddress = publicRsaKey.toString();
+
+        std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
+        if (!checkRSApublicKey(toAddress))
+            throw std::runtime_error("public key is incorrect");
+
+        std::string subject = ui->subjectEdit->text().toUtf8().constData();
+        if (subject.empty())
+            throw std::runtime_error("subject cannot be empty");
+
+        if (subject.size() > 100)
+            throw std::runtime_error("subject cannot be longer than 100 letters");
+
+        std::string message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+        if (message.empty())
+            throw std::runtime_error("message cannot be empty");
+
+        if (message.size() > 1000)
+            throw std::runtime_error("message cannot be longer than 1000 letters");
+
+        const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
+
+        std::vector<unsigned char> data = createData(
+            fromAddress,
+            toAddress,
+            subject,
+            message,
+            signature);
+
+        int numThreads = gArgs.GetArg("-msgminingthreads", GetNumCores());
+        if (numThreads < 1)
+            numThreads = GetNumCores();
+
+        boost::thread backgroundMining {
+            &MessengerPage::sendByMining,
+            this,
+            wallet,
+            data,
+            subject,
+            message,
+            fromAddress,
+            toAddress,
+            numThreads};
+
+        backgroundMining.detach();
+    }
+    catch(const std::exception& e) {
+        QMessageBox::critical(0, "Error", e.what());
+    }
+    catch(...) {
+        QMessageBox::critical(0, "Error", "Unknown error occurred");
+    }
+#endif
+}
+
+void MessengerPage::setUiMining(bool started) {
+    if (started) {
+        lockUISending();
+    }
+    else {
+        unlockUISending();
+    }
 }
 
 void MessengerPage::lockUISending()
@@ -774,110 +873,6 @@ void MessengerPage::unlockUISending()
 {
     ui->sendWithMining->setEnabled(true);
     ui->sendWithMining->setText(tr("Send by Mining"));
-}
-
-void MessengerPage::sendByMining()
-{
-#ifdef ENABLE_WALLET
-    QString error;
-
-    if (walletModel)
-    {
-        try
-        {
-            interfaces::Wallet& wlt = walletModel->wallet();
-            std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
-            if(wallet != nullptr)
-            {
-                CWallet* const pwallet=wallet.get();
-
-                pwallet->BlockUntilSyncedToCurrentChain();
-
-                std::string fromAddress, toAddress, subject, message, signature;
-                std::vector<unsigned char> data;
-
-                {
-                    LOCK2(cs_main, pwallet->cs_wallet);
-
-                    WalletModel::MessengerUnlockContext msgCtx(walletModel->requestMessengerUnlock());
-                    if (!msgCtx.isValid())
-                        throw std::runtime_error("Could not unlock messenger");
-
-                    CMessengerKey privateRsaKey, publicRsaKey;
-                    if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
-                        throw std::runtime_error("No RSA keys found");
-
-                    fromAddress = publicRsaKey.toString();
-
-                    toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
-                    if (!checkRSApublicKey(toAddress))
-                        throw std::runtime_error("public key is incorrect");
-
-                    subject = ui->subjectEdit->text().toUtf8().constData();
-                    if (subject.empty())
-                        throw std::runtime_error("subject cannot be empty");
-
-                    if (subject.size() > 100)
-                        throw std::runtime_error("subject cannot be longer than 100 letters");
-
-                    message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
-                    if (message.empty())
-                        throw std::runtime_error("message cannot be empty");
-
-                    if (message.size() > 1000)
-                        throw std::runtime_error("message cannot be longer than 1000 letters");
-
-                    const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
-
-                    data = createData(
-                    fromAddress,
-                    toAddress,
-                    subject,
-                    message,
-                    signature);
-
-                    lockUISending();
-                }
-
-                int numThreads = gArgs.GetArg("-msgminingthreads", GetNumCores());
-                if (numThreads < 1)
-                    numThreads = GetNumCores();
-
-                CTransactionRef tx = CreateMsgTx(pwallet, data, numThreads);
-
-                if (!tx) {
-                    LogPrintf("Could not mine transaction. An error occurred or txn cancelled.\n");
-                    throw std::runtime_error("Could not mine transaction. An error occurred or txn cancelled.");
-                }
-
-                if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))
-                {
-                    LogPrintf("Error while saving history\n");
-                    throw std::runtime_error("Txn created, but an error occurred while saving history.");
-                }
-            }
-            else
-            {
-                throw std::runtime_error("No wallet found");
-            }
-        }
-        catch(std::exception const& e)
-        {
-            LogPrintf("Send by minig exception: %s\n", e.what());
-            error = e.what();
-        }
-        catch(...)
-        {
-            LogPrintf("Send by minig unkwnown exception.\n");
-            error = "Send by minig unkwnown exception.";
-        }
-    }
-
-    if (!error.isEmpty()) {
-        QMessageBox::critical(this, tr("Error"), error);
-    }
-    unlockUISending();
-#endif
 }
 
 std::vector<unsigned char> MessengerPage::createData(

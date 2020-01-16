@@ -79,6 +79,14 @@ private:
         const std::string& message,
         const std::string& signature);
 
+    void sendByMining(
+        std::shared_ptr<CWallet> pwallet,
+        std::vector<unsigned char> data,
+        std::string subject,
+        std::string message,
+        std::string fromAddress,
+        std::string toAddress,
+        int numThreads);
 protected:
     virtual void showEvent(QShowEvent * event);
 
@@ -88,7 +96,6 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void send();
-    void sendByMining();
     void read(const std::string& txnId);
     void fillUpTable();
     void fillTable(TransactionsMap& transactions);
@@ -115,6 +122,7 @@ private Q_SLOTS:
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
 
+    void setUiMining(bool started);
     void lockUISending();
     void unlockUISending();
 

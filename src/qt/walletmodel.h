@@ -247,6 +247,7 @@ private:
     std::unique_ptr<interfaces::Handler> m_handler_messenger_status_changed;
     std::unique_ptr<interfaces::Handler> m_handler_address_book_changed;
     std::unique_ptr<interfaces::Handler> m_handler_messenger_address_book_changed;
+    std::unique_ptr<interfaces::Handler> m_handler_msg_txn_mining;
     std::unique_ptr<interfaces::Handler> m_handler_transaction_changed;
     std::unique_ptr<interfaces::Handler> m_handler_encr_msg_transaction_changed;
     std::unique_ptr<interfaces::Handler> m_handler_msg_transaction_send;
@@ -310,6 +311,9 @@ Q_SIGNALS:
     // Watch-only address added
     void notifyWatchonlyChanged(bool fHaveWatchonly);
 
+    // Mining msg txn started or finished
+    void notifyMiningTxn(bool started);
+
     // Signal that wallet is about to be removed
     void unload();
 
@@ -330,6 +334,8 @@ public Q_SLOTS:
     void updateAddressBook(const QString &address, const QString &label, bool isMine, const QString &purpose, int status);
     /* New, updated or removed messenger address book entry */
     void updateMessengerAddressBook(const QString &address, const QString &label, int status);
+    /* Mining msg txn started or finished */
+    void updateMsgTxnMining(bool started);
     /* Watch-only added */
     void updateWatchOnlyFlag(bool fHaveWatchonly);
     /* Current, immature or unconfirmed balance might have changed - emit 'balanceChanged' if so */
