@@ -26,6 +26,7 @@ using namespace std;
 
 static const int MIN_MSG_TXN_SIZE = 1078;
 static const int MAX_MSG_TXN_SIZE = 2182;
+static const uint32_t TARGET_MULTIPLIER = 8;
 
 namespace internal_miner
 {
@@ -165,7 +166,7 @@ static bool getTarget(const CTransaction& txn, const CBlockIndex* indexPrev, ari
         return false;
     }
 
-    const uint32_t ratio = (blockReward / txnCost);
+    const uint32_t ratio = (blockReward / txnCost) * TARGET_MULTIPLIER;
 
     // Only for regtest
     if (Params().GetConsensus().fPowAllowMinDifficultyBlocks) {
