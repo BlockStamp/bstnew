@@ -2660,6 +2660,9 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Requested wallet does not exist or is not loaded");
     }
 
+    // In case msg txn mining was started from this wallet
+    wallet->AbortPendingMsgTxns();
+
     // Release the "main" shared pointer and prevent further notifications.
     // Note that any attempt to load the same wallet would fail until the wallet
     // is destroyed (see CheckUniqueFileid).
