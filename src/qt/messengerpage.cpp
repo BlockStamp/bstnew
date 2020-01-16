@@ -795,15 +795,20 @@ void MessengerPage::on_sendByMining_clicked()
         if (!msgCtx.isValid())
             throw std::runtime_error("Could not unlock messenger");
 
+        std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
+        if (!confirmWindow(0, toAddress)) {
+            return;
+        }
+
+        if (!checkRSApublicKey(toAddress))
+            throw std::runtime_error("public key is incorrect");
+
         CMessengerKey privateRsaKey, publicRsaKey;
         if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
             throw std::runtime_error("No RSA keys found");
 
         std::string fromAddress = publicRsaKey.toString();
 
-        std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
-        if (!checkRSApublicKey(toAddress))
-            throw std::runtime_error("public key is incorrect");
 
         std::string subject = ui->subjectEdit->text().toUtf8().constData();
         if (subject.empty())
