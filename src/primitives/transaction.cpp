@@ -71,6 +71,11 @@ uint256 CMutableTransaction::GetHash() const
     return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
 }
 
+uint256 CMutableTransaction::GetMsgHash() const
+{
+    return SerializeMsgHash(*this);
+}
+
 void CMutableTransaction::SetNamecoin()
 {
     assert (nVersion == CTransaction::CURRENT_VERSION);
@@ -88,6 +93,14 @@ uint256 CTransaction::ComputeWitnessHash() const
         return hash;
     }
     return SerializeHash(*this, SER_GETHASH, 0);
+}
+
+uint256 CTransaction::RefreshHash()
+{
+    hash = ComputeHash();
+    if (HasWitness())
+        m_witness_hash = ComputeHash();
+    return GetHash();
 }
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */

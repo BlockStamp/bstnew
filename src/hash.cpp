@@ -5,7 +5,7 @@
 #include <hash.h>
 #include <crypto/common.h>
 #include <crypto/hmac_sha512.h>
-
+#include <openssl/sha.h>
 
 inline uint32_t ROTL32(uint32_t x, int8_t r)
 {
@@ -244,4 +244,36 @@ uint64_t SipHashUint256Extra(uint64_t k0, uint64_t k1, const uint256& val, uint3
     SIPROUND;
     SIPROUND;
     return v0 ^ v1 ^ v2 ^ v3;
+}
+
+bool CObjHash::updateNonce(uint32_t nNonce, uint32_t target) {
+    size_t size = m_data.size();
+    if (size < 12) throw std::runtime_error("Incorrect transaction serialization format");
+    std::memcpy(m_data.data()+size-4, &nNonce, sizeof(nNonce));
+
+    m_hash.resize(SHA256_DIGEST_LENGTH);
+    SHA256_CTX ctx = m_ctx;
+    SHA256_Update(&ctx, (unsigned char*)&nNonce, sizeof(nNonce));
+    SHA256_Final((unsigned char*)&m_hash[0], &ctx);
+
+    if (((uint16_t*)&m_hash[0])[15] == target)
+        return true;
+    return false;
+}
+
+void CObjHash::updateBlockInfo(uint32_t height, uint32_t hash) {
+    size_t size = m_data.size();
+    if (size < 12) throw std::runtime_error("Incorrect transaction serialization format");
+    std::memcpy(m_data.data()+size-12, &height, sizeof(height));
+    std::memcpy(m_data.data()+size-8, &hash, sizeof(hash));
+
+    SHA256_Init(&m_ctx);
+    SHA256_Update(&m_ctx, (unsigned char*)&m_data[0], m_data.size() - 4);
+}
+
+void CObjHash::update() {
+    SHA256_Init(&m_ctx);
+    SHA256_Update(&m_ctx, (unsigned char*)&m_data[0], m_data.size());
+    m_hash.resize(SHA256_DIGEST_LENGTH);
+    SHA256_Final((unsigned char*)&m_hash[0], &m_ctx);
 }

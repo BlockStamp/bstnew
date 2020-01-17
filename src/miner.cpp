@@ -15,6 +15,7 @@
 #include <consensus/validation.h>
 #include <games/gamesutils.h>
 #include <hash.h>
+#include <internal_miner.h>
 #include <net.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
@@ -402,6 +403,11 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
     nFees += iter->GetFee();
     inBlock.insert(iter);
 
+    if (iter->GetTx().IsMsgTx() && iter->GetFee() == 0)
+    {
+        nFees += internal_miner::getMsgFee(iter->GetTx());
+    }
+
     bool fPrintPriority = gArgs.GetBoolArg("-printpriority", DEFAULT_PRINTPRIORITY);
     if (fPrintPriority) {
         LogPrintf("fee %s txid %s\n",
@@ -554,7 +560,19 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
             packageSigOpsCost = modit->nSigOpCostWithAncestors;
         }
 
-        if (packageFees < blockMinFeeRate.GetFee(packageSize)) {
+        if (iter->tx->IsMsgTx() && chainActive.Height() < Params().GetConsensus().MsgTxnsAllowed) {
+            continue;
+        }
+
+        if (iter->tx->IsMsgTx()) {
+            const CTransaction& tx = *iter->tx;
+            CValidationState state;
+            if (!internal_miner::verifyTransactionHash(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
+                continue;
+            }
+        }
+
+        if (!iter->tx->IsMsgTx() && packageFees < blockMinFeeRate.GetFee(packageSize)) {
             // Everything else we might consider has a lower fee rate
             return;
         }

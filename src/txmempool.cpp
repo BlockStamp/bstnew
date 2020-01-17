@@ -18,6 +18,9 @@
 #include <util.h>
 #include <utilmoneystr.h>
 #include <utiltime.h>
+#include <internal_miner.h>
+
+const int MSG_TXN_ACCEPTED_DEPTH = 6;
 
 CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                                  int64_t _nTime, unsigned int _entryHeight,
@@ -599,6 +602,28 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
     blockSinceLastRollingFeeBump = true;
 }
 
+void CTxMemPool::removeTooOldMsgTxns(int newTipHeight)
+{
+    LOCK(cs);
+    internal_miner::ExtNonce extNonce{};
+
+    const uint32_t minAcceptedHeight =
+        (newTipHeight > MSG_TXN_ACCEPTED_DEPTH) ? (newTipHeight-MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+
+    std::vector<txiter> remove;
+    for (auto it = mapTx.begin(); it != mapTx.end(); ++it) {
+        const CTransaction& txn = *it->tx;
+        if (txn.IsMsgTx() && (!readExtNonce(txn, extNonce) || extNonce.tip_block_height < minAcceptedHeight)) {
+            remove.push_back(it);
+        }
+    }
+
+    for (const auto& it : remove) {
+        removeUnchecked(it, MemPoolRemovalReason::MSG_TX_EXPIRED);
+    }
+}
+
 void CTxMemPool::_clear()
 {
     mapLinks.clear();
@@ -623,7 +648,7 @@ static void CheckInputsAndUpdateCoins(const CTransaction& tx, CCoinsViewCache& m
 {
     CValidationState state;
     CAmount txfee = 0;
-    bool fCheckResult = tx.IsCoinBase() || Consensus::CheckTxInputs(tx, state, mempoolDuplicate, spendheight, SCRIPT_VERIFY_NAMES_MEMPOOL, txfee);
+    bool fCheckResult = tx.IsCoinBase() || tx.IsMsgTx() || Consensus::CheckTxInputs(tx, state, mempoolDuplicate, spendheight, SCRIPT_VERIFY_NAMES_MEMPOOL, txfee);
     assert(fCheckResult);
     UpdateCoins(tx, mempoolDuplicate, 1000000);
 }
@@ -657,6 +682,8 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
         innerUsage += memusage::DynamicUsage(links.parents) + memusage::DynamicUsage(links.children);
         bool fDependsWait = false;
         setEntries setParentCheck;
+
+        if (!tx.IsMsgTx()) {
         for (const CTxIn &txin : tx.vin) {
             // Check that every mempool transaction's inputs refer to available coins, or other mempool tx's.
             indexed_transaction_set::const_iterator it2 = mapTx.find(txin.prevout.hash);
@@ -674,6 +701,7 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
             assert(it3->first == &txin.prevout);
             assert(it3->second == &tx);
             i++;
+        }
         }
         assert(setParentCheck == GetMemPoolParents(it));
         // Verify ancestor state is correct.

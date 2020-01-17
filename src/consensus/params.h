@@ -141,6 +141,8 @@ struct Params {
     int GetbetNewVerify;
     /** bioinfo hardfork - change of block subsidy*/
     int SubsidyChangeHeight;
+    /** bioinfo hardfork - msg transactions */
+    int MsgTxnsAllowed;
 
 
     /**

@@ -538,6 +538,11 @@ public:
             [fn](CWallet*, const std::string& address, const std::string& label, ChangeType status)
         { fn(address, label, status); }));
     }
+    std::unique_ptr<Handler> handleMessengerTxnMining(MessengerTxnMiningFn fn) override
+    {
+        return MakeHandler(m_wallet.NotifyMiningTxn.connect(
+            [fn](CWallet*, bool started) { fn(started); }));
+    }
     std::unique_ptr<Handler> handleTransactionChanged(TransactionChangedFn fn) override
     {
         return MakeHandler(m_wallet.NotifyTransactionChanged.connect(

@@ -38,6 +38,9 @@ public:
     void SetNull() { hash.SetNull(); n = (uint32_t) -1; }
     bool IsNull() const { return (hash.IsNull() && n == (uint32_t) -1); }
 
+    void SetMsg() { hash.SetNull(); n = (uint32_t) -2; }
+    bool IsMsg() const { return (hash.IsNull() && n == (uint32_t) -2); }
+
     friend bool operator<(const COutPoint& a, const COutPoint& b)
     {
         int cmp = a.hash.Compare(b.hash);
@@ -274,6 +277,22 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     s << tx.nLockTime;
 }
 
+template<typename Stream, typename TxType>
+inline void UnserializeMsgTransaction(TxType& tx, Stream& s) {
+    s >> tx.nVersion;
+    tx.vin.clear();
+    tx.vout.clear();
+    s >> tx.vin;
+    s >> tx.vout;
+}
+
+template<typename Stream, typename TxType>
+inline void SerializeMsgTransaction(const TxType& tx, Stream& s) {
+    s << tx.nVersion;
+    s << tx.vin;
+    s << tx.vout;
+}
+
 /** The basic transaction that is broadcasted on the network and contained in
  * blocks.  A transaction can contain multiple inputs and outputs.
  */
@@ -307,8 +326,8 @@ public:
 
 private:
     /** Memory only. */
-    const uint256 hash;
-    const uint256 m_witness_hash;
+    uint256 hash;
+    uint256 m_witness_hash;
 
     uint256 ComputeHash() const;
     uint256 ComputeWitnessHash() const;
@@ -337,6 +356,7 @@ public:
 
     const uint256& GetHash() const { return hash; }
     const uint256& GetWitnessHash() const { return m_witness_hash; };
+    uint256 RefreshHash();
 
     // Return sum of txouts.
     CAmount GetValueOut(bool fExclueNames = false) const;
@@ -353,6 +373,11 @@ public:
     bool IsCoinBase() const
     {
         return (vin.size() == 1 && vin[0].prevout.IsNull());
+    }
+
+    bool IsMsgTx() const
+    {
+        return vin.size() == 1 && vin[0].prevout.IsMsg() && vout.size() == 1 && vout[0].nValue == 0;
     }
 
     bool IsNamecoin() const
@@ -467,10 +492,19 @@ struct CMutableTransaction
         SerializeTransaction(*this, s);
     }
 
-
     template <typename Stream>
     inline void Unserialize(Stream& s) {
         UnserializeTransaction(*this, s);
+    }
+
+    template <typename Stream>
+    inline void SerializeMsg(Stream& s) const {
+        SerializeMsgTransaction(*this, s);
+    }
+
+    template <typename Stream>
+    inline void UnserializeMsg(Stream& s) const {
+        UnserializeMsgTransaction(*this, s);
     }
 
     template <typename Stream>
@@ -482,6 +516,7 @@ struct CMutableTransaction
      * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
      */
     uint256 GetHash() const;
+    uint256 GetMsgHash() const;
 
     bool HasWitness() const
     {
@@ -498,6 +533,59 @@ struct CMutableTransaction
      * that it isn't already.
      */
     void SetNamecoin();
+
+    std::vector<unsigned char> loadOpReturn() const
+    {
+        for(size_t i=0;i<vout.size();++i)
+        {
+            CScript::const_iterator it_beg=vout[i].scriptPubKey.begin();
+            CScript::const_iterator it_end=vout[i].scriptPubKey.end();
+
+            const int dist = std::distance(it_beg, it_end);
+            if (dist <= 0) {
+                continue;
+            }
+
+            if (*it_beg==OP_RETURN)
+            {
+                if (dist < 2) {
+                    return std::vector<unsigned char>{};
+                }
+
+                int order = *(it_beg+1);
+
+                if (order<=0x4b)
+                {
+                    return (dist < 3) ? std::vector<unsigned char>{} :
+                                        std::vector<unsigned char>(it_beg+2, it_end);
+                }
+
+                if(order==0x4c)
+                {
+                    return (dist < 4) ? std::vector<unsigned char>{} :
+                                        std::vector<unsigned char>(it_beg+3, it_end);
+
+                }
+
+                if(order==0x4d)
+                {
+                    return (dist < 5) ? std::vector<unsigned char>{} :
+                                        std::vector<unsigned char>(it_beg+4, it_end);
+                }
+
+                if(order==0x4e)
+                {
+                    return (dist < 7) ? std::vector<unsigned char>{} :
+                                        std::vector<unsigned char>(it_beg+6, it_end);
+                }
+
+                return std::vector<unsigned char>{};
+            }
+        }
+
+        return std::vector<unsigned char>{};
+    }
+
 };
 
 typedef std::shared_ptr<const CTransaction> CTransactionRef;

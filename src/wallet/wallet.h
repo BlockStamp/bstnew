@@ -286,6 +286,7 @@ public:
 
     const uint256& GetHash() const { return tx->GetHash(); }
     bool IsCoinBase() const { return tx->IsCoinBase(); }
+    bool IsMsgTx() const { return tx->IsMsgTx(); }
     bool IsImmatureCoinBase() const EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 };
 
@@ -661,6 +662,9 @@ private:
     std::mutex mutexMsgScanning;
     friend class MessengerRescanReserver;
 
+    std::atomic<bool> fAbortMsgTxns{false};
+    std::atomic<bool> fPendingMsgTxns{false};
+
     WalletBatch *encrypted_batch = nullptr;
     WalletBatch *messenger_encrypted_batch = nullptr;
 
@@ -897,6 +901,10 @@ public:
     bool IsMsgAbortingRescan() { return fAbortMsgRescan; }
     bool IsMsgScanning() { return fScanningMessenger; }
 
+    void AbortPendingMsgTxns() { fAbortMsgTxns = true; }
+    bool IsAbortingMsgTxns() { return fAbortMsgTxns; }
+    void ResetAbortingMsgTxns() { fAbortMsgTxns = false; }
+
     /**
      * keystore implementation
      * Generate a new key
@@ -1093,6 +1101,7 @@ public:
     /** should probably be renamed to IsRelevantToMe */
     bool IsFromMe(const CTransaction& tx) const;
     bool IsEnrcyptedMsg(const std::vector<char>& opReturn) const;
+    bool IsFreeEncryptedMsg(const std::vector<char>& opReturn) const;
     CAmount GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames = true) const;
     /** Returns whether all of the inputs match the filter */
     bool IsAllFromMe(const CTransaction& tx, const isminefilter& filter) const;
@@ -1166,6 +1175,11 @@ public:
     boost::signals2::signal<void (CWallet *wallet, const std::string &key,
             const std::string &label,
             ChangeType status)> NotifyMessengerAddressBookChanged;
+
+    /**
+     * Started or finished mining process transaction
+     */
+    boost::signals2::signal<void (CWallet *wallet, bool started)> NotifyMiningTxn;
 
     /**
      * Wallet transaction added, removed or updated.

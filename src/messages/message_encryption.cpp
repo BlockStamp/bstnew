@@ -11,6 +11,7 @@
 const int ENCR_MARKER_SIZE = 8;
 const size_t RSA_SIGNATURE_LENGTH = 256;
 const std::string ENCR_MARKER = "MESSAGE:";
+const std::string ENCR_FREE_MARKER = "MSGFREE:";
 const std::string MSG_RECOGNIZE_TAG = "MSG"; //< message prefix to recognize after decode
 const char MSG_DELIMITER = '\0';
 const char KEY_SEPARATOR = '\n';

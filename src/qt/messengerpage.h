@@ -79,6 +79,14 @@ private:
         const std::string& message,
         const std::string& signature);
 
+    void sendByMining(
+        std::shared_ptr<CWallet> pwallet,
+        std::vector<unsigned char> data,
+        std::string subject,
+        std::string message,
+        std::string fromAddress,
+        std::string toAddress,
+        int numThreads);
 protected:
     virtual void showEvent(QShowEvent * event);
 
@@ -114,6 +122,10 @@ private Q_SLOTS:
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
 
+    void setUiMining(bool started);
+    void lockUISending();
+    void unlockUISending();
+
     void on_transactionsTableCellSelected(int row, int col);
     void on_transactionsTableCellPressed(int row, int col);
     void on_addressBookPressed();
@@ -127,6 +139,7 @@ private Q_SLOTS:
 
     void on_searchTxnEdited(const QString& text);
     void on_sendHistoryBtn_clicked();
+    void on_sendByMining_clicked();
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H

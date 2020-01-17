@@ -82,7 +82,7 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
 {
     std::array<int32_t, 3> betTypes={ {MAKE_MODULO_GAME_INDICATOR, MAKE_MODULO_NEW_GAME_INDICATOR, GET_MODULO_NEW_GAME_INDICATOR} };
     bool badVersionFlag=true;
-    if(!tx.IsNamecoin() &&  (tx.nVersion > CTransaction::MAX_STANDARD_VERSION || tx.nVersion < 1))
+    if(!tx.IsNamecoin() && !tx.IsMsgTx() &&  (tx.nVersion > CTransaction::MAX_STANDARD_VERSION || tx.nVersion < 1))
     {
         for(size_t i=0;i<betTypes.size();++i)
         {

@@ -53,6 +53,8 @@
 #include <array>
 #include <vector>
 
+#include <boost/thread.hpp>
+
 static const std::array<int, 9> confTargets = { {2, 4, 6, 12, 24, 48, 144, 504, 1008} };
 extern int getConfTargetForIndex(int index);
 extern int getIndexForConfTarget(int target);
@@ -141,10 +143,12 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->transactionTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->transactionTable->setItemDelegateForColumn(0, &dateDelegate);
     ui->transactionTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->transactionTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->messageViewEdit->setReadOnly(true);
     ui->fromLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
+    connect(ui->sendWithMining, SIGNAL(clicked()), this, SLOT(on_sendByMining_clicked()));
     connect(ui->transactionTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
     connect(ui->transactionTable, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(on_transactionTableContextMenuRequest(QPoint)));
@@ -298,8 +302,8 @@ void MessengerPage::setModel(WalletModel *model)
     interfaces::WalletBalances balances = walletModel->wallet().getBalances();
     setBalance(balances);
     connect(walletModel, SIGNAL(balanceChanged(interfaces::WalletBalances)), this, SLOT(setBalance(interfaces::WalletBalances)));
+    connect(walletModel, SIGNAL(notifyMiningTxn(bool)), this, SLOT(setUiMining(bool)));
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
-
     for (const int n : confTargets) {
         ui->confTargetSelector->addItem(tr("%1 (%2 blocks)").arg(GUIUtil::formatNiceTimeOffset(n*Params().GetConsensus().nPowTargetSpacing)).arg(n));
     }
@@ -572,6 +576,14 @@ void MessengerPage::read(const std::string& txnId)
             const CWalletTx& wtx = it->second.wltTx;
             std::vector<char> OPreturnData = wtx.tx->loadOpReturn();
 
+            if (wallet.get()->IsFreeEncryptedMsg(OPreturnData))
+            {
+                assert(OPreturnData.size() >= 12);
+                // replace ENCR_MARKER text
+                std::memcpy(OPreturnData.data(), ENCR_MARKER.data(), ENCR_MARKER_SIZE);
+                OPreturnData.erase(OPreturnData.end()-12, OPreturnData.end());
+            }
+
             std::string from, subject, body;
             decryptMessageAndSplit(OPreturnData, privateRsaKey.toString(), from, subject, body);
 
@@ -604,6 +616,8 @@ void MessengerPage::read(const std::string& txnId)
 void MessengerPage::send()
 {
 #ifdef ENABLE_WALLET
+    QString error;
+
     if (walletModel)
     {
         try
@@ -636,6 +650,15 @@ void MessengerPage::send()
                 const std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
                 const std::string subject = ui->subjectEdit->text().toUtf8().constData();
                 const std::string message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+
+                if (!checkRSApublicKey(toAddress))
+                    throw std::runtime_error("public key is incorrect");
+
+                if (subject.empty())
+                    throw std::runtime_error("subject cannot be empty");
+
+                if (message.empty())
+                    throw std::runtime_error("message cannot be empty");
 
                 const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
 
@@ -714,18 +737,147 @@ void MessengerPage::send()
         }
         catch(std::exception const& e)
         {
-            QMessageBox msgBox;
-            msgBox.setText(e.what());
-            msgBox.exec();
+            error = e.what();
         }
         catch(...)
         {
-            QMessageBox msgBox;
-            msgBox.setText("Unknown exception occured");
-            msgBox.exec();
+            error = "Sending message unkwnown exception.";
         }
     }
+
+    if (!error.isEmpty()) {
+        QMessageBox::critical(this, tr("Error"), error);
+    }
+
 #endif
+}
+
+void MessengerPage::sendByMining(
+    std::shared_ptr<CWallet> pwallet,
+    std::vector<unsigned char> data,
+    std::string subject,
+    std::string message,
+    std::string fromAddress,
+    std::string toAddress,
+    int numThreads)
+{
+    pwallet->NotifyMiningTxn(pwallet.get(), true);
+    CTransactionRef tx = CreateMsgTx(pwallet.get(), data, numThreads);
+    if (tx) {
+        if (!pwallet->SaveMsgToHistory(tx->GetHash(), subject, message, fromAddress, toAddress))
+        {
+            LogPrintf("Error while saving history\n");
+        }
+    }
+    else {
+        LogPrintf("Could not mine transaction. An error occurred or txn cancelled.\n");
+    }
+
+    pwallet->NotifyMiningTxn(pwallet.get(), false);
+}
+
+void MessengerPage::on_sendByMining_clicked()
+{
+#ifdef ENABLE_WALLET
+
+    if (!walletModel)
+        return;
+
+    try {
+        interfaces::Wallet& wlt = walletModel->wallet();
+        std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
+        if (!wallet)
+            throw std::runtime_error("No wallet found");
+
+        wallet->BlockUntilSyncedToCurrentChain();
+
+        WalletModel::MessengerUnlockContext msgCtx(walletModel->requestMessengerUnlock());
+        if (!msgCtx.isValid())
+            throw std::runtime_error("Could not unlock messenger");
+
+        std::string toAddress = ui->addressEdit->toPlainText().toUtf8().constData();
+        if (!confirmWindow(0, toAddress)) {
+            return;
+        }
+
+        if (!checkRSApublicKey(toAddress))
+            throw std::runtime_error("public key is incorrect");
+
+        CMessengerKey privateRsaKey, publicRsaKey;
+        if (!wallet->GetMessengerKeys(privateRsaKey, publicRsaKey))
+            throw std::runtime_error("No RSA keys found");
+
+        std::string fromAddress = publicRsaKey.toString();
+
+
+        std::string subject = ui->subjectEdit->text().toUtf8().constData();
+        if (subject.empty())
+            throw std::runtime_error("subject cannot be empty");
+
+        if (subject.size() > 100)
+            throw std::runtime_error("subject cannot be longer than 100 letters");
+
+        std::string message = ui->messageStoreEdit->toPlainText().toUtf8().constData();
+        if (message.empty())
+            throw std::runtime_error("message cannot be empty");
+
+        if (message.size() > 1000)
+            throw std::runtime_error("message cannot be longer than 1000 letters");
+
+        const std::string signature = signMessage(privateRsaKey.toString(), fromAddress);
+
+        std::vector<unsigned char> data = createData(
+            fromAddress,
+            toAddress,
+            subject,
+            message,
+            signature);
+
+        int numThreads = gArgs.GetArg("-msgminingthreads", GetNumCores());
+        if (numThreads < 1)
+            numThreads = GetNumCores();
+
+        boost::thread backgroundMining {
+            &MessengerPage::sendByMining,
+            this,
+            wallet,
+            data,
+            subject,
+            message,
+            fromAddress,
+            toAddress,
+            numThreads};
+
+        backgroundMining.detach();
+    }
+    catch(const std::exception& e) {
+        QMessageBox::critical(0, "Error", e.what());
+    }
+    catch(...) {
+        QMessageBox::critical(0, "Error", "Unknown error occurred");
+    }
+#endif
+}
+
+void MessengerPage::setUiMining(bool started) {
+    if (started) {
+        lockUISending();
+    }
+    else {
+        unlockUISending();
+    }
+}
+
+void MessengerPage::lockUISending()
+{
+    ui->sendWithMining->setText(tr("Mining..."));
+    ui->sendWithMining->setEnabled(false);
+}
+
+void MessengerPage::unlockUISending()
+{
+    ui->sendWithMining->setEnabled(true);
+    ui->sendWithMining->setText(tr("Send by Mining"));
 }
 
 std::vector<unsigned char> MessengerPage::createData(
@@ -922,6 +1074,13 @@ bool MessengerPage::confirmWindow(const CAmount totalAmount, const std::string& 
         .arg(BitcoinUnits::formatHtmlWithUnit(walletModel->getOptionsModel()->getDisplayUnit(), totalAmount)));
     questionString.append(QString("<br /><span style='font-size:10pt; font-weight:normal;'>(=%1)</span>")
         .arg(alternativeUnits.join(" " + tr("or") + " ")));
+
+    if (totalAmount == 0) // send by mining
+    {
+        questionString.append("<hr /><span style='font-size:10pt;'>");
+        questionString.append(tr("Message is totally free but user node will have to mine the transaction which can take a few minutes, depends on a computer performance."));
+        questionString.append("</span><br />");
+    }
 
     SendConfirmationDialog confirmDialog(tr("Confirm send message"),
         questionString, SEND_CONFIRM_DELAY, this);

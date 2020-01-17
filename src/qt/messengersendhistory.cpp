@@ -32,7 +32,8 @@ namespace
     {
         DATE = 0,
         TO = 1,
-        SUBJECT = 2
+        SUBJECT = 2,
+        LAST = 3
     };
 }
 
@@ -60,6 +61,7 @@ MessengerSendHistory::MessengerSendHistory(const PlatformStyle *_platformStyle, 
     ui->transactionsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->transactionsTable->setItemDelegateForColumn(0, &datedelegate);
     ui->transactionsTable->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->transactionsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     connect(ui->transactionsTable, SIGNAL(cellClicked(int, int)), this, SLOT(on_transactionsTableCellSelected(int, int)));
     connect(ui->transactionsTable, SIGNAL(cellPressed(int,int)), this, SLOT(on_transactionsTableCellPressed(int, int)));
@@ -159,6 +161,9 @@ void MessengerSendHistory::fillTable(HistoryTransactionsMap& transactions)
     ui->transactionsTable->setRowCount(transactions.size());
     ui->transactionsTable->setSortingEnabled(false);
 
+    interfaces::Wallet& wlt = walletModel->wallet();
+    std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
+
     int row = 0;
     for (auto index  = transactions.begin(); index != transactions.end(); ++index)
     {
@@ -177,6 +182,23 @@ void MessengerSendHistory::fillTable(HistoryTransactionsMap& transactions)
 
         ui->transactionsTable->setItem(row, TransactionsTableColumn::DATE, item);
         ui->transactionsTable->setItem(row, TransactionsTableColumn::SUBJECT, new QTableWidgetItem(it.subject.c_str()));
+
+        const CWalletTx* wtx = wallet->GetWalletTx(index->first);
+        if (wtx->isAbandoned())
+        {
+            for (int col=0; col<TransactionsTableColumn::LAST; ++col)
+            {
+                ui->transactionsTable->item(row, col)->setBackgroundColor(QColor(255,0,0));
+                ui->transactionsTable->item(row, col)->setToolTip(tr("Message not included in a blockchain"));
+            }
+        } else
+        {
+            for (int col=0; col<TransactionsTableColumn::LAST; ++col)
+            {
+                ui->transactionsTable->item(row, col)->setBackgroundColor(QColor(255,255,255));
+                ui->transactionsTable->item(row, col)->setToolTip("");
+            }
+        }
 
         ++row;
     }

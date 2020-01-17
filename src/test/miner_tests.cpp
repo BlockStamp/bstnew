@@ -8,6 +8,7 @@
 #include <consensus/merkle.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+#include <internal_miner.h>
 #include <validation.h>
 #include <miner.h>
 #include <policy/policy.h>
@@ -17,6 +18,8 @@
 #include <uint256.h>
 #include <util.h>
 #include <utilstrencodings.h>
+#include <messages/message_encryption.h>
+#include <wallet/wallet.h>
 
 #include <test/test_bitcoin.h>
 
@@ -640,6 +643,39 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
     TestPackageSelection(chainparams, scriptPubKey, txFirst);
 
     fCheckpointsEnabled = true;
+}
+
+BOOST_AUTO_TEST_CASE(MineTransaction_ValidationHash)
+{
+    CBlockIndex* pindexPrev = chainActive.Tip();
+    pindexPrev->nBits = 540802519;
+
+    std::vector<unsigned char> extData;
+    extData.insert(extData.end(), ENCR_FREE_MARKER.begin(), ENCR_FREE_MARKER.end());
+    extData.resize(1070);
+    extData.insert(extData.end(), 12, 0);
+
+    CMutableTransaction txn{};
+    txn.vin.resize(1);
+    txn.vin[0].prevout.SetMsg();
+
+    CScript scriptPubKey;
+    scriptPubKey << OP_RETURN << extData;
+
+    txn.vout.resize(1);
+    txn.vout[0].scriptPubKey = scriptPubKey;
+    txn.vout[0].nValue = 0;
+
+    CWallet wallet("dummy", WalletDatabase::CreateDummy(), WalletDatabase::CreateDummy());
+
+    internal_miner::ExtNonce ext_nonce;
+    internal_miner::Miner(wallet, 1).mineTransaction(txn, ext_nonce);
+
+    CTransactionRef tx = MakeTransactionRef(std::move(txn));
+
+    CValidationState state;
+    bool rv = internal_miner::verifyTransactionHash(*tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL);
+    BOOST_CHECK(rv);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

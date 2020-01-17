@@ -129,6 +129,7 @@ BITCOIN_CORE_H = \
   interfaces/handler.h \
   interfaces/node.h \
   interfaces/wallet.h \
+  internal_miner.h \
   key.h \
   key_io.h \
   keystore.h \
@@ -250,6 +251,7 @@ libbitcoin_server_a_SOURCES = \
   index/txindex.cpp \
   interfaces/handler.cpp \
   interfaces/node.cpp \
+  internal_miner.cpp \
   init.cpp \
   games/gamesutils.cpp \
   games/gamestxs.cpp \
@@ -558,7 +560,7 @@ if GLIBC_BACK_COMPAT
   libbstconsensus_la_SOURCES += compat/glibc_compat.cpp
 endif
 
-libbstconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
+libbstconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS) $(SSL_LIBS) $(CRYPTO_LIBS)
 libbstconsensus_la_LIBADD = $(LIBSECP256K1)
 libbstconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
 libbstconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)

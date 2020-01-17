@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <internal_miner.h>
 
 class CBlockIndex;
 class CCoinsViewCache;

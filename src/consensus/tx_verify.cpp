@@ -10,6 +10,7 @@
 #include <script/interpreter.h>
 #include <consensus/validation.h>
 #include <games/modulo/moduloverify.h>
+#include <internal_miner.h>
 #include <chainparams.h>
 
 // TODO remove the following dependencies
@@ -145,6 +146,9 @@ int64_t GetTransactionSigOpCost(const CTransaction& tx, const CCoinsViewCache& i
     if (tx.IsCoinBase())
         return nSigOps;
 
+    if (tx.IsMsgTx())
+        return nSigOps;
+
     if (flags & SCRIPT_VERIFY_P2SH) {
         nSigOps += GetP2SHSigOpCount(tx, inputs) * WITNESS_SCALE_FACTOR;
     }
@@ -203,6 +207,10 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
         for (const auto& txin : tx.vin)
             if (txin.prevout.IsNull())
                 return state.DoS(10, false, REJECT_INVALID, "bad-txns-prevout-null");
+    }
+
+    if (tx.IsMsgTx() && !internal_miner::CheckMsgTxnSize(tx)) {
+        return state.DoS(10, false, REJECT_INVALID, "bad-msg-txn-size");
     }
 
     if(modulo::ver_1::isMakeBetTx(tx))

@@ -31,6 +31,7 @@
 
 class CBlockIndex;
 extern CCriticalSection cs_main;
+extern const int MSG_TXN_ACCEPTED_DEPTH;
 
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
 static const uint32_t MEMPOOL_HEIGHT = 0x7FFFFFFF;
@@ -66,7 +67,7 @@ class CTxMemPool;
 
 class CTxMemPoolEntry
 {
-private:
+public:
     const CTransactionRef tx;
     const CAmount nFee;             //!< Cached to avoid expensive parent-transaction lookups
     const size_t nTxWeight;         //!< ... and avoid recomputing tx weight (also used for GetTxSize())
@@ -381,7 +382,8 @@ enum class MemPoolRemovalReason {
     BLOCK,       //! Removed for block
     CONFLICT,    //! Removed for conflict with in-block transaction
     NAME_CONFLICT, //! Removed due to a name-operation conflict
-    REPLACED     //! Removed for replacement
+    REPLACED,     //! Removed for replacement
+    MSG_TX_EXPIRED  //! Msg tx is too old
 };
 
 class SaltedTxidHasher
@@ -584,6 +586,7 @@ public:
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     void removeConflicts(const CTransaction &tx) EXCLUSIVE_LOCKS_REQUIRED(cs);
     void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight);
+    void removeTooOldMsgTxns(int newTipHeight);
 
     void clear();
     void _clear() EXCLUSIVE_LOCKS_REQUIRED(cs); //lock free

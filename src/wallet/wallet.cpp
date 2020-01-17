@@ -31,10 +31,12 @@
 #include <wallet/walletutil.h>
 #include <messages/message_encryption.h>
 #include <messages/message_utils.h>
+#include <internal_miner.h>
 
 #include <algorithm>
 #include <assert.h>
 #include <future>
+#include <version.h>
 
 #include <boost/algorithm/string/replace.hpp>
 
@@ -743,7 +745,7 @@ void CWallet::AddToSpends(const uint256& wtxid)
     auto it = mapWallet.find(wtxid);
     assert(it != mapWallet.end());
     CWalletTx& thisTx = it->second;
-    if (thisTx.IsCoinBase()) // Coinbases don't spend anything!
+    if (thisTx.IsCoinBase() || thisTx.IsMsgTx()) // Coinbases and msg txes don't spend anything!
         return;
 
     for (const CTxIn& txin : thisTx.tx->vin)
@@ -1233,20 +1235,17 @@ void CWallet::AddEncrMsgToWallet(const std::string& from, const std::string& sub
         // Merge
         if (!wtxIn.hashUnset() && wtxIn.hashBlock != wtx.hashBlock)
         {
-            std::cout << "Updated because wtxIn.hashBlock != wtx.hashBlock\n";
             wtx.hashBlock = wtxIn.hashBlock;
             fUpdated = true;
         }
         // If no longer abandoned, update
         if (wtxIn.hashBlock.IsNull() && wtx.isAbandoned())
         {
-            std::cout << "Updated because wtxIn.hashBlock.IsNull() && wtx.isAbandoned()\n";
             wtx.hashBlock = wtxIn.hashBlock;
             fUpdated = true;
         }
         if (wtxIn.nIndex != -1 && (wtxIn.nIndex != wtx.nIndex))
         {
-            std::cout << "Updated because wtxIn.nIndex != -1 && (wtxIn.nIndex != wtx.nIndex)\n";
             wtx.nIndex = wtxIn.nIndex;
             fUpdated = true;
         }
@@ -1268,8 +1267,16 @@ void CWallet::AddEncrMsgToWalletIfNeeded(const CTransactionRef& ptx, const CBloc
     const CTransaction& tx = *ptx;
     std::vector<char> opReturn = tx.loadOpReturn();
 
-    if (!IsEnrcyptedMsg(opReturn)) {
+    if (!IsEnrcyptedMsg(opReturn) && !IsFreeEncryptedMsg(opReturn)) {
         return;
+    }
+
+    if (IsFreeEncryptedMsg(opReturn)) {
+        // modify op return
+        assert(opReturn.size() >= 12);
+        // replace ENCR_MARKER text
+        std::memcpy(opReturn.data(), ENCR_MARKER.data(), ENCR_MARKER_SIZE);
+        opReturn.erase(opReturn.end()-12, opReturn.end());
     }
 
     CMessengerKey privateRsaKey, publicRsaKey;
@@ -1296,6 +1303,13 @@ bool CWallet::SaveMsgToHistory(
     const std::string& fromAddress,
     const std::string& toAddress)
 {
+    bool saveHistoryEnabled = gArgs.GetArg("-disablemsghistory", DEFAULT_MSG_SAVE_HISTORY);
+    if (saveHistoryEnabled == false)
+    {
+        LogPrintf("Disabled saving communicator message history\n");
+        return true;
+    }
+
     const int64_t time = GetTime();
     std::vector<unsigned char> encrypted;
 
@@ -1310,6 +1324,8 @@ bool CWallet::SaveMsgToHistory(
         LogPrintf("Failed to encrypted message\n");
         return false;
     }
+
+    LOCK(cs_wallet);
 
     if (!WalletBatch(*msgDatabase).WriteMsgTxToHistory(hash, toAddress, subject, encrypted, time)) {
         LogPrintf("Failed to wrtie encrypted message to db\n");
@@ -1547,10 +1563,34 @@ void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx) {
 }
 
 void CWallet::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
+    using namespace internal_miner;
     LOCK(cs_wallet);
-    auto it = mapWallet.find(ptx->GetHash());
+
+    uint256 hash = ptx->GetHash();
+    auto it = mapWallet.find(hash);
+
     if (it != mapWallet.end()) {
         it->second.fInMempool = false;
+    }
+
+    if (ptx->IsMsgTx())
+    {
+        int tip = chainActive.Height();
+
+        const uint32_t minAcceptedHeight =
+            (tip > MSG_TXN_ACCEPTED_DEPTH) ? (tip-MSG_TXN_ACCEPTED_DEPTH) : 0;
+
+        const CTransaction& txn = *ptx;
+        ExtNonce extNonce{};
+        if (!readExtNonce(txn, extNonce) || extNonce.tip_block_height < minAcceptedHeight)
+        {
+            // abandon transaction from mapWallet
+            if (TransactionCanBeAbandoned(hash))
+            {
+                LogPrintf("Abandon message transaction: %s\n", hash.ToString());
+                AbandonTransaction(hash);
+            }
+        }
     }
 }
 
@@ -1715,8 +1755,14 @@ bool CWallet::IsFromMe(const CTransaction& tx) const
 
 bool CWallet::IsEnrcyptedMsg(const std::vector<char>& opReturn) const
 {
-    return opReturn.size() >= ENCR_MARKER_SIZE &&
+    return (int)opReturn.size() >= ENCR_MARKER_SIZE &&
         std::string(opReturn.data(), opReturn.data() + ENCR_MARKER_SIZE) == ENCR_MARKER;
+}
+
+bool CWallet::IsFreeEncryptedMsg(const std::vector<char>& opReturn) const
+{
+    return (int)opReturn.size() >= ENCR_MARKER_SIZE &&
+        std::string(opReturn.data(), opReturn.data() + ENCR_MARKER_SIZE) == ENCR_FREE_MARKER;
 }
 
 CAmount CWallet::GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames) const
@@ -2178,8 +2224,11 @@ bool CWalletTx::RelayWalletTransaction(CConnman* connman)
             pwallet->WalletLogPrintf("Relaying wtx %s\n", GetHash().ToString());
             if (connman) {
                 CInv inv(MSG_TX, GetHash());
-                connman->ForEachNode([&inv](CNode* pnode)
+                connman->ForEachNode([&inv, this](CNode* pnode)
                 {
+                    if (IsMsgTx() && pnode->nVersion < MSG_TXNS_SUPPORTED) {
+                        return;
+                    }
                     pnode->PushInventory(inv);
                 });
                 return true;
@@ -3468,12 +3517,14 @@ bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
             // otherwise just for transaction history.
             AddToWallet(wtxNew);
 
-            // Notify that old coins are spent
-            for (const CTxIn& txin : wtxNew.tx->vin)
-            {
-                CWalletTx &coin = mapWallet.at(txin.prevout.hash);
-                coin.BindWallet(this);
-                NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+            if (!wtxNew.IsMsgTx()) {
+                // Notify that old coins are spent
+                for (const CTxIn& txin : wtxNew.tx->vin)
+                {
+                    CWalletTx &coin = mapWallet.at(txin.prevout.hash);
+                    coin.BindWallet(this);
+                    NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+                }
             }
         }
 
