@@ -4,7 +4,7 @@
 
 FEE_PER_BYTE = 1
 MSG_TXN_ACCEPTED_DEPTH = 6
-
+TARGET_MULTIPLIER = 8
 
 def get_msgs_for_node(node):
     res = []

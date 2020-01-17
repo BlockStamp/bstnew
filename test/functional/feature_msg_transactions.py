@@ -7,7 +7,7 @@ msg transactions)
 
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.messengertools import get_msgs_for_node, check_msg_txn, get_low_32_bits, get_txn_cost, \
-    MSG_TXN_ACCEPTED_DEPTH
+    MSG_TXN_ACCEPTED_DEPTH, TARGET_MULTIPLIER
 from test_framework.blocktools import create_block, create_coinbase
 from test_framework.messages import uint256_from_str, hex_str_to_bytes, CTransaction, CTxOut, CTxIn, COutPoint, ToHex
 from test_framework.script import CScript, OP_RETURN
@@ -56,7 +56,7 @@ def get_target(txn):
     block_target = uint256_from_str(
         hex_str_to_bytes("0000000000ffff00000000000000000000000000000000000000000000000000")[::-1])
 
-    target = block_target * ratio
+    target = block_target * ratio * TARGET_MULTIPLIER
     return target
 
 
