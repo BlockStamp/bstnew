@@ -151,7 +151,6 @@ bool getTxnCost(const CTransaction& txn, CAmount& cost) {
         return false;
     }
 
-    //TODO: Find what feePerByte should be
     constexpr CAmount feePerByte = 1;
     cost = txSize * feePerByte;
     return true;
