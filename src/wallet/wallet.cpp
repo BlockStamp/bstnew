@@ -2208,8 +2208,15 @@ void CWallet::ReacceptWalletTransactions()
     // Try to add wallet transactions to memory pool
     for (const std::pair<const int64_t, CWalletTx*>& item : mapSorted) {
         CWalletTx& wtx = *(item.second);
+
         CValidationState state;
         wtx.AcceptToMemoryPool(maxTxFee, state);
+
+        const uint256 hash = wtx.GetHash();
+        if (wtx.IsMsgTx() && TransactionCanBeAbandoned(hash)) {
+            LogPrintf("Abandon message transaction in ReacceptWalletTransactions: %s\n", hash.ToString());
+            AbandonTransaction(hash);
+        }
     }
 }
 

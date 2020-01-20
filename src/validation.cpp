@@ -575,8 +575,9 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return false; // state filled in by CheckTransaction
     }
 
-    if (tx.IsMsgTx() && !internal_miner::verifyTransactionHash(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL))
+    if (tx.IsMsgTx() && !internal_miner::verifyTransactionHash(tx, state, internal_miner::TxPoWCheck::FOR_MEMPOOL)) {
         return false; // state filled in by verifyTransactionHash
+    }
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
