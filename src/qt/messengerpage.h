@@ -68,6 +68,7 @@ private:
     QButtonGroup *groupFee;
     const PlatformStyle *platformStyle;
 
+    void fillMyAddressTab();
     void minimizeFeeSection(bool fMinimize);
     void updateFeeMinimizedLabel();
     void updateCoinControlState(CCoinControl& ctrl);

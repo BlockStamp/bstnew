@@ -145,6 +145,9 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
     ui->transactionTable->setContextMenuPolicy(Qt::CustomContextMenu);
     ui->transactionTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->messageViewEdit->setReadOnly(true);
+    ui->MyAddrEdit->setReadOnly(true);
+    ui->MyAddrEdit->setFont(GUIUtil::fixedPitchFont());
+    ui->addressEdit->setFont(GUIUtil::fixedPitchFont());
     ui->fromLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     connect(ui->sendButton, SIGNAL(clicked()), this, SLOT(send()));
@@ -163,6 +166,20 @@ MessengerPage::MessengerPage(const PlatformStyle *_platformStyle, QWidget *paren
 MessengerPage::~MessengerPage()
 {
     delete ui;
+}
+
+void MessengerPage::fillMyAddressTab() {
+    interfaces::Wallet& wlt = walletModel->wallet();
+    std::shared_ptr<CWallet> wallet = GetWallet(wlt.getWalletName());
+    CMessengerKey rsaPrivateKey, rsaPublicKey;
+    std::string publicKey;
+
+    if (wallet && wallet->GetMessengerKeys(rsaPrivateKey, rsaPublicKey) && rsaPublicKey.toString(publicKey)) {
+        ui->MyAddrEdit->setPlainText(QString::fromUtf8(publicKey.c_str()));
+    }
+    else {
+        ui->MyAddrEdit->setPlainText("Unable to retrieve key");
+    }
 }
 
 void MessengerPage::minimizeFeeSection(bool fMinimize)
@@ -316,6 +333,7 @@ void MessengerPage::setModel(WalletModel *model)
     updateFeeSectionControls();
     updateMinFeeLabel();
     updateSmartFeeLabel();
+    fillMyAddressTab();
 
     // set default rbf checkbox state
     ui->optInRBF->setCheckState(Qt::Checked);
