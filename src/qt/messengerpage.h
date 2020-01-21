@@ -68,6 +68,7 @@ private:
     QButtonGroup *groupFee;
     const PlatformStyle *platformStyle;
 
+    void fillMyAddressTab();
     void minimizeFeeSection(bool fMinimize);
     void updateFeeMinimizedLabel();
     void updateCoinControlState(CCoinControl& ctrl);
@@ -140,6 +141,7 @@ private Q_SLOTS:
     void on_searchTxnEdited(const QString& text);
     void on_sendHistoryBtn_clicked();
     void on_sendByMining_clicked();
+    void on_tabWidget_tabBarClicked(int index);
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H
