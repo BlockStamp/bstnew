@@ -141,6 +141,7 @@ private Q_SLOTS:
     void on_searchTxnEdited(const QString& text);
     void on_sendHistoryBtn_clicked();
     void on_sendByMining_clicked();
+    void on_tabWidget_tabBarClicked(int index);
 };
 
 #endif // BITCOIN_QT_MESSAGEPAGE_H

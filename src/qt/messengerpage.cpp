@@ -1139,3 +1139,10 @@ void MessengerPage::on_sendHistoryBtn_clicked()
     MessengerSendHistory dlg(platformStyle, walletModel, clientModel, this);
     dlg.exec();
 }
+
+void MessengerPage::on_tabWidget_tabBarClicked(int index)
+{
+    if (index == 2) {
+        fillMyAddressTab();
+    }
+}
