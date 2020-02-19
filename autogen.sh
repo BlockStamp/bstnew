@@ -14,3 +14,7 @@ fi
 which autoreconf >/dev/null || \
   (echo "configuration failed, please install autoconf first" && exit 1)
 autoreconf --install --force --warnings=all
+
+cd tor
+./autogen.sh
+./configure

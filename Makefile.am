@@ -282,7 +282,14 @@ docs: doc/doxygen/.stamp
 else
 docs:
 	@echo "error: doxygen not found"
+	@echo "$(tordirname)"
 endif
+
+tornode:
+	@echo "Tor node compilation"
+	@echo "$(tordirname)"
+	$(MAKE) -C tor
+	
 
 clean-docs:
 	rm -rf doc/doxygen
@@ -291,3 +298,5 @@ clean-local: clean-docs
 	rm -rf coverage_percent.txt test_bitcoin.coverage/ total.coverage/ test/tmp/ cache/ $(OSX_APP)
 	rm -rf test/functional/__pycache__ test/functional/test_framework/__pycache__ test/cache
 
+
+	

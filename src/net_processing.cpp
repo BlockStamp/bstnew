@@ -2758,6 +2758,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
+    if (strCommand == NetMsgType::BROADCAST_TOR) {
+        LogPrintf("\n\n\nRECEIVED BROADCAST TOR\n\n\n");
+        printf("\n\n\nRECEIVED BROADCAST TOR\n #%s# \n\n", vRecv.str().c_str());
+        connman->AddTorProxyAddress(vRecv.str());
+    }
+
     if (strCommand == NetMsgType::MEMPOOL) {
         if (!(pfrom->GetLocalServices() & NODE_BLOOM) && !pfrom->fWhitelisted)
         {
@@ -2852,6 +2858,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (bPingFinished) {
             pfrom->nPingNonceSent = 0;
         }
+        connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::BROADCAST_TOR, "nwbit46qxxekjyar66n7bre2cyitukarqhdpztcc2iqkkz4ejon5faid.onion:5000"));
         return true;
     }
 

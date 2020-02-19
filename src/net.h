@@ -28,6 +28,7 @@
 #include <thread>
 #include <memory>
 #include <condition_variable>
+#include <unordered_set>
 
 #ifndef WIN32
 #include <arpa/inet.h>
@@ -230,6 +231,7 @@ public:
     void MarkAddressGood(const CAddress& addr);
     void AddNewAddresses(const std::vector<CAddress>& vAddr, const CAddress& addrFrom, int64_t nTimePenalty = 0);
     std::vector<CAddress> GetAddresses();
+    void AddTorProxyAddress(const std::string& torAddrStr);
 
     // Denial-of-service detection/prevention
     // The idea is to detect peers that are behaving
@@ -406,6 +408,8 @@ private:
     std::list<CNode*> vNodesDisconnected;
     mutable CCriticalSection cs_vNodes;
     std::atomic<NodeId> nLastNodeId;
+
+    std::unordered_set<std::string> vTorProxyAddr;
 
     /** Services this instance offers */
     ServiceFlags nLocalServices;

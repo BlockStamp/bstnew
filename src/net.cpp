@@ -2504,6 +2504,16 @@ std::vector<CAddress> CConnman::GetAddresses()
     return addrman.GetAddr();
 }
 
+void CConnman::AddTorProxyAddress(const std::string& torAddrStr)
+{
+    try {
+        vTorProxyAddr.insert(torAddrStr);
+    } catch (std::exception& e)
+    {
+        throw e;
+    }
+}
+
 bool CConnman::AddNode(const std::string& strNode)
 {
     LOCK(cs_vAddedNodes);
