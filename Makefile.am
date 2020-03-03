@@ -72,6 +72,11 @@ $(BITCOIN_WIN_INSTALLER): all-recursive
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_CLI_BIN) $(top_builddir)/release
+	$(MKDIR_P) $(top_builddir)/release/python
+	$(MKDIR_P) $(top_builddir)/release/tor
+	@cp -r $(top_srcdir)/python/windows/* $(top_builddir)/release/python/
+	@cp -r $(top_srcdir)/tor/windows/* $(top_builddir)/release/tor/
+
 	@test -f $(MAKENSIS) && $(MAKENSIS) -V2 $(top_builddir)/share/setup.nsi || \
 	  echo error: could not build $@
 	@echo built $@
@@ -282,14 +287,41 @@ docs: doc/doxygen/.stamp
 else
 docs:
 	@echo "error: doxygen not found"
-	@echo "$(tordirname)"
 endif
 
 tornode:
-	@echo "Tor node compilation"
-	@echo "$(tordirname)"
-	$(MAKE) -C tor
+	@echo "Tor node module"
+	mkdir $(prefix)/tor
+if TARGET_DARWIN
+	@echo "OSX"
+	cp -rf tor/darwin/* $(prefix)/tor/
+endif
+if TARGET_WINDOWS
+	@echo "Windows"
+	cp -rf tor/windows/* $(prefix)/tor/
+endif
+if TARGET_LINUX
+	@echo "Linux"
+	cp -rf tor/linux/* $(prefix)/tor/
+endif
 	
+bstpython:
+	@echo "Python module"
+	mkdir $(prefix)/python
+if TARGET_DARWIN
+	@echo "OSX"
+	cp -rf python/darwin/* $(prefix)/python/
+endif
+if TARGET_WINDOWS
+	@echo "Windows"
+	cp -rf python/windows/* $(prefix)/python/
+endif
+if TARGET_LINUX
+	@echo "Linux"
+	cp -rf python/linux/* $(prefix)/python/
+endif
+
+external: tornode bstpython
 
 clean-docs:
 	rm -rf doc/doxygen

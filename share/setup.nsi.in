@@ -82,6 +82,10 @@ Section -Main SEC0000
     File @abs_top_srcdir@/release/@BITCOIN_CLI_NAME@@EXEEXT@
     SetOutPath $INSTDIR\doc
     File /r /x Makefile* @abs_top_srcdir@/doc\*.*
+    SetOutPath $INSTDIR\python
+    File @abs_tor_srcdir@/release/python/
+    SetOutPath $INSTDIR\tor
+    File @abs_tor_srcdir@/release/tor/Tor/
     SetOutPath $INSTDIR
     WriteRegStr HKCU "${REGKEY}\Components" Main 1
 SectionEnd

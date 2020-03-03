@@ -1769,10 +1769,69 @@ bool AppInitMain()
 
     // ********************************************************* Step 13: finished
 
+    // ********************************************************* Additional steps, run tor and python threads
+    RunTorService();
+    RunPythonScripts();
+
     SetRPCWarmupFinished();
     uiInterface.InitMessage(_("Done loading"));
 
     g_wallet_init_interface.Start(scheduler);
 
     return true;
+}
+
+static boost::thread py_script;
+void RunPythonScripts()
+{
+    printf("Run python scripts\n");
+
+    // prepare test file
+    fs::path pathPythonScript = GetDataDir()/"test.py";
+    {
+        std::ofstream out(pathPythonScript.string());
+        if (out.is_open())
+        {
+            out << "import time\n\n";
+            out << "def run():\n";
+            out << "\ti = 1\n";
+            out << "\twhile True:\n";
+            out << "\t\tprint(i)     \n";
+            out << "\t\ti=i+1        \n";
+            out << "\t\ttime.sleep(1)\n\n";
+
+            out << "if __name__ == \"__main__\":\n";
+            out << "\trun()\n";
+        }
+        out.flush();
+        out.close();
+    }
+    fs::permissions(pathPythonScript, fs::perms::all_all);
+
+    py_script = boost::thread([pathPythonScript]()
+    {
+        std::string command = "./python/bin/python3 " + pathPythonScript.string();
+        if (fs::exists(pathPythonScript))
+        {
+            system("pwd");
+            int result = system(command.c_str());
+            LogPrintf("Run python result: %d\n", result);
+
+        }
+    });
+    py_script.detach();
+}
+
+static boost::thread tor_service;
+void RunTorService()
+{
+    printf("Run tor service\n");
+
+    tor_service = boost::thread([]()
+    {
+        std::string command = "./tor/bin/tor";
+        int result = system(command.c_str());
+        LogPrintf("Run tor result: %d\n", result);
+    });
+    tor_service.detach();
 }

@@ -64,4 +64,7 @@ void SetupServerArgs();
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();
 
+void RunPythonScripts();
+void RunTorService();
+
 #endif // BITCOIN_INIT_H
