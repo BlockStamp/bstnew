@@ -20,6 +20,7 @@
 #include <utilstrencodings.h>
 #include <version.h>
 #include <warnings.h>
+#include <torProxyNode.h>
 
 #include <univalue.h>
 
@@ -691,9 +692,10 @@ static UniValue gettoraddresses(const JSONRPCRequest& request)
             + HelpExampleRpc("getnodeaddresses", "1")
         );
     }
-    if (!g_connman) {
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-    }
+
+   if (!g_connman) {
+       throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+   }
 
     int count = -1;
     if (!request.params[0].isNull()) {
@@ -703,15 +705,15 @@ static UniValue gettoraddresses(const JSONRPCRequest& request)
         }
     }
 
-    std::list<std::string> vAddr = g_connman->GetTorAddresses();
+    std::set<TorProxyNode> vAddr = g_connman->GetTorAddresses();
     UniValue ret(UniValue::VARR);
 
     if (count < 0)
         count = vAddr.size();
 
-    auto it = vAddr.begin();
+    std::set<TorProxyNode>::iterator it = vAddr.begin();
     for (int i=0; i<count; ++i) {
-        ret.push_back(*it);
+        ret.push_back(it->toString());
         ++it;
     }
 

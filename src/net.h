@@ -21,6 +21,7 @@
 #include <sync.h>
 #include <uint256.h>
 #include <threadinterrupt.h>
+#include <torProxyNode.h>
 
 #include <atomic>
 #include <deque>
@@ -231,8 +232,8 @@ public:
     void MarkAddressGood(const CAddress& addr);
     void AddNewAddresses(const std::vector<CAddress>& vAddr, const CAddress& addrFrom, int64_t nTimePenalty = 0);
     std::vector<CAddress> GetAddresses();
-    void AddTorProxyAddress(const std::string& torAddrStr);
-    std::list<std::string> GetTorAddresses();
+    void AddTorProxyAddress(const TorProxyNode &torNode);
+    std::set<TorProxyNode> GetTorAddresses();
 
     // Denial-of-service detection/prevention
     // The idea is to detect peers that are behaving
@@ -410,7 +411,8 @@ private:
     mutable CCriticalSection cs_vNodes;
     std::atomic<NodeId> nLastNodeId;
 
-    std::list<std::string> vTorProxyAddr;
+    std::set<TorProxyNode> vTorProxyAddr;
+    TorProxyNode myAddress;
 
     /** Services this instance offers */
     ServiceFlags nLocalServices;

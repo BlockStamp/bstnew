@@ -2504,22 +2504,22 @@ std::vector<CAddress> CConnman::GetAddresses()
     return addrman.GetAddr();
 }
 
-void CConnman::AddTorProxyAddress(const std::string& torAddrStr)
+void CConnman::AddTorProxyAddress(const TorProxyNode& torNode)
 {
     try {
-        auto it = std::find(vTorProxyAddr.begin(), vTorProxyAddr.end(), torAddrStr);
+        auto it = std::find(vTorProxyAddr.begin(), vTorProxyAddr.end(), torNode);
         if (it != vTorProxyAddr.end())
         {
             vTorProxyAddr.erase(it);
         }
-        vTorProxyAddr.push_front(torAddrStr);
+        vTorProxyAddr.insert(torNode);
     } catch (std::exception& e)
     {
         throw e;
     }
 }
 
-std::list<std::string> CConnman::GetTorAddresses()
+std::set<TorProxyNode> CConnman::GetTorAddresses()
 {
     return vTorProxyAddr;
 }

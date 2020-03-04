@@ -1770,8 +1770,8 @@ bool AppInitMain()
     // ********************************************************* Step 13: finished
 
     // ********************************************************* Additional steps, run tor and python threads
-    RunTorService();
-    RunPythonScripts();
+//    RunTorService();
+//    RunPythonScripts();
 
     SetRPCWarmupFinished();
     uiInterface.InitMessage(_("Done loading"));
@@ -1813,7 +1813,6 @@ void RunPythonScripts()
         std::string command = "./python/bin/python3 " + pathPythonScript.string();
         if (fs::exists(pathPythonScript))
         {
-            system("pwd");
             int result = system(command.c_str());
             LogPrintf("Run python result: %d\n", result);
 
