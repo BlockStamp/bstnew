@@ -20,7 +20,6 @@
 #include <utilstrencodings.h>
 #include <version.h>
 #include <warnings.h>
-#include <torProxyNode.h>
 
 #include <univalue.h>
 
@@ -679,48 +678,6 @@ static UniValue getnodeaddresses(const JSONRPCRequest& request)
     return ret;
 }
 
-static UniValue gettoraddresses(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() > 1) {
-        throw std::runtime_error(
-            "gettoraddresses ( count )\n"
-            "\nReturn known tor proxy addresses\n"
-            "\nArguments:\n"
-            "1. \"count\"    (numeric, optional) How many addresses to return. (default = all)\n"
-            "\nExamples:\n"
-            + HelpExampleCli("gettoraddresses", "1")
-            + HelpExampleRpc("getnodeaddresses", "1")
-        );
-    }
-
-   if (!g_connman) {
-       throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
-   }
-
-    int count = -1;
-    if (!request.params[0].isNull()) {
-        count = request.params[0].get_int();
-        if (count <= 0) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Address count out of range");
-        }
-    }
-
-    std::set<TorProxyNode> vAddr = g_connman->GetTorAddresses();
-    UniValue ret(UniValue::VARR);
-
-    if (count < 0)
-        count = vAddr.size();
-
-    std::set<TorProxyNode>::iterator it = vAddr.begin();
-    for (int i=0; i<count; ++i) {
-        ret.push_back(it->toString());
-        ++it;
-    }
-
-    return ret;
-}
-
-
 // clang-format off
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
@@ -738,7 +695,6 @@ static const CRPCCommand commands[] =
     { "network",            "clearbanned",            &clearbanned,            {} },
     { "network",            "setnetworkactive",       &setnetworkactive,       {"state"} },
     { "network",            "getnodeaddresses",       &getnodeaddresses,       {"count"} },
-    { "network",            "gettoraddresses",        &gettoraddresses,        {"count"} },
 };
 // clang-format on
 

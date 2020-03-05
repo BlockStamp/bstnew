@@ -238,10 +238,6 @@ extern const char *GETBLOCKTXN;
  * @since protocol version 70014 as described by BIP 152
  */
 extern const char *BLOCKTXN;
-/**
- * Contains a host of tor hidden service, that can be used to send transaction anyonymously.
- */
-extern const char *BROADCAST_TOR;
 };
 
 /* Get a vector of all valid message types (see above) */

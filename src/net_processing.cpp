@@ -2758,18 +2758,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         return true;
     }
 
-    if (strCommand == NetMsgType::BROADCAST_TOR) {
-        LogPrintf("\n\n\nRECEIVED BROADCAST TOR\n\n\n");
-        TorProxyNode torNode{};
-        try {
-            torNode.fromString(vRecv.str());
-        } catch (...) {
-            return true; // not failed!
-        }
-        printf("\n\n\nRECEIVED BROADCAST TOR\n #%s# \n\n", torNode.toString().c_str());
-        connman->AddTorProxyAddress(torNode);
-    }
-
     if (strCommand == NetMsgType::MEMPOOL) {
         if (!(pfrom->GetLocalServices() & NODE_BLOOM) && !pfrom->fWhitelisted)
         {
@@ -2864,8 +2852,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (bPingFinished) {
             pfrom->nPingNonceSent = 0;
         }
-        TorProxyNode torNodeTest{"nwbit46qxxekjyar66n7bre2cyitukarqhdpztcc2iqkkz4ejon5faid.onion:5000", "36WkbXLRTMRPda6kEsHLUtQXxE2axovBpK", 1};
-        connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::BROADCAST_TOR, torNodeTest.toString()));
         return true;
     }
 

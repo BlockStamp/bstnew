@@ -1813,6 +1813,7 @@ void RunPythonScripts()
         std::string command = "./python/bin/python3 " + pathPythonScript.string();
         if (fs::exists(pathPythonScript))
         {
+            system("pwd");
             int result = system(command.c_str());
             LogPrintf("Run python result: %d\n", result);
 

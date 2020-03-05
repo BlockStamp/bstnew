@@ -438,8 +438,8 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0)
         throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "BST is not connected!");
 
-    if (IsInitialBlockDownload())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BST is downloading blocks...");
+//    if (IsInitialBlockDownload())
+//        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BST is downloading blocks...");
 
     static unsigned int nTransactionsUpdatedLast;
 
