@@ -87,6 +87,28 @@ bool WalletBatch::EraseMsgAddress(const std::string& address)
     return EraseIC(std::make_pair(std::string("msg_address"), address));
 }
 
+bool WalletBatch::WriteMyProxyAddress(const TorProxyNode& myProxy_node)
+{
+    std::string myProxyStr = myProxy_node.toString();
+    printf("Savin my_proxy_node: %s\n", myProxyStr.c_str());
+    return WriteIC(std::string("myproxy_address"), myProxyStr);
+}
+
+bool WalletBatch::EraseMyProxyAddress()
+{
+    return EraseIC(std::string("myproxy_address"));
+}
+
+bool WalletBatch::WriteProxyAddress(const TorProxyNode &proxyNode)
+{
+    return WriteIC(std::make_pair(std::string("torproxy_address"), proxyNode.bst_address), proxyNode.toString());
+}
+
+bool WalletBatch::EraseProxyAddress(const std::string& bst_address)
+{
+    return EraseIC(std::make_pair(std::string("torproxy_address"), bst_address));
+}
+
 bool WalletBatch::EraseTx(uint256 hash)
 {
     return EraseIC(std::make_pair(std::string("tx"), hash));
@@ -234,6 +256,15 @@ bool WalletBatch::ReadPrivateKey(std::string& privateKey)
     return m_batch.Read(std::string("_privatekey"), privateKey);
 }
 
+bool WalletBatch::ReadMyProxyAddress(TorProxyNode& myProxyNode)
+{
+    std::string myProxyNodeStr;
+    bool rv = m_batch.Read(std::string("myproxy_address"), myProxyNodeStr);
+    if (!myProxyNodeStr.empty())
+        myProxyNode.fromString(myProxyNodeStr);
+    return rv;
+}
+
 
 class CWalletScanState {
 public:
@@ -280,6 +311,25 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             std::string strAddress;
             ssKey >> strAddress;
             ssValue >> pwallet->mapAddressBook[DecodeDestination(strAddress)].purpose;
+        }
+        else if (strType == "myproxy_address")
+        {
+            std::string myOwnProxyStr;
+            ssValue >> myOwnProxyStr;
+            pwallet->myOwnProxyService.fromString(myOwnProxyStr);
+            printf("myproxy_address_str: %s\n", myOwnProxyStr.c_str());
+            printf("myproxy_address: %s\n", pwallet->myOwnProxyService.toString().c_str());
+        }
+        else if (strType == "torproxy_address")
+        {
+            printf("torproxy_address type\n");
+            std::string bst_address, torproxy_str;
+            TorProxyNode proxyNode;
+            ssKey >> bst_address;
+            ssValue >> torproxy_str;
+            proxyNode.fromString(torproxy_str);
+            printf("proxynode_address: %s\t%s\n", bst_address.c_str(), proxyNode.toString().c_str());
+            pwallet->vProxyNodes.insert({bst_address, proxyNode});
         }
         else if (strType == "tx")
         {

@@ -23,6 +23,7 @@
 #include <wallet/walletdb.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/walletutil.h>
+#include <torProxyNode.h>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -1102,6 +1103,7 @@ public:
     bool IsFromMe(const CTransaction& tx) const;
     bool IsEnrcyptedMsg(const std::vector<char>& opReturn) const;
     bool IsFreeEncryptedMsg(const std::vector<char>& opReturn) const;
+    bool IsProxyBroadcastMsg(const std::vector<char>& opReturn) const;
     CAmount GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames = true) const;
     /** Returns whether all of the inputs match the filter */
     bool IsAllFromMe(const CTransaction& tx, const isminefilter& filter) const;
@@ -1298,6 +1300,16 @@ public:
 
     /** Implement lookup of key origin information through wallet key metadata. */
     bool GetKeyOrigin(const CKeyID& keyid, KeyOriginInfo& info) const override;
+
+    void addTorProxyNode(const std::string& onion_address, const std::string& bst_address);
+    void addTorProxyNode(const TorProxyNode& addingNode);
+    void initProxyNodeService();
+    /** update proxy node reputation, handle proxy broadcast message. */
+    void UpdateProxyNodeReputation(const CTransactionRef &ptx, const CBlockIndex *pIndex, int posInBlock);
+
+    // key - bst address
+    std::map<std::string, TorProxyNode> vProxyNodes;
+    TorProxyNode myOwnProxyService;
 };
 
 /** A key allocated from the key pool. */

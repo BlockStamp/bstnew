@@ -10,6 +10,7 @@
 #include <primitives/transaction.h>
 #include <wallet/db.h>
 #include <key.h>
+#include <torProxyNode.h>
 
 #include <list>
 #include <stdint.h>
@@ -192,6 +193,11 @@ public:
     bool WriteMsgAddress(const std::string& address, const std::string& label);
     bool EraseMsgAddress(const std::string& address);
 
+    bool WriteMyProxyAddress(const TorProxyNode &myProxy_node);
+    bool EraseMyProxyAddress();
+    bool WriteProxyAddress(const TorProxyNode &proxyNode);
+    bool EraseProxyAddress(const std::string& bst_address);
+
     bool WriteKey(const CPubKey& vchPubKey, const CPrivKey& vchPrivKey, const CKeyMetadata &keyMeta);
     bool WriteCryptedKey(const CPubKey& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, const CKeyMetadata &keyMeta);
     bool WriteMasterKey(unsigned int nID, const CMasterKey& kMasterKey);
@@ -223,6 +229,8 @@ public:
 
     bool ReadPublicKey(std::string& publicKey);
     bool ReadPrivateKey(std::string& privateKey);
+
+    bool ReadMyProxyAddress(TorProxyNode& myProxyNode);
 
     /// Write destination data key,value tuple to database
     bool WriteDestData(const std::string &address, const std::string &key, const std::string &value);

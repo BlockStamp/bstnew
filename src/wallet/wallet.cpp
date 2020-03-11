@@ -32,6 +32,7 @@
 #include <messages/message_encryption.h>
 #include <messages/message_utils.h>
 #include <internal_miner.h>
+#include <torProxyNode.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -577,7 +578,9 @@ CBlockIndex* CWallet::ScanForMessages(CBlockIndex* pindexStart, const MessengerR
 
             LOCK(cs_wallet);
             for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
+                printf("Scan For Messages\n");
                 AddEncrMsgToWalletIfNeeded(block.vtx[posInBlock], pindex, posInBlock);
+                UpdateProxyNodeReputation(block.vtx[posInBlock], pindex, posInBlock);
             }
         }
         else {
@@ -1366,6 +1369,9 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const CBlockI
         bool fExisted = mapWallet.count(tx.GetHash()) != 0;
         if (fExisted && !fUpdate) return false;
 
+        if (!fExisted)
+            UpdateProxyNodeReputation(ptx, pIndex, posInBlock);
+
         if (fExisted || IsMine(tx) || IsFromMe(tx))
         {
             /* Check if any keys in the wallet keypool that were supposed to be unused
@@ -1763,6 +1769,12 @@ bool CWallet::IsFreeEncryptedMsg(const std::vector<char>& opReturn) const
 {
     return (int)opReturn.size() >= ENCR_MARKER_SIZE &&
         std::string(opReturn.data(), opReturn.data() + ENCR_MARKER_SIZE) == ENCR_FREE_MARKER;
+}
+
+bool CWallet::IsProxyBroadcastMsg(const std::vector<char>& opReturn) const
+{
+    return (int)opReturn.size() >= ENCR_MARKER_SIZE &&
+        std::string(opReturn.data(), opReturn.data() + ENCR_MARKER_SIZE) == PROXY_MESSAGE_MARKER;
 }
 
 CAmount CWallet::GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames) const
@@ -3615,6 +3627,7 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
     }
 
     GenerateMessengerKeys();
+    initProxyNodeService();
 
     return DBErrors::LOAD_OK;
 }
@@ -5025,4 +5038,125 @@ bool CWallet::GetKeyOrigin(const CKeyID& keyID, KeyOriginInfo& info) const
         std::copy(keyID.begin(), keyID.begin() + 4, info.fingerprint);
     }
     return true;
+}
+
+void CWallet::addTorProxyNode(const std::string& onion_address, const std::string& bst_address)
+{
+    TorProxyNode addingNode(onion_address, bst_address);
+    try {
+        auto it = vProxyNodes.find(addingNode.bst_address);
+        if (it != vProxyNodes.end())
+        {
+            vProxyNodes.erase(it);
+        }
+        vProxyNodes.insert({addingNode.bst_address, addingNode});
+    } catch (std::exception& e)
+    {
+        throw e;
+    }
+}
+
+void CWallet::addTorProxyNode(const TorProxyNode& addingNode)
+{
+    try {
+        auto it = vProxyNodes.find(addingNode.bst_address);
+        if (it != vProxyNodes.end())
+        {
+            vProxyNodes.erase(it);
+        }
+        vProxyNodes.insert({addingNode.bst_address, addingNode});
+    } catch (std::exception& e)
+    {
+        throw e;
+    }
+
+}
+
+void CWallet::initProxyNodeService()
+{
+    if (myOwnProxyService.bst_address.empty())
+    {
+        WalletBatch walletBatch(*database);
+        walletBatch.ReadMyProxyAddress(myOwnProxyService);
+
+        if (myOwnProxyService.bst_address.empty())
+        {
+            CPubKey newKey;
+            GetKeyFromPool(newKey);
+            LearnRelatedScripts(newKey, m_default_address_type);
+            CTxDestination dest = GetDestinationForKey(newKey, m_default_address_type);
+            SetAddressBook(dest, "tor proxy", "receive");
+            printf("Generated address for tor proxy: %s\n", EncodeDestination(dest).c_str());
+            //TODO: replace with real data
+            myOwnProxyService.onion_address = "nwbit46qxxekjyar66n7bre2cyitukarqhdpztcc2iqkkz4ejon5faid.onion:5000";
+            myOwnProxyService.bst_address = EncodeDestination(dest);
+            walletBatch.WriteMyProxyAddress(myOwnProxyService);
+        }
+    }
+    printf("My own service: %s\n", myOwnProxyService.toString().c_str());
+}
+
+//TODO: update in db, consider saving to database at the end of application, not in runtime.
+
+void CWallet::UpdateProxyNodeReputation(const CTransactionRef &ptx, const CBlockIndex *pIndex, int posInBlock)
+{
+    AssertLockHeld(cs_wallet);
+    const CTransaction& tx = *ptx;
+    if (!tx.IsCoinBase())
+    {
+        if (!IsFromMe(tx))
+        {
+            std::vector<char> opReturn = tx.loadOpReturn();
+
+            if (IsProxyBroadcastMsg(opReturn))
+            {
+                TorProxyNode proxyNode;
+                proxyNode.fromString(std::string(opReturn.begin() + ENCR_MARKER_SIZE, opReturn.end()));
+                addTorProxyNode(proxyNode);
+                printf("added proxy node: %s\n", proxyNode.toString().c_str());
+            }
+        }
+
+        CAmount totalOutValue = GetCredit(tx, ISMINE_ALL);
+        for (const CTxOut& txout : tx.vout)
+        {
+            CTxDestination dest;
+            ExtractDestination(txout.scriptPubKey, dest);
+            const std::string& encoded_dest = EncodeDestination(dest);
+            std::map<std::string, TorProxyNode>::iterator nodeItem = vProxyNodes.find(encoded_dest);
+            if (nodeItem != vProxyNodes.end())
+            {
+                nodeItem->second.payment += txout.nValue;
+                nodeItem->second.txns_count += 1;
+                WalletBatch batch(*database);
+                batch.WriteProxyAddress(nodeItem->second);
+                printf("Payoff to proxy address: %s\tAmount: %ld\n", encoded_dest.c_str(), txout.nValue);
+                break;
+            }
+        }
+
+        CAmount totalInValue = GetDebit(tx, ISMINE_ALL);
+        for (const CTxIn& txin : tx.vin)
+        {
+            CTransactionRef prevTx;
+            uint256 hashBlock = uint256();
+            if (GetTransaction(txin.prevout.hash, prevTx, Params().GetConsensus(), hashBlock, true))
+            {
+                const CTransaction& prevtx = *prevTx;
+                CTxDestination src;
+                ExtractDestination(prevtx.vout[txin.prevout.n].scriptPubKey, src);
+                const std::string& encoded_src = EncodeDestination(src);
+                std::map<std::string, TorProxyNode>::iterator nodeItem =  vProxyNodes.find(encoded_src);
+                if (nodeItem != vProxyNodes.end())
+                {
+                    nodeItem->second.fee += std::abs(totalInValue - totalOutValue);
+                    nodeItem->second.txns_count += 1;
+                    WalletBatch batch(*database);
+                    batch.WriteProxyAddress(nodeItem->second);
+                    printf("Payment from proxy address: %s\tFee: %ld\n", encoded_src.c_str(), totalInValue - totalOutValue);
+                    break;
+                }
+            }
+        }
+    }
 }

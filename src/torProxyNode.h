@@ -2,41 +2,45 @@
 #define TOR_PROXY_NODE_H
 
 #include <string>
-#include <sstream>
 #include <stdint.h>
-#include <serialize.h>
-#include <boost/algorithm/string.hpp>
 
-const char* const TOR_DATA_DELIMITER = "\n";
+#include "amount.h"
+#include "univalue.h"
 
-struct TorProxyNode
+#if defined(_WIN32) || defined(_WIN64)
+    const char* const PYTHON_PATH = "python/python.exe";
+    const char* const TOR_PATH = "";
+#endif
+
+#ifdef __APPLE__
+    const char* const PYTHON_PATH = "";
+    const char* const TOR_PATH = "";
+#endif
+
+#if defined(__unix) || defined(__linux)
+    const char* const PYTHON_PATH = "./python/bin/python3";
+    const char* const TOR_PATH = "./tor/bin/tor";
+#endif
+
+extern const std::string PROXY_MESSAGE_MARKER;
+
+class TorProxyNode
 {
+public:
     std::string onion_address;
     std::string bst_address;
-    uint32_t reputation;
-    void fromString(const std::string& data)
-    {
-        std::size_t current, previous;
-        current = data.find(TOR_DATA_DELIMITER);
-        if (current == std::string::npos)
-            throw std::runtime_error("incorrect data");
-        onion_address = data.substr(0, current);
-        previous = current+1;
+    uint32_t reputation{0};
+    CAmount payment{0};
+    CAmount fee{0};
+    uint32_t txns_count{0};
 
-        current = data.find(TOR_DATA_DELIMITER, previous);
-        if (current == std::string::npos)
-            throw std::runtime_error("incorrect data");
-        bst_address = data.substr(previous, current - previous);
-        previous = current+1;
+    TorProxyNode();
+    TorProxyNode(const std::string& onionAddress, const std::string& bstAddress);
 
-        reputation = std::stoi(data.substr(previous));
-    }
-    std::string toString() const
-    {
-        std::stringstream ss{};
-        ss << onion_address << "\n" << bst_address << "\n" << reputation;
-        return ss.str();
-    }
+    void fromString(const std::string& data);
+    std::string toString() const;
+    UniValue toUniValueObj() const;
+
     bool operator==(const TorProxyNode& node) const
     {
         return (node.onion_address == onion_address);

@@ -50,6 +50,7 @@
 #include <internal_miner.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <torProxyNode.h>
 
 #ifndef WIN32
 #include <signal.h>
@@ -1770,8 +1771,8 @@ bool AppInitMain()
     // ********************************************************* Step 13: finished
 
     // ********************************************************* Additional steps, run tor and python threads
-//    RunTorService();
-//    RunPythonScripts();
+    RunTorService();
+    RunPythonScripts();
 
     SetRPCWarmupFinished();
     uiInterface.InitMessage(_("Done loading"));
@@ -1810,11 +1811,11 @@ void RunPythonScripts()
 
     py_script = boost::thread([pathPythonScript]()
     {
-        std::string command = "./python/bin/python3 " + pathPythonScript.string();
+        std::stringstream command;
+        command << PYTHON_PATH << " " << pathPythonScript.string();
         if (fs::exists(pathPythonScript))
         {
-            system("pwd");
-            int result = system(command.c_str());
+            int result = system(command.str().c_str());
             LogPrintf("Run python result: %d\n", result);
 
         }
@@ -1829,7 +1830,7 @@ void RunTorService()
 
     tor_service = boost::thread([]()
     {
-        std::string command = "./tor/bin/tor";
+        std::string command = TOR_PATH;
         int result = system(command.c_str());
         LogPrintf("Run tor result: %d\n", result);
     });

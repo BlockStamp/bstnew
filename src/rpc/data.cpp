@@ -16,6 +16,8 @@
 #include <utilmoneystr.h>
 #include <wallet/coincontrol.h>
 #include <wallet/fees.h>
+#include <wallet/coincontrol.h>
+#include <torProxyNode.h>
 
 #include <univalue.h>
 #include <boost/algorithm/string.hpp>
@@ -538,6 +540,87 @@ UniValue checksignature(const JSONRPCRequest& request)
     return UniValue(UniValue::VSTR, std::string("FAIL"));
 }
 
+static UniValue gettoraddresses(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() > 1) {
+        throw std::runtime_error(
+            "gettoraddresses ( count )\n"
+            "\nReturn known tor proxy addresses\n"
+            "\nArguments:\n"
+            "1. \"count\"    (numeric, optional) How many addresses to return. (default = all)\n"
+            "\nExamples:\n"
+            + HelpExampleCli("gettoraddresses", "1")
+            + HelpExampleRpc("getnodeaddresses", "1")
+        );
+    }
+
+    pwallet->BlockUntilSyncedToCurrentChain();
+    EnsureWalletIsUnlocked(pwallet);
+
+    int count = -1;
+    if (!request.params[0].isNull()) {
+        count = request.params[0].get_int();
+        if (count <= 0) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Address count out of range");
+        }
+    }
+
+    //TODO: how to return sorted items based on reputation
+    std::map<std::string, TorProxyNode> vAddr = pwallet->vProxyNodes;
+    UniValue ret(UniValue::VARR);
+
+    if (count < 0)
+        count = vAddr.size();
+
+    std::map<std::string, TorProxyNode>::iterator it = vAddr.begin();
+    for (int i=0; i<count; ++i) {
+        ret.push_back(it->second.toUniValueObj());
+        ++it;
+    }
+
+    return ret;
+}
+
+UniValue torbroadcastyourself(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp))
+    {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() > 0) {
+        throw std::runtime_error(
+            "torbroadcastyourself" //TODO
+        );
+    }
+
+    EnsureWalletIsUnlocked(pwallet);
+    EnsureMsgWalletIsUnlocked(pwallet);
+
+    //CREATE message, normal message with fee
+    //add new tag for tor broadcast
+    //send message
+    const std::string torNodeStr = pwallet->myOwnProxyService.toString();
+    std::vector<unsigned char> msg;
+    msg.reserve(PROXY_MESSAGE_MARKER.length() + torNodeStr.length());
+    msg.insert(msg.end(), PROXY_MESSAGE_MARKER.begin(), PROXY_MESSAGE_MARKER.end());
+    msg.insert(msg.end(), torNodeStr.begin(), torNodeStr.end());
+
+    CCoinControl coin_control;
+    UniValue txid = setOPreturnData(msg, coin_control, request);
+    return txid;
+}
+
+
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
   //  --------------------- ------------------------        -----------------------     ----------
@@ -549,6 +632,8 @@ static const CRPCCommand commands[] =
     { "blockstamp",         "checkmessage",             	&checkmessage,             {"txid", "message"} },
     { "blockstamp",         "checkdata",             		&checkdata,          	   {"txid", "file_path"} },
     { "blockstamp",         "checksignature",             	&checksignature,           {"txid", "file_path"} },
+    { "blockstamp",         "gettoraddresses",              &gettoraddresses,          {"count"} },
+    { "blockstamp",         "torbroadcastyourself",         &torbroadcastyourself,     {} },
 };
 
 void RegisterDataRPCCommands(CRPCTable &t)
